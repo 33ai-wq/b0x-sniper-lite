@@ -1,0 +1,17 @@
+{
+  "name": "b0x-sniper-lite",
+  "version": "lite-1.0.0",
+  "description": "Solana memecoin sniper — capital-preserving auto-buy. B0xSniperLITE v1.0 by prpo_ai (2026-07-06)",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail"
+  },
+  "keywords": ["solana", "sniper", "memecoin", "pump.fun", "jupiter", "dexscreener", "b0x"],
+  "author": "B0x70 <prpoai495@gmail.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "wrangler": "^3.0.0"
+  }
+}
