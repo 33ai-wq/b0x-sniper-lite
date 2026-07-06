@@ -1,0 +1,6 @@
+# Python deps for b0x-sniper-lite sniper core (lite-1.0.0)
+solana
+solders
+aiohttp
+base58
+requests

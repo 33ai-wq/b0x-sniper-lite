@@ -1,0 +1,15 @@
+# Node
+node_modules/
+
+# Cloudflare build cache
+.wrangler/
+.dev.vars*
+
+# Secrets (never commit)
+.env
+.env.*
+!.env.example
+
+# OS
+.DS_Store
+Thumbs.db

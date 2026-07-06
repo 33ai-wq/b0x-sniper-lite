@@ -1,0 +1,46 @@
+{
+  "wallet": {
+    "address": "7P7w3M9yQs5PCH2WbfmMxVWnkrobVsq1ARZBFfJ5W5zN",
+    "private_key_env": "WALLET_PRIVATE_KEY",
+    "path_to_env": "/data/data/com.termux/files/home/meridian/.env"
+  },
+  "rpc": {
+    "helius_url": "https://mainnet.helius-rpc.com/?api-key=564953dc-d1bf-495b-84ae-76c2c4b6aa31",
+    "jupiter_quote_api": "https://quote-api.jup.ag/v6/quote",
+    "jupiter_swap_api": "https://quote-api.jup.ag/v6/swap",
+    "pump_fun_trade_api": "https://pumpfunapi.slerfag.xyz",
+    "raydium_launchpad_api": "https://launchpad-raydium-mainnet.0xp.xyz"
+  },
+  "telegram": {
+    "bot_token_env": "TELEGRAM_BOT_TOKEN",
+    "chat_id": 1963809645
+  },
+  "trade": {
+    "max_per_trade_sol": 0.0033,
+    "max_trades_per_day": 5,
+    "daily_loss_lock_sol": 0.005,
+    "wallet_safety_floor_sol": 0.0125,
+    "exit_seconds_after_buy": 60,
+    "take_profit_pcts": [20, 50, 100],
+    "exit_allocation_pcts": [50, 30, 20],
+    "stop_loss_pct": 30
+  },
+  "filter": {
+    "min_liquidity_sol": 1.5,
+    "max_liquidity_sol": 50,
+    "min_holder_count": 20,
+    "max_top10_holder_pct": 30,
+    "max_dev_wallet_pct": 5,
+    "min_bonding_curve_progress_pct": 15,
+    "max_other_snipers_in_first_5s": 200,
+    "require_metadata": true,
+    "block_known_rugs": true,
+    "min_score_to_snipe": 65
+  },
+  "scan": {
+    "interval_seconds": 25,
+    "max_no_trade_idle_logs_per_hour": 4
+  },
+  "version": "lite-1.0.0",
+  "build_date": "2026-07-06"
+}
