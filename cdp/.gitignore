@@ -1,0 +1,4 @@
+.env.cdp
+*.json
+*.key
+!set_cdp_creds.sh
