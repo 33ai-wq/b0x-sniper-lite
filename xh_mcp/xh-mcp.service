@@ -1,0 +1,15 @@
+[Unit]
+Description=XH Agents MCP Server (FastMCP - SSExpose to agents)
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/prpo_ai/xh_mcp
+ExecStart=/home/ubuntu/prpo_ai/venv/bin/python /home/ubuntu/prpo_ai/xh_mcp/xh_mcp_server.py --transport sse --port 8989
+Restart=on-failure
+RestartSec=5
+Environment=XH_BASE_URL=https://xhagents.xyz
+
+[Install]
+WantedBy=multi-user.target
