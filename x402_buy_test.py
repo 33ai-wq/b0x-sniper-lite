@@ -34,6 +34,8 @@ TARGETS = [
     ("new", "https://xhagents.xyz/api/defi-sentiment", {"asset": "BTC", "protocol": "aerodrome"}, "0.10"),
     ("new", "https://xhagents.xyz/api/whale-watch", {"min_usd": 50000, "blocks": 200, "token": "USDC"}, "0.10"),
     ("new", "https://xhagents.xyz/api/x402-directory", {"query": "gas", "limit": 5}, "0.10"),
+    # knowledge product, $2 — kept in its own group so a plain `--group new` never spends it
+    ("bundle", "https://xhagents.xyz/api/compute/xh-bundle", {"topic": "fix-bug-base-rpc", "format": "markdown"}, "2.00"),
 ]
 
 
@@ -91,7 +93,7 @@ def main():
     ap.add_argument("--check", action="store_true", help="do not pay; only inspect")
     ap.add_argument("--only", help="only buy targets whose URL contains one of these substrings (comma-separated)")
     ap.add_argument("--tx", help="real Base tx hash to feed the payment-verify endpoint")
-    ap.add_argument("--group", default="all", help="core | new | all")
+    ap.add_argument("--group", default="all", help="core | new | bundle | all")
     args = ap.parse_args()
     only = [s.strip() for s in (args.only or "").split(",") if s.strip()]
 

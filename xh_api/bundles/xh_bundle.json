@@ -1,0 +1,362 @@
+{
+  "bundle": "XH Agents — Build & Ship an x402 Paid API",
+  "bundle_id": "xh-bundle",
+  "version": "1.0.0",
+  "vendor": "XH Agents (https://xhagents.xyz)",
+  "summary": "Everything XH Agents learned while turning a hand-rolled 402 flow into a set of x402 endpoints that pass the CDP validator, get indexed in Coinbase Bazaar, and take real USDC from unknown buyers. Twelve playbooks: each one records the mechanism that worked, the failure that preceded it, and the command that proves it.",
+  "how_to_read": "Each item has: solves, prerequisites, steps (with the actual commands), pitfalls (things that cost us real time or real money), verify (how to prove it worked). Commands are Linux/bash on a single VPS with nginx + systemd. No credentials are included — every secret is referenced by file path only.",
+  "delivery": {
+    "format": "JSON by default; request format=markdown for one concatenated document",
+    "topic": "send topic=<item id> to receive a single playbook",
+    "free_preview": "GET /api/compute/xh-bundle lists every item id and title without payment"
+  },
+  "items": [
+    {
+      "id": "ship-x402-endpoint",
+      "title": "Ship a new x402 paid endpoint end to end",
+      "requested_by_owner": true,
+      "solves": "You have a useful HTTP service and want agents to pay per call in USDC without API keys, subscriptions or human onboarding.",
+      "prerequisites": [
+        "A host you control with nginx, systemd and HTTPS",
+        "An EVM treasury address to receive USDC (we use Base, chain id 8453)",
+        "A Coinbase CDP API key (key id + private key) for the facilitator",
+        "Python 3.11+ with a venv"
+      ],
+      "steps": [
+        {"n": 1, "do": "Install the official x402 package in the service venv", "cmd": "./venv/bin/pip install x402"},
+        {"n": 2, "do": "Build a FastAPI app and register the exact-EVM server mechanism for Base", "cmd": "srv = x402ResourceServer(HTTPFacilitatorClient(FacilitatorConfig(url='https://api.cdp.coinbase.com/platform/v2/x402', auth_provider=CreateHeadersAuthProvider(my_headers)))); register_exact_evm_server(srv, ['eip155:8453'])"},
+        {"n": 3, "do": "Describe every paid route once, and reuse that description for the gate, the OpenAPI document and the directory listing", "cmd": "X402_ROUTES['POST /my-endpoint'] = {'accepts': {'scheme': 'exact', 'price': '$0.10', 'network': 'eip155:8453', 'payTo': TREASURY}, 'resource': SITE + '/api/my-endpoint', 'extensions': declare_discovery_extension(input=EXAMPLE_IN, input_schema=SCHEMA_IN, body_type='json', output=OutputConfig(example=EXAMPLE_OUT))}"},
+        {"n": 4, "do": "Gate the app in HTTP middleware, ABOVE the request-body schema layer, so an empty probe still gets 402", "cmd": "@app.middleware('http')\\nasync def gate(request, call_next): return await payment_middleware(X402_ROUTES, srv)(request, call_next)"},
+        {"n": 5, "do": "Write the handler as a plain def when it does network or chain I/O (FastAPI then runs it in a threadpool instead of blocking the event loop)", "cmd": "@app.post('/my-endpoint')\\ndef my_endpoint(req: MyReq): ..."},
+        {"n": 6, "do": "Expose it through nginx with its own location and a read timeout long enough for the slowest handler", "cmd": "location = /api/my-endpoint { proxy_pass http://127.0.0.1:8991/my-endpoint; proxy_http_version 1.1; proxy_set_header Host $host; proxy_read_timeout 120s; }"},
+        {"n": 7, "do": "Make it discoverable: an OpenAPI 3.1 document with x-payment-info plus a /.well-known/x402 resource list on the public host", "cmd": "curl -s https://your-host/openapi.json | python3 -m json.tool | head"},
+        {"n": 8, "do": "Iterate against the free CDP validator until every preflight check passes", "cmd": "curl -s -X POST https://api.cdp.coinbase.com/platform/v2/x402/validate -H 'Content-Type: application/json' -d '{\"resource\":\"https://your-host/api/my-endpoint\",\"method\":\"POST\"}'"},
+        {"n": 9, "do": "Submit the URL to x402scan (URL only, no wallet, no fee) and confirm it registered", "cmd": "POST https://www.x402scan.com/api/trpc/public.resources.checkRegistered with {\"json\":{\"resources\":[{\"url\":\"https://your-host/api/my-endpoint\"}]}}"},
+        {"n": 10, "do": "Take one real payment: Bazaar indexing follows the first settlement through the CDP facilitator automatically (no submission, no fee)", "cmd": "./venv/bin/python buy_test.py --only my-endpoint"}
+      ],
+      "pitfalls": [
+        "The gate must sit above body validation. A handler that validates its body first answers 400/422 to the validator's empty probe and every envelope check is reported as skipped.",
+        "x402.org/facilitator does not serve `exact` on Base mainnet; wiring it in makes the process refuse the route at boot with 'does not support scheme exact on network eip155:8453'. Only the CDP facilitator supports Base, and only it feeds Coinbase Bazaar.",
+        "The SDK can abort construction with SystemExit, which `except Exception` does not catch. Wrap it and verify the unit is still active after restarting.",
+        "Never point a new public API path at the default catch-all: on our nginx an unmatched /api/* went to n8n and answered 200 with HTML, so the frontend failed silently.",
+        "If a route keeps its old manual payment branch, guard it on 'the standard gate did not verify', or the x402 signature gets parsed as the legacy format and a paid request is rejected after the customer already signed."
+      ],
+      "verify": [
+        "Unpaid request returns 402 with a PAYMENT-REQUIRED header: curl -sD- -o /dev/null -X POST https://your-host/api/my-endpoint -H 'Content-Type: application/json' -d '{}'",
+        "CDP validator: 25 checks, 0 failures, index populated after the first settled call",
+        "A paid call returns 200 AND a PAYMENT-RESPONSE settlement header"
+      ],
+      "files": ["paid API service (FastAPI + x402)", "nginx vhost", "openapi.json at the docroot", ".well-known/x402 at the docroot"]
+    },
+    {
+      "id": "verifier-money-rules",
+      "title": "The two rules for verifying USDC payments (and the shared verifier that enforces them)",
+      "requested_by_owner": false,
+      "solves": "You need to know a payment happened, to the right address, for the right amount, from the right sender, exactly once — without trusting an RPC to have honoured your filter.",
+      "prerequisites": ["A Base RPC endpoint", "Python with requests/web3"],
+      "steps": [
+        {"n": 1, "do": "Filter eth_getLogs by the TOKEN contract, never by the recipient: ERC-20 Transfer events are emitted by the token", "cmd": "params = [{'fromBlock': hex(start), 'toBlock': hex(end), 'address': USDC, 'topics': [TRANSFER_TOPIC, payer_topic_or_None, recipient_topic]}]"},
+        {"n": 2, "do": "Bind every credit to sender + recipient + token + amount + tx hash, and record the hash so it can never be claimed twice", "cmd": "ok, reason, detail = verify_tx_usdc(tx_hash=tx, to_address=TREASURY, min_atomic=100000, from_address=payer)"},
+        {"n": 3, "do": "Re-check the returned log locally instead of trusting that the RPC applied your topic filter", "cmd": "assert detail['to'].lower() == treasury.lower() and int(detail['value_atomic']) >= min_atomic"},
+        {"n": 4, "do": "Fail closed: any RPC or parse problem must raise a reason, never a silent pass"},
+        {"n": 5, "do": "Settle only AFTER the handler has produced its answer, so a failed call never charges the buyer"}
+      ],
+      "pitfalls": [
+        "Filtering by `address = treasury` matches nothing, ever — the Transfer log is emitted by the token contract. This one mistake meant no Base payment was detected for days.",
+        "Amount-only matching (`value >= price*0.99`) with no recipient and no tx binding lets one transfer buy unlimited credits.",
+        "A 403 from a Cloudflare-fronted RPC is not a failed payment: identify your caller with a User-Agent, otherwise the shared verifier reports `rpc_error:403` on a perfectly real settlement — and, worse, does it inside an HTTP 200 response.",
+        "Wide getLogs ranges get 413 Payload Too Large; keep the lookback to a few hundred blocks for a settlement scan."
+      ],
+      "verify": [
+        "A dedicated test suite over matching, replay, expiry and malformed hashes (ours is 18 checks, all passing)",
+        "Real money: a settlement shows up as a Transfer to the treasury with the payer as topics[1]"
+      ],
+      "files": ["shared verifier module (one file, imported by every money path)"]
+    },
+    {
+      "id": "test-buyer",
+      "title": "Test the buyer side with real money (throwaway wallet, gasless settlement)",
+      "requested_by_owner": true,
+      "solves": "Prove that an unknown agent with a funded wallet can actually buy your endpoint — the only test that catches payment-path bugs.",
+      "prerequisites": ["Python venv with x402 + eth_account", "A throwaway EOA, key stored in a file with mode 600", "USDC on Base (no ETH needed)"],
+      "steps": [
+        {"n": 1, "do": "Generate a one-off wallet on the host and keep the key out of chat, out of git, mode 600", "cmd": "python -c \"from eth_account import Account; a=Account.create(); open('keys/buyer.key','w').write(a.key.hex()); print(a.address)\""},
+        {"n": 2, "do": "Ask the owner to fund that address with USDC only — the CDP facilitator settles an EIP-3009 authorization, so the payer never needs gas", "cmd": "send USDC on Base to <buyer address>"},
+        {"n": 3, "do": "Client: make an unpaid call, decode the challenge, sign the authorization, retry with both payment headers", "cmd": "client = x402ClientSync(); register_exact_evm_client(client, EthAccountSigner(acct), ['eip155:8453']); http = x402HTTPClientSync(client)\\nrequired = decode_payment_required_header(resp.headers['PAYMENT-REQUIRED'])\\nsig = encode_payment_signature_header(http.create_payment_payload(required))\\nretry with {X_PAYMENT_HEADER: sig, PAYMENT_SIGNATURE_HEADER: sig}"},
+        {"n": 4, "do": "Read the PAYMENT-RESPONSE header on the paid response — that is the settlement receipt", "cmd": "resp.headers.get('PAYMENT-RESPONSE')"},
+        {"n": 5, "do": "Verify on-chain that the money moved, using the token-as-emitter filter", "cmd": "find_incoming_usdc(TREASURY, from_address=buyer, min_atomic=100000, lookback_blocks=800)"},
+        {"n": 6, "do": "Check the payer balance before AND after, and reconcile the difference against the number of successful calls", "cmd": "usdc_balance(buyer)  # expect exactly the sum of settled calls"},
+        {"n": 7, "do": "For endpoints that need a real reference (a settlement hash, an address), plumb it in explicitly (--tx) instead of leaving a placeholder that silently skips the target"}
+      ],
+      "pitfalls": [
+        "A placeholder that makes the script skip a target is worse than a failure: payment-verify stayed untested for a whole round because the sample hash was injected into the wrong target index.",
+        "Balance reads taken immediately after a paid call lag by a block and print 'spent 0.000000' even though the transfer is real. Re-query the Transfer logs before believing either number.",
+        "Public RPC endpoints 403 the default python-urllib/python-requests User-Agent, so the balance check dies before the test even starts. Set a real UA and keep a fallback list.",
+        "A 5xx or a 504 must leave the balance unchanged. Test that too — it is the cheapest way to prove your settle-after-answer ordering."
+      ],
+      "verify": [
+        "Every paid call: HTTP 200 with a settlement header, plus the answer body read (not just the status code)",
+        "On-chain Transfer from the buyer to the treasury for each successful call"
+      ],
+      "files": ["buy_test.py (client)", "keys/*.key (mode 600, never committed)"]
+    },
+    {
+      "id": "x402-register",
+      "title": "Register the endpoint where agents actually look (and how Bazaar indexing really works)",
+      "requested_by_owner": true,
+      "solves": "Discovery: an endpoint nobody can find earns nothing, no matter how well it works.",
+      "prerequisites": ["An endpoint that answers a standard x402 402 with accepts[]", "An OpenAPI document and/or /.well-known/x402 at the public host"],
+      "steps": [
+        {"n": 1, "do": "Publish discovery documents at the docroot: OpenAPI 3.1 with x-payment-info + a 402 response per paid operation, and /.well-known/x402 listing the resources and ownership proofs", "cmd": "curl -s https://your-host/.well-known/x402 | head -c 400"},
+        {"n": 2, "do": "Validate with the free, unauthenticated CDP validator until preflight is clean", "cmd": "curl -s -X POST https://api.cdp.coinbase.com/platform/v2/x402/validate -d '{\"resource\":\"https://your-host/api/x\",\"method\":\"POST\"}'"},
+        {"n": 3, "do": "Submit the URL at https://www.x402scan.com/resources/register — URL + Add button, no auth, no wallet, no fee, one resource at a time"},
+        {"n": 4, "do": "Confirm registration through their public API, not the UI toast", "cmd": "POST https://www.x402scan.com/api/trpc/public.resources.checkRegistered with {\"json\":{\"resources\":[{\"url\":\"<url>\"}]}} -> registered[] / unregistered[]"},
+        {"n": 5, "do": "For Coinbase Bazaar: do nothing but take one real payment through the CDP facilitator — indexing is automatic and free", "cmd": "then re-run the CDP validator and look at the `index` field"},
+        {"n": 6, "do": "Optionally list on third-party directories that probe the live handshake (they read the same envelope, so nothing extra to build)"}
+      ],
+      "pitfalls": [
+        "A home-made 402 body (nonce / payout_address / how_to_pay) is invisible to every directory and agent. Anything that is not x402Version + accepts[] does not exist to them.",
+        "The x402scan verification API is unversioned and drifts: the payload is now an array of OBJECTS ({'url': ...}), not an array of strings, and omitting the 'json' wrapper is a 400. Re-read their error text instead of assuming.",
+        "Do not pay x402bazaar.org: 1 USDC per service and its public quick-register is broken server-side (RLS blocks the public insert). It is a different platform from Coinbase Bazaar.",
+        "index: null is normal until the first settlement. It is not a rejection, and there is no form to submit.",
+        "An MCP server is not registerable — MCP is how agents call your tools, x402 is how they pay. Register the paid HTTP endpoints."
+      ],
+      "verify": [
+        "10/10 of our resources reported registered by x402scan's own API",
+        "CDP validator: 25 checks passed, 0 failed, index.active true after settlement"
+      ],
+      "files": ["openapi.json", ".well-known/x402", "nginx location for the well-known path with default_type application/json"]
+    },
+    {
+      "id": "fix-bug-base-rpc",
+      "title": "Pick Base RPC endpoints that actually work (the eth_getLogs capability audit)",
+      "requested_by_owner": true,
+      "solves": "Paid endpoints were intermittently answering 503 rpc_unavailable because the RPC fallback list contained endpoints that cannot serve eth_getLogs at all.",
+      "prerequisites": ["Python with requests or httpx"],
+      "steps": [
+        {"n": 1, "do": "Probe each candidate with a REAL ~200-block USDC eth_getLogs, not with eth_blockNumber — a plain call working proves nothing about log queries", "cmd": "POST {method: eth_getLogs, params: [{fromBlock: latest-200, toBlock: latest, address: USDC, topics: [TRANSFER_TOPIC]}]}"},
+        {"n": 2, "do": "Keep only the endpoint if it returns a log array; record WHY the others fail", "cmd": "log the error, not just a boolean"},
+        {"n": 3, "do": "Identify your client with a User-Agent — a bare python-requests UA receives 403 from Cloudflare-fronted RPCs", "cmd": "headers={'User-Agent': 'your-agent-name/1.0'}"},
+        {"n": 4, "do": "Try every endpoint twice with a short pause: the good ones rate-limit in bursts and pass on the second attempt", "cmd": "for attempt in range(2): for url in RPC_LIST: try: ... except: continue"},
+        {"n": 5, "do": "Give eth_getLogs a longer timeout than the cheap calls (45 s), and keep the block range small (a few hundred blocks)", "cmd": "timeout = 45.0 if method == 'eth_getLogs' else 20.0"},
+        {"n": 6, "do": "Apply the same fallback to every helper that talks to an RPC, including web3-based view calls", "cmd": "for url in RPC_LIST: try: Web3(HTTPProvider(url, request_kwargs={'timeout': 20})) ..."}
+      ],
+      "pitfalls": [
+        "Our measured results on 2026-09-26 (Base mainnet): base-rpc.publicnode.com works; mainnet.base.org works; base.llamarpc.com returns a Cloudflare 525 / non-JSON; base.blockpi.network the same; base.meowrpc.com answers 'The method eth_getLogs is not supported'; base.drpc.org caps ranges at 10,000 blocks on its free plan; 1rpc.io/base caps eth_getLogs at 50 blocks.",
+        "Reputation is worthless — a well-known provider can refuse the one method you need.",
+        "Old blocks are 'archive' territory: some endpoints answer 'Archive requests require a personal token' for ranges only hours old, so an hour-by-hour backfill needs a paid key or a different provider.",
+        "A 413 Payload Too Large is a range problem, not an endpoint problem. Chunk to <=1000 blocks when backfilling."
+      ],
+      "verify": [
+        "A settlement scan over the last ~800 blocks returns the expected Transfer with amount and tx hash",
+        "The endpoint answers 200 instead of 503 on a paid call, confirmed with real money"
+      ],
+      "files": ["RPC helper in the paid API service", "shared verifier RPC plumbing"]
+    },
+    {
+      "id": "connect-cdp-account",
+      "title": "Connect to Coinbase CDP with an API key (JWT per method+path)",
+      "requested_by_owner": true,
+      "solves": "The facilitator endpoints (supported / verify / settle / discovery) must be called with a CDP credential, and each call needs its own signed JWT.",
+      "prerequisites": ["A CDP API key (key id + private key) from the Coinbase Developer Platform", "The cdp Python package", "A mode-600 file holding the credentials"],
+      "steps": [
+        {"n": 1, "do": "Store the credential in a file readable only by the service user, and never print it", "cmd": "install -m 600 /dev/null cdp/.env.cdp; chmod 600 cdp/.env.cdp  # then fill CDP_API_KEY_ID / CDP_API_KEY_PRIVATE_KEY"},
+        {"n": 2, "do": "Read the file at boot and build a per-request header provider — the JWT binds a method AND a path, so it cannot be reused across endpoints", "cmd": "get_auth_headers(GetAuthHeadersOptions(api_key_id=ID, api_key_secret=SECRET, request_method='POST', request_host='api.cdp.coinbase.com', request_path='/platform/v2/x402/verify'))"},
+        {"n": 3, "do": "Hand that provider to the facilitator client so the SDK signs each call correctly", "cmd": "HTTPFacilitatorClient(FacilitatorConfig(url='https://api.cdp.coinbase.com/platform/v2/x402', auth_provider=CreateHeadersAuthProvider(my_headers)))"},
+        {"n": 4, "do": "Check what the facilitator supports before wiring a network into the gate", "cmd": "curl -s <facilitator>/supported   # must list scheme 'exact' on eip155:8453"},
+        {"n": 5, "do": "Reuse the same provider for the discovery search and for the validation report", "cmd": "GET /platform/v2/x402/discovery/search?limit=20  (limit is capped at 20)"}
+      ],
+      "pitfalls": [
+        "A JWT signed for one path fails on another with a signature error that looks like a bad key. Bind method+path every time.",
+        "x402.org/facilitator is a dead end for Base: it does not offer `exact` on eip155:8453, and the x402 SDK validates routes at boot and exits.",
+        "CDP_WALLET_SECRET is only needed for CDP Server Wallets. Facilitator auth and x402 settlement work with the API key alone — do not block a launch on it.",
+        "The discovery search parameter `limit` is capped at 20; a larger value returns an error, not a truncated result.",
+        "Never echo credentials into logs, commits or chat. Reference the file path."
+      ],
+      "verify": [
+        "Boot log shows the facilitator URL and the number of gated routes",
+        "A real payment verifies AND settles (PAYMENT-RESPONSE carries a transaction hash)"
+      ],
+      "files": ["cdp/.env.cdp (mode 600)", "paid API service"]
+    },
+    {
+      "id": "core-data",
+      "title": "Consolidate core data from Cloudflare Workers and a legacy Solana endpoint into your own API",
+      "requested_by_owner": true,
+      "solves": "Data and payment logic spread across Cloudflare Workers and an old free-domain endpoint is hard to price, hard to version and hard to debug. This is how we moved the core set onto one VPS service while the workers kept running.",
+      "prerequisites": ["The existing worker sources", "A VPS service with the shared verifier", "nginx routes for the new paths"],
+      "steps": [
+        {"n": 1, "do": "Inventory the live worker routes and classify each one: data (keep), payment plumbing (replace with the standard gate), deprecated (drop)"},
+        {"n": 2, "do": "Re-implement the data routes on the VPS, one endpoint per file section, all behind one gate and one treasury", "cmd": "keep the response shape identical so existing callers do not break"},
+        {"n": 3, "do": "Reuse the shared verifier for money — never re-write payment verification per service"},
+        {"n": 4, "do": "Keep the workers deployed while the new service warms up; switch discovery documents only after the new paths respond 402 correctly", "cmd": "for p in $(list_endpoints); do curl -s -o /dev/null -w '%{http_code} ' -X POST https://host/api/$p -d '{}'; done"},
+        {"n": 5, "do": "Leave legacy free-domain endpoints and their DNS updater alone if anything still points at them", "cmd": "crontab -l | grep duckdns   # keep it"},
+        {"n": 6, "do": "Publish one OpenAPI document per public host listing every paid route, then register the whole set"}
+      ],
+      "pitfalls": [
+        "Deleting a legacy endpoint because it 'looks unused' breaks a caller you cannot see. Check the access log for its last 200 before removing anything.",
+        "Two implementations of the same data drift within days. Pick one as the source of truth and mark the other read-only.",
+        "Each public host needs its own discovery document and its own registration; a resource is registered per URL, not per host."
+      ],
+      "verify": [
+        "All consolidated routes answer 402 with a standard challenge on the public host",
+        "Every route settles at least once through the CDP facilitator and appears in the Bazaar index"
+      ],
+      "files": ["paid API service", "nginx vhost", "OpenAPI + .well-known per host"]
+    },
+    {
+      "id": "drive-bridge",
+      "title": "Bridge a VPS to a user's Google Drive with rclone (no browser on the server)",
+      "requested_by_owner": true,
+      "solves": "A headless server needs to read and write a user's Google Drive (drop a file, pick up a queue) without an interactive browser login.",
+      "prerequisites": ["rclone on the VPS", "One interactive machine with a browser to authorise the OAuth token once"],
+      "steps": [
+        {"n": 1, "do": "Install rclone and create the remote", "cmd": "curl https://rclone.org/install.sh | sudo bash; rclone config"},
+        {"n": 2, "do": "Choose drive, then the headless flow: rclone prints a URL, you authorise it on any machine with a browser and paste the code back on the server", "cmd": "# no browser needed on the VPS; the token is written into rclone.conf"},
+        {"n": 3, "do": "Lock the config down; it contains a refresh token", "cmd": "chmod 600 ~/.config/rclone/rclone.conf"},
+        {"n": 4, "do": "Verify both directions before automating anything", "cmd": "rclone lsd gdrive: ; rclone copy ./probe.txt gdrive:tmp-verify/ && rclone lsjson gdrive:tmp-verify/"},
+        {"n": 5, "do": "Write a one-way sync with explicit exclusions so secrets and build junk never leave the host", "cmd": "rclone sync /home/user gdrive:BACKUP/home-user --exclude node_modules/** --exclude .git/** --exclude .env --exclude '*.key' --transfers 4 --bwlimit 8M"},
+        {"n": 6, "do": "Schedule it and log the result", "cmd": "0 */8 * * * /usr/bin/flock -n /tmp/backup.lock /home/user/backup.sh >> /var/log/backup.log 2>&1"},
+        {"n": 7, "do": "For queue workflows (drop folder -> process -> publish), poll a single folder and move files between state folders; never delete the user's source file"}
+      ],
+      "pitfalls": [
+        "Never commit or paste rclone.conf: it holds a long-lived refresh token.",
+        "--bwlimit matters on a small VPS: an unbounded sync will starve the paid API of bandwidth and cause timeouts.",
+        "lock the job (flock) or a slow run overlaps the next and corrupts state.",
+        "Excluding .env and *.key is not optional when the synced tree is a home directory."
+      ],
+      "verify": [
+        "rclone lsjson on the destination lists the expected files with sizes",
+        "The log shows the last run's transferred bytes and no errors"
+      ],
+      "files": ["~/.config/rclone/rclone.conf (mode 600)", "backup script", "cron entry"]
+    },
+    {
+      "id": "install-adsense",
+      "title": "Install AdSense correctly on a site you also sell ads on",
+      "requested_by_owner": true,
+      "solves": "Get a site through AdSense review, and keep your own paid placements unmistakably separate from Google's units.",
+      "prerequisites": ["A site you control end to end (source + live docroot)", "AdSense publisher id"],
+      "steps": [
+        {"n": 1, "do": "Put the script tag as the FIRST element in <head> of every page — in the shared layout, not per page", "cmd": "<head><script async src='https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXX' crossorigin='anonymous'></script>..."},
+        {"n": 2, "do": "Publish ads.txt at the docroot with the publisher line and no redirects", "cmd": "curl -s https://your-host/ads.txt"},
+        {"n": 3, "do": "Write the pages review looks for: about, privacy, terms, disclaimer — and make the privacy page name the ad network", "cmd": "curl -s -o /dev/null -w '%{http_code} %{url_effective}\\n' https://your-host/{about,privacy,terms,disclaimer}"},
+        {"n": 4, "do": "Label every unit you sell directly as Sponsored/Ad, and never place your own slot where it can be mistaken for a Google unit"},
+        {"n": 5, "do": "Verify against the live docroot, not the build output", "cmd": "curl -s --resolve your-host:443:127.0.0.1 -k https://your-host/ | grep -c 'adsbygoogle.js'"}
+      ],
+      "pitfalls": [
+        "On a hand-edited live docroot, editing only the Astro/Vite source changes nothing until a rebuild AND a copy to the docroot. Always curl the live host to confirm.",
+        "A missing ads.txt or an unreachable privacy page is a common review rejection.",
+        "The user-agent matters for the check: grep the origin with --resolve so DNS or a CDN cache cannot fool you.",
+        "Third-party scripts belong in the layout, otherwise new pages ship without the tag and the review sample fails."
+      ],
+      "verify": [
+        "curl -sD- https://your-host/ | grep -i 'adsbygoogle.js' shows the script in the first bytes of <head>",
+        "ads.txt and all four legal pages answer 200"
+      ],
+      "files": ["layout template (source)", "live docroot index.html", "ads.txt", "legal pages"]
+    },
+    {
+      "id": "ads-size-setup",
+      "title": "One ad slot, several sizes (and prove it cannot be abused)",
+      "requested_by_owner": true,
+      "solves": "Sell the same placement at different IAB sizes without shipping three templates or breaking layout on mobile.",
+      "prerequisites": ["A slot container in the page", "A small engine or JSON listing that maps size -> price"],
+      "steps": [
+        {"n": 1, "do": "Define the sellable sizes and prices in ONE place (we use 728x90, 300x250, 480x320) and let the page pick, rather than duplicating markup"},
+        {"n": 2, "do": "Render the slot at load from that definition, choosing by viewport, with a fixed aspect box so nothing jumps", "cmd": "<div class='ad-slot' data-sizes='728x90,480x320,300x250'>"},
+        {"n": 3, "do": "Keep third-party (AdSense) units and your own (Sponsored) units in the same slot mechanism but different labels"},
+        {"n": 4, "do": "Make activation/publishing require an admin token — an unauthenticated publish endpoint means anyone can put content on your site", "cmd": "curl -s -X POST https://your-host/api/ads/activate -d '{}'  # must NOT be 200 without the token"},
+        {"n": 5, "do": "Test the slot with a hostile creative: oversized image, very long text, an iframe, a script tag — the page must stay intact", "cmd": "node test_ad_slot.mjs"}
+      ],
+      "pitfalls": [
+        "A slot that does not exist in the DOM is the classic failure: the ad flow works and the paid ad is never displayed. Assert the container is present in the live HTML.",
+        "Unlabelled own units can be mistaken for Google units — that is both a policy risk and an advertiser complaint.",
+        "Layout shift from a slot with no reserved height makes the page look broken and hurts conversion.",
+        "Sanitise creative content: a paid advertiser is still an untrusted input."
+      ],
+      "verify": [
+        "Rendered slot reports the chosen size and the price for that size",
+        "Hostile-creative test passes with the page layout unchanged",
+        "Publish path refuses requests without the admin token"
+      ],
+      "files": ["slot markup", "ad engine service", "slot test"]
+    },
+    {
+      "id": "nginx-route-recovery",
+      "title": "Recover lost nginx routes after a vhost rename (and always know what nginx really serves)",
+      "requested_by_owner": false,
+      "solves": "After renaming a virtual host, whole API namespaces silently fell through to a catch-all and answered 200 with HTML — the site 'worked' while every JSON client failed.",
+      "prerequisites": ["nginx with sites-available/sites-enabled", "A way to curl the origin"],
+      "steps": [
+        {"n": 1, "do": "Always curl the origin with --resolve so DNS, a CDN or a cache cannot mislead you", "cmd": "curl -s --resolve your-host:443:127.0.0.1 -k https://your-host/api/x | head -c 200"},
+        {"n": 2, "do": "List every public path the app is supposed to own, then check each one is claimed by an explicit location", "cmd": "for p in /api/a /api/b /mcp/ /.well-known/x402; do printf '%s ' $p; curl -s -o /dev/null -w '%{http_code}\\n' https://your-host$p; done"},
+        {"n": 3, "do": "Before editing, compare root/alias and the location list against the backup", "cmd": "diff <(grep -n 'root\\|location' /etc/nginx/sites-available/old) <(grep -n 'root\\|location' /etc/nginx/sites-available/new)"},
+        {"n": 4, "do": "Back up the vhost, test, reload, then re-verify the origin", "cmd": "sudo cp /etc/nginx/sites-available/host{,.bak.$(date +%Y%m%d_%H%M%S)} && sudo nginx -t && sudo systemctl reload nginx"},
+        {"n": 5, "do": "Check whether sites-enabled is a symlink or a real file before you 'fix' anything — replacing a symlink with a copy silently swaps the live config", "cmd": "ls -la /etc/nginx/sites-enabled/ | grep your-host"}
+      ],
+      "pitfalls": [
+        "An unmatched /api/* proxied to a workflow tool answers 200 with HTML; a frontend doing res.json() fails silently and you debug the wrong layer.",
+        "Renaming or copying the sites-available file can replace a symlink with a stale copy — the 'edits vanished' symptom.",
+        "Every new API path needs its own location block; relying on a generic /api/ prefix means the next service silently inherits the catch-all.",
+        "server_name changes do not move routes: the location list is what decides."
+      ],
+      "verify": [
+        "Every owned path returns its own status from the origin (402/200 JSON, never an HTML fallback)",
+        "nginx -t is clean and the service is running after reload"
+      ],
+      "files": ["nginx vhost", "backup copies of previous vhosts"]
+    },
+    {
+      "id": "xh-bundle-mechanism",
+      "title": "How this bundle endpoint works (the mechanism you are calling)",
+      "requested_by_owner": true,
+      "solves": "You are paying for one call and receiving a document set. This item explains the mechanism so you can build the same kind of product.",
+      "prerequisites": ["The x402 gate from the first playbook"],
+      "steps": [
+        {"n": 1, "do": "Keep the CONTENT in a JSON file next to the service, not in the code: content edits then need no code review and survive refactors", "cmd": "xh_api/bundles/xh_bundle.json"},
+        {"n": 2, "do": "Serve a free listing on GET (ids + titles + price) and gate only POST, so agents can see what they would buy before paying", "cmd": "GET /api/compute/xh-bundle  # no payment"},
+        {"n": 3, "do": "Support topic=<item id> to return a single playbook and format=markdown for one document — a caller pays once and gets exactly what it needs"},
+        {"n": 4, "do": "Price per route rather than uniformly: data calls are cents, a multi-item knowledge bundle is dollars", "cmd": "PRICE_OVERRIDES = {'POST /xh-bundle': float(os.environ.get('XH_BUNDLE_PRICE_USDC', '2'))}"},
+        {"n": 5, "do": "Return provenance in the payload: bundle version, generated timestamp, item count, and the licence — the buyer can cite it"},
+        {"n": 6, "do": "Register it like any other resource, then take one real payment to trigger indexing"}
+      ],
+      "pitfalls": [
+        "Do not put content in the Python file if a non-developer might edit it; and do not fetch it from a third party at request time (latency plus an outage you cannot control).",
+        "A bundle is judged by its specificity. Generic advice is worthless next to the measured RPC table, the payload shapes and the pitfalls that cost real money.",
+        "If you filter by topic, keep the free listing in sync with the file or agents will pay for an id that returns nothing."
+      ],
+      "verify": [
+        "GET returns the item list without a payment header",
+        "An unpaid POST returns 402 quoting the bundle price",
+        "A paid POST returns every item (or exactly the requested topic) with the settlement header present"
+      ],
+      "files": ["paid API service", "xh_api/bundles/xh_bundle.json"]
+    },
+    {
+      "id": "telegram-alerts-secure",
+      "title": "Wire alerts and watchdog jobs to Telegram without leaking a bot token",
+      "requested_by_owner": false,
+      "solves": "You want a cron job or a watchdog to tell you when something breaks, from a headless server, with credentials that never appear in code, chat or git.",
+      "prerequisites": ["A Telegram bot token from BotFather", "A chat id", "curl or Python on the host"],
+      "steps": [
+        {"n": 1, "do": "Create the bot with BotFather, then find the chat id by calling getUpdates after sending the bot one message", "cmd": "curl -s 'https://api.telegram.org/bot<TOKEN>/getUpdates' | python3 -c \"import sys,json;d=json.load(sys.stdin);print(d['result'][-1]['message']['chat']['id'])\""},
+        {"n": 2, "do": "Store token and chat id in a mode-600 env file and load it at run time; never inline them in the script", "cmd": "chmod 600 /home/user/.telegram_env"},
+        {"n": 3, "do": "Keep the sender tiny: read the env, build the message, POST it, and exit non-zero on failure so cron reports it", "cmd": "curl -s -X POST \"https://api.telegram.org/bot$TOKEN/sendMessage\" -d chat_id=$CHAT -d text=\"$MSG\""},
+        {"n": 4, "do": "Make watchdogs idempotent: a marker file or a last-run timestamp so a persistent outage does not spam every interval"},
+        {"n": 5, "do": "Have the job report the ARTIFACT, not a promise — the file path, the byte count, the exit code"}
+      ],
+      "pitfalls": [
+        "A token pasted into a script eventually reaches a log, a git history or a screenshot. File + chmod 600 + env load is the whole point.",
+        "Telegram rate-limits: a loop that alerts every minute gets muted exactly when you need it.",
+        "Cron has a minimal environment — load the env file inside the script instead of relying on the shell profile.",
+        "'Job scheduled' is not 'job works'. Trigger it once manually and confirm the message arrived before trusting the schedule."
+      ],
+      "verify": [
+        "A manual run delivers a message and exits 0",
+        "The token file is mode 600 and no token string appears in the repository"
+      ],
+      "files": ["alert script", "mode-600 env file", "cron entry"]
+    }
+  ]
+}
