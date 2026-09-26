@@ -35,7 +35,7 @@ TARGETS = [
     ("new", "https://xhagents.xyz/api/whale-watch", {"min_usd": 50000, "blocks": 200, "token": "USDC"}, "0.10"),
     ("new", "https://xhagents.xyz/api/x402-directory", {"query": "gas", "limit": 5}, "0.10"),
     # knowledge product, $2 — kept in its own group so a plain `--group new` never spends it
-    ("bundle", "https://xhagents.xyz/api/compute/xh-bundle", {"topic": "fix-bug-base-rpc", "format": "markdown"}, "2.00"),
+    ("bundle", "https://xhagents.xyz/api/compute/xh-bundle", {"format": "json"}, "2.00"),
 ]
 
 
@@ -112,6 +112,14 @@ def main():
 
     client = x402ClientSync()
     register_exact_evm_client(client, EthAccountSigner(acct), ["eip155:8453"])
+    # the SDK refuses to sign anything above $1 per payment by default
+    # (DEFAULT_MAX_AMOUNT_PER_PAYMENT = "$1"), which silently blocks any endpoint
+    # priced higher — raise the cap for this test wallet.
+    try:
+        client.set_spend_controls({"max_amount_per_payment": "$5"})
+        print("spend control : max $5 per payment (SDK default is $1)")
+    except Exception as e:
+        print(f"spend control : GAGAL dinaikkan ({e}) — endpoint >$1 akan ditolak SDK")
     http = x402HTTPClientSync(client)
 
     selected = [t for t in TARGETS if (not args.group or args.group == "all" or t[0] == args.group)
