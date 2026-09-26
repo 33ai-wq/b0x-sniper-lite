@@ -34,18 +34,35 @@ USDC_SOLANA_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
 TRANSFER_TOPIC = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
 
 BASE_RPC = os.environ.get("XH_BASE_RPC", "https://mainnet.base.org")
+# Public RPC hosts sit behind Cloudflare and answer 403 to the default python-requests
+# User-Agent, and they rate-limit or time out at random — so identify ourselves and fall back.
+BASE_RPC_FALLBACKS = [u.strip() for u in os.environ.get(
+    "XH_BASE_RPC_FALLBACKS", "https://base-rpc.publicnode.com,https://mainnet.base.org").split(",") if u.strip()]
 SOL_RPC = os.environ.get("XH_SOL_RPC", "https://api.mainnet-beta.solana.com")
 
 
 # ───────────────────────────── RPC plumbing ──────────────────────────────
 
 def _rpc(method: str, params: list, rpc: str = BASE_RPC, timeout: int = 12):
-    r = requests.post(rpc, json={"jsonrpc": "2.0", "id": 1, "method": method, "params": params}, timeout=timeout)
-    r.raise_for_status()
-    body = r.json()
-    if body.get("error"):
-        raise RuntimeError(f"{method}: {body['error']}")
-    return body.get("result")
+    """JSON-RPC call with a sender identity and a fallback list.
+
+    A bare python-requests User-Agent gets 403 from the Cloudflare-fronted public RPCs,
+    which used to surface as `rpc_error:403 Forbidden` on a payment that was actually fine.
+    """
+    last: str = ""
+    for url in [rpc] + [u for u in BASE_RPC_FALLBACKS if u and u != rpc]:
+        try:
+            r = requests.post(url, json={"jsonrpc": "2.0", "id": 1, "method": method, "params": params},
+                              headers={"User-Agent": "xh-agents-verify/1.0", "Content-Type": "application/json"},
+                              timeout=timeout)
+            r.raise_for_status()
+            body = r.json()
+            if body.get("error"):
+                raise RuntimeError(f"{method}: {body['error']}")
+            return body.get("result")
+        except Exception as e:  # try the next endpoint
+            last = f"{url}: {type(e).__name__} {e}"[:200]
+    raise RuntimeError(f"rpc_unavailable ({last})")
 
 
 def _topic_to_addr(topic: str) -> str:

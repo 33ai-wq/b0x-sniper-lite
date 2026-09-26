@@ -23,8 +23,17 @@ USDC_BASE = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
 RPC = "https://mainnet.base.org"
 
 TARGETS = [
-    ("https://xhagents.xyz/api/kb/ask", {"question": "How do I check which directory nginx really serves?"}, "0.03"),
-    ("https://xhagents.xyz/api/chat", {"message": "One sentence on BTC right now, please."}, "0.10"),
+    # group, url, body, price
+    ("core", "https://xhagents.xyz/api/kb/ask", {"question": "How do I check which directory nginx really serves?"}, "0.03"),
+    ("core", "https://xhagents.xyz/api/chat", {"message": "One sentence on BTC right now, please."}, "0.10"),
+    ("new", "https://xhagents.xyz/api/wallet-profile", {"address": "0x6cb53f00a586f7704e1f7121c2e397b579eb3ed0"}, "0.10"),
+    ("new", "https://xhagents.xyz/api/gas-tracker", {}, "0.10"),
+    ("new", "https://xhagents.xyz/api/token-check", {"token": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"}, "0.10"),
+    ("new", "https://xhagents.xyz/api/x402-check", {"url": "https://xhagents.xyz/api/kb/ask"}, "0.10"),
+    ("new", "https://xhagents.xyz/api/payment-verify", {"tx_hash": "__FILL__", "to": "0x6cb53f00a586f7704e1f7121c2e397b579eb3ed0", "min_amount": 0.01}, "0.10"),
+    ("new", "https://xhagents.xyz/api/defi-sentiment", {"asset": "BTC", "protocol": "aerodrome"}, "0.10"),
+    ("new", "https://xhagents.xyz/api/whale-watch", {"min_usd": 50000, "blocks": 200, "token": "USDC"}, "0.10"),
+    ("new", "https://xhagents.xyz/api/x402-directory", {"query": "gas", "limit": 5}, "0.10"),
 ]
 
 
@@ -80,8 +89,11 @@ def challenge(headers):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--check", action="store_true", help="do not pay; only inspect")
-    ap.add_argument("--only", help="only buy targets whose URL contains this string")
+    ap.add_argument("--only", help="only buy targets whose URL contains one of these substrings (comma-separated)")
+    ap.add_argument("--tx", help="real Base tx hash to feed the payment-verify endpoint")
+    ap.add_argument("--group", default="all", help="core | new | all")
     args = ap.parse_args()
+    only = [s.strip() for s in (args.only or "").split(",") if s.strip()]
 
     from eth_account import Account
     from x402 import x402ClientSync
@@ -100,15 +112,40 @@ def main():
     register_exact_evm_client(client, EthAccountSigner(acct), ["eip155:8453"])
     http = x402HTTPClientSync(client)
 
-    spend = sum(float(t[2]) for t in TARGETS)
-    print(f"total price  : {spend:.2f} USDC for {len(TARGETS)} calls\n")
+    selected = [t for t in TARGETS if (not args.group or args.group == "all" or t[0] == args.group)
+                and (not only or any(s in t[1] for s in only))
+                and t[2].get("tx_hash") != "__FILL__"]
+    spend = sum(float(t[3]) for t in selected)
+    print(f"total price  : {spend:.2f} USDC for {len(selected)} calls\n")
     if bal < spend:
         print(f"!! balance too low — send at least {spend - bal + 0.01:.2f} USDC to {acct.address} on Base")
         return 2
 
     failures = 0
-    for url, body, price in TARGETS:
-        if args.only and args.only not in url:
+    # payment-verify needs a real settlement hash; take the one given, or the newest from our own feed
+    pv = next((i for i, t in enumerate(TARGETS) if t[1].endswith("/payment-verify")), None)
+    if args.tx and pv is not None:
+        TARGETS[pv] = (TARGETS[pv][0], TARGETS[pv][1], {**TARGETS[pv][2], "tx_hash": args.tx}, TARGETS[pv][3])
+        print(f"(payment-verify memakai tx dari --tx: {args.tx[:20]}…)\n")
+    elif pv is not None and TARGETS[pv][2].get("tx_hash") == "__FILL__":
+        try:
+            from xh_verify import find_incoming_usdc
+            hits = find_incoming_usdc("0x6cb53f00a586f7704e1f7121c2e397b579eb3ed0", min_atomic=10000,
+                                      lookback_blocks=800, rpc=RPC_LIST[0])
+            if hits:
+                TARGETS[pv] = (TARGETS[pv][0], TARGETS[pv][1],
+                               {**TARGETS[pv][2], "tx_hash": hits[0]["tx_hash"]}, TARGETS[pv][3])
+                print(f"(payment-verify akan memakai tx nyata: {hits[0]['tx_hash'][:20]}…)\n")
+        except Exception as e:
+            print(f"(gagal mengambil tx hash contoh: {str(e)[:120]})\n")
+
+    for group, url, body, price in TARGETS:
+        if args.group and args.group != "all" and group != args.group:
+            continue
+        if only and not any(s in url for s in only):
+            continue
+        if body.get("tx_hash") == "__FILL__":
+            print(f"── {url}  (${price}) SKIPPED: needs --tx <hash>")
             continue
         print(f"── {url}  (${price})")
         status, headers, raw = post(url, body)
