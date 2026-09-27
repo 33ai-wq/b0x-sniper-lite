@@ -50,7 +50,11 @@ def _rpc(method: str, params: list, rpc: str = BASE_RPC, timeout: int = 12):
     which used to surface as `rpc_error:403 Forbidden` on a payment that was actually fine.
     """
     last: str = ""
-    for url in [rpc] + [u for u in BASE_RPC_FALLBACKS if u and u != rpc]:
+    # eth_getLogs: public endpoints first — a dedicated RPC on a free plan caps the block range
+    # (Alchemy Free allows 10 blocks), which would fail every settlement scan.
+    urls = ([u for u in BASE_RPC_FALLBACKS if u] + [rpc]) if method == "eth_getLogs" \
+        else [rpc] + [u for u in BASE_RPC_FALLBACKS if u and u != rpc]
+    for url in urls:
         try:
             r = requests.post(url, json={"jsonrpc": "2.0", "id": 1, "method": method, "params": params},
                               headers={"User-Agent": "xh-agents-verify/1.0", "Content-Type": "application/json"},

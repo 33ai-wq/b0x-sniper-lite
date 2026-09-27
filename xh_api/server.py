@@ -56,14 +56,19 @@ FACILITATOR_URL = os.environ.get("X402_FACILITATOR_URL", "https://api.cdp.coinba
 CDP_HOST, CDP_BASE_PATH = "api.cdp.coinbase.com", "/platform/v2/x402"
 CDP_ENV_FILE = "/home/ubuntu/prpo_ai/cdp/.env.cdp"
 
-# A dedicated RPC (e.g. Alchemy) goes first when XH_BASE_RPC is set; the public endpoints stay
-# as fallbacks. Dropped after measuring them on 2026-09-26: base.llamarpc.com (Cloudflare 525,
-# returns non-JSON), base.blockpi.network (same), base.meowrpc.com (no eth_getLogs),
-# base.drpc.org (>10k block cap), 1rpc.io/base (eth_getLogs capped at 50 blocks).
+# A dedicated RPC (e.g. Alchemy) goes first for cheap calls when XH_BASE_RPC is set; the public
+# endpoints stay as fallbacks. Dropped after measuring them on 2026-09-26: base.llamarpc.com
+# (Cloudflare 525, returns non-JSON), base.blockpi.network (same), base.meowrpc.com (no
+# eth_getLogs), base.drpc.org (>10k block cap), 1rpc.io/base (eth_getLogs capped at 50 blocks).
+#
+# eth_getLogs is ordered the other way round on purpose: Alchemy's Free tier answers
+# "Under the Free tier plan, you can make eth_getLogs requests with up to a 10 block range"
+# (measured 2026-09-27), while whale-watch scans 200 blocks and a settlement scan 800. So wide
+# log queries go to the public endpoints first and the dedicated RPC is the last resort.
+_PUBLIC_RPC = ["https://base-rpc.publicnode.com", "https://mainnet.base.org"]
 _DEDICATED_RPC = os.environ.get("XH_BASE_RPC", "").strip()
-RPC_LIST = ([_DEDICATED_RPC] if _DEDICATED_RPC else []) + \
-           ["https://base-rpc.publicnode.com", "https://mainnet.base.org"]
-LOG_RPC_LIST = RPC_LIST
+RPC_LIST = ([_DEDICATED_RPC] if _DEDICATED_RPC else []) + _PUBLIC_RPC
+LOG_RPC_LIST = _PUBLIC_RPC + ([_DEDICATED_RPC] if _DEDICATED_RPC else [])
 ERC20_MIN_ABI = [
     {"name": "name", "type": "function", "inputs": [], "outputs": [{"type": "string"}], "stateMutability": "view"},
     {"name": "symbol", "type": "function", "inputs": [], "outputs": [{"type": "string"}], "stateMutability": "view"},
