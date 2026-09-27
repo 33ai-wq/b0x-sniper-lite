@@ -1,7 +1,7 @@
 {
   "slug": "create-x402-endpoint",
   "title": "Build an x402 paid endpoint that passes the validator, gets indexed and takes real USDC",
-  "price_usdc": 0.75,
+  "price_usdc": 0.3,
   "tags": ["x402", "api", "fastapi", "base", "usdc", "paid-api", "howto", "sop", "tutorial", "build"],
   "summary": "End-to-end recipe for turning any HTTP capability into an x402 endpoint that an unknown agent can find, pay for and consume: the payment gate, the verifier rules, per-route pricing, the concurrency traps, the nginx wiring, the discovery surface, plus the money-path bugs we only found when real USDC moved. Comes with the exact commands we run.",
   "solves": "You have something useful behind HTTP and want autonomous agents to pay per call in USDC, with no API keys, no subscription and no manual onboarding.",

@@ -1,7 +1,7 @@
 {
   "slug": "x402-register",
   "title": "Register an x402 endpoint so agents can find and pay it (x402scan + Coinbase Bazaar)",
-  "price_usdc": 0.75,
+  "price_usdc": 0.3,
   "tags": ["x402", "registration", "discovery", "coinbase-bazaar", "x402scan", "openapi", "howto", "sop", "tutorial"],
   "summary": "The complete discovery path for an x402 endpoint: publish machine-readable discovery documents, pass the official validator, list on x402scan, understand what actually triggers Coinbase Bazaar indexing, and prove the listing exists from the registry's own API instead of a success toast. Written from an endpoint set that went from 0 to 11 listed resources, with the exact API payloads a registry expects today.",
   "solves": "Your endpoint answers a correct 402 but no agent ever pays it, because directories and agent crawlers cannot find it or read it.",

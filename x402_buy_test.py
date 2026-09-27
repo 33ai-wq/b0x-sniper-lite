@@ -41,8 +41,10 @@ TARGETS = [
     # GET form of a paid route is exercised too — proving both methods can be paid.
     ("howto", "https://xhagents.xyz/api/howto/youtube-auto-ai", {}, "0.10", "POST"),
     ("howto", "https://xhagents.xyz/api/howto/vps-gdrive-connect", {}, "0.10", "POST"),
-    ("howto", "https://xhagents.xyz/api/howto/x402-register", {}, "0.75", "GET"),
-    ("howto", "https://xhagents.xyz/api/howto/create-x402-endpoint", {}, "0.75", "POST"),
+    # GET payment was already proven at $0.75; this one now runs as POST, which also tests
+    # whether a POST settlement is what triggers Bazaar indexing for this resource.
+    ("howto", "https://xhagents.xyz/api/howto/x402-register", {}, "0.30", "POST"),
+    ("howto", "https://xhagents.xyz/api/howto/create-x402-endpoint", {}, "0.30", "POST"),
 ]
 
 
