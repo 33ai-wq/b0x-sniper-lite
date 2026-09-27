@@ -41,13 +41,6 @@ from xh_verify import verify_tx_usdc  # noqa: E402
 # ── config ────────────────────────────────────────────────────────────────────
 PORT = int(os.environ.get("XH_API_PORT", "8991"))
 PRICE_USDC = float(os.environ.get("XH_API_PRICE", "0.1"))
-# the bundle is a knowledge product, not a data call: priced per route ($2 vs $0.10)
-BUNDLE_PRICE_USDC = float(os.environ.get("XH_BUNDLE_PRICE_USDC", "0.91"))
-PRICE_OVERRIDES: dict[str, float] = {"POST /xh-bundle": BUNDLE_PRICE_USDC}
-# a route can be served under a longer public path (nginx prefix) — the challenge must quote the
-# URL a buyer can actually reach, not the internal one
-RESOURCE_OVERRIDES: dict[str, str] = {"POST /xh-bundle": "/api/compute/xh-bundle"}
-BUNDLE_FILE = os.environ.get("XH_BUNDLE_FILE", "/home/ubuntu/prpo_ai/xh_api/bundles/xh_bundle.json")
 TREASURY_BASE = os.environ.get("XH_TREASURY_BASE", "0x6cb53f00a586f7704e1f7121c2e397b579eb3ed0")
 USDC_BASE = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
 X402_NETWORK = "eip155:8453"
@@ -56,14 +49,7 @@ FACILITATOR_URL = os.environ.get("X402_FACILITATOR_URL", "https://api.cdp.coinba
 CDP_HOST, CDP_BASE_PATH = "api.cdp.coinbase.com", "/platform/v2/x402"
 CDP_ENV_FILE = "/home/ubuntu/prpo_ai/cdp/.env.cdp"
 
-# A dedicated RPC (e.g. Alchemy) goes first when XH_BASE_RPC is set; the public endpoints stay
-# as fallbacks. Dropped after measuring them on 2026-09-26: base.llamarpc.com (Cloudflare 525,
-# returns non-JSON), base.blockpi.network (same), base.meowrpc.com (no eth_getLogs),
-# base.drpc.org (>10k block cap), 1rpc.io/base (eth_getLogs capped at 50 blocks).
-_DEDICATED_RPC = os.environ.get("XH_BASE_RPC", "").strip()
-RPC_LIST = ([_DEDICATED_RPC] if _DEDICATED_RPC else []) + \
-           ["https://base-rpc.publicnode.com", "https://mainnet.base.org"]
-LOG_RPC_LIST = RPC_LIST
+RPC_LIST = ["https://base-rpc.publicnode.com", "https://mainnet.base.org", "https://base.llamarpc.com"]
 ERC20_MIN_ABI = [
     {"name": "name", "type": "function", "inputs": [], "outputs": [{"type": "string"}], "stateMutability": "view"},
     {"name": "symbol", "type": "function", "inputs": [], "outputs": [{"type": "string"}], "stateMutability": "view"},
@@ -90,23 +76,18 @@ LABELS = {
 
 # ── RPC helpers (fallback across public endpoints) ────────────────────────────
 def _rpc(method: str, params: list, timeout: float = 20.0) -> Any:
-    """Try every endpoint, twice: the public RPCs rate-limit bursts and time out at random."""
     last: Any = None
-    for attempt in range(2):
-        for url in (LOG_RPC_LIST if method == "eth_getLogs" else RPC_LIST):
-            try:
-                r = httpx.post(url, json={"jsonrpc": "2.0", "id": 1, "method": method, "params": params},
-                               headers={"User-Agent": "xh-agents-api/1.0"},
-                               timeout=timeout if method != "eth_getLogs" else max(timeout, 45.0))
-                r.raise_for_status()
-                j = r.json()
-                if "error" in j:
-                    raise RuntimeError(j["error"])
-                return j.get("result")
-            except Exception as e:  # try the next endpoint
-                last = f"{url}: {type(e).__name__} {e}"[:200]
-        if attempt == 0:
-            time.sleep(1.5)
+    for url in RPC_LIST:
+        try:
+            r = httpx.post(url, json={"jsonrpc": "2.0", "id": 1, "method": method, "params": params},
+                           headers={"User-Agent": "xh-agents-api/1.0"}, timeout=timeout)
+            r.raise_for_status()
+            j = r.json()
+            if "error" in j:
+                raise RuntimeError(j["error"])
+            return j.get("result")
+        except Exception as e:  # try the next endpoint
+            last = e
     raise HTTPException(status_code=503, detail=f"rpc_unavailable: {last}")
 
 
@@ -121,17 +102,11 @@ def _is_address(a: str) -> bool:
 
 
 def erc20_call(to: str, fn: str, args: list | None = None) -> Any:
-    """Call a view function from the minimal ABI using web3 (with an RPC fallback)."""
+    """Call a view function from the minimal ABI using web3."""
     from web3 import Web3
-    last: Any = None
-    for url in RPC_LIST:
-        try:
-            w3 = Web3(Web3.HTTPProvider(url, request_kwargs={"timeout": 20}))
-            c = w3.eth.contract(address=Web3.to_checksum_address(to), abi=ERC20_MIN_ABI)
-            return getattr(c.functions, fn)(*(args or [])).call()
-        except Exception as e:
-            last = f"{url}: {type(e).__name__} {e}"[:200]
-    raise RuntimeError(f"erc20_call {fn} failed ({last})")
+    w3 = Web3(Web3.HTTPProvider(RPC_LIST[0], request_kwargs={"timeout": 20}))
+    c = w3.eth.contract(address=Web3.to_checksum_address(to), abi=ERC20_MIN_ABI)
+    return getattr(c.functions, fn)(*(args or [])).call()
 
 
 # ── x402 paid gate (same pattern as the KB service) ───────────────────────────
@@ -199,28 +174,6 @@ PAID_ROUTES = [
      {"url": "https://xhagents.xyz/api/kb/ask", "status": 402, "conformant": True, "x402Version": 2,
       "accepts": [{"scheme": "exact", "network": "eip155:8453", "amount": "30000",
                    "payTo": "0x6cb53f00a586f7704e1f7121c2e397b579eb3ed0"}], "has_bazaar_extension": True}),
-    ("POST /defi-sentiment", "defiSentiment", "DeFi / asset sentiment",
-     "Funding rate, open interest and price trend for a perpetual pair (Binance public data) plus protocol TVL change from DefiLlama, combined into a labelled sentiment with its weights shown.",
-     {"asset": "BTC", "protocol": "aerodrome"},
-     {"type": "object", "properties": {"asset": {"type": "string"}, "protocol": {"type": "string"}}},
-     {"asset": "BTC", "sentiment": "mildly bullish", "score": 0.42,
-      "funding_rate_8h_pct": "0.0089", "open_interest_usd": 412000000, "price_change": {"24h_pct": 1.9, "7d_pct": -2.4},
-      "protocol_tvl": {"slug": "aerodrome", "tvl_usd": 380000000, "change_24h_pct": 1.1, "change_7d_pct": -3.2}}),
-    ("POST /whale-watch", "whaleWatch", "Large recent transfers on Base",
-     "Scans the last blocks for USDC and WETH transfers above a USD threshold and returns the largest movements with direction and counterparties. Pending-mempool visibility needs a node with txpool access, which this reports instead of faking.",
-     {"min_usd": 100000, "blocks": 300, "token": "USDC"},
-     {"type": "object", "properties": {"min_usd": {"type": "number"}, "blocks": {"type": "integer"},
-                                       "token": {"type": "string"}}},
-     {"blocks_scanned": 300, "threshold_usd": 100000, "events_found": 4,
-      "largest": [{"token": "USDC", "amount": "1250000.0", "from": "0x...", "to": "0x...", "tx_hash": "0x..."}]}),
-    ("POST /x402-directory", "x402Directory", "Search the x402 ecosystem",
-     "Searches Coinbase Bazaar and the x402-list directory at once and returns de-duplicated endpoints with price, network, payTo and description, so an agent can find a service to pay without knowing it in advance.",
-     {"query": "gas", "max_price_usd": 0.5, "limit": 10},
-     {"type": "object", "properties": {"query": {"type": "string"}, "network": {"type": "string"},
-                                       "max_price_usd": {"type": "number"}, "limit": {"type": "integer"}}},
-     {"query": "gas", "sources": ["coinbase-bazaar", "x402-list"], "results": 3,
-      "endpoints": [{"url": "https://xhagents.xyz/api/gas-tracker", "price_usd": 0.1, "network": "eip155:8453",
-                     "payTo": "0x6cb53f00a586f7704e1f7121c2e397b579eb3ed0", "sources": ["bazaar", "x402-list"]}]}),
     ("POST /payment-verify", "paymentVerify", "USDC settlement verification",
      "Verifies that a transaction hash settled a USDC payment to a given recipient, returning the parsed transfer and confirmation count.",
      {"tx_hash": "0x" + "0" * 64, "to": TREASURY_BASE, "min_amount": 0.1},
@@ -229,16 +182,6 @@ PAID_ROUTES = [
       "required": ["tx_hash"]},
      {"verified": True, "from": "0x85fc53d6a89bf64e563588efc37b12ee89c4e421", "to": TREASURY_BASE,
       "amount_usdc": "0.1", "confirmations": 3}),
-    ("POST /xh-bundle", "xhBundle", "XH Agents playbook bundle",
-     "Thirteen production playbooks from running an x402 paid API on Base: shipping the endpoint, the payment-verifier rules, the real-money buyer test, the Base RPC capability audit, CDP authentication, directory registration, consolidating Cloudflare/Solana data, an rclone Google Drive bridge, AdSense, multi-size ad slots, nginx route recovery and secure Telegram alerts. Each item carries the mechanism, the commands, the pitfalls that cost us real money and how to verify the result.",
-     {"topic": "fix-bug-base-rpc", "format": "json"},
-     {"type": "object", "properties": {"topic": {"type": "string"}, "format": {"type": "string"}},
-      "required": []},
-     {"bundle": "XH Agents — Build & Ship an x402 Paid API", "version": "1.0.0",
-      "items_returned": 13, "requested_topic": None,
-      "items": [{"id": "fix-bug-base-rpc", "title": "Pick Base RPC endpoints that actually work",
-                 "steps": [{"n": 1, "do": "probe each candidate with a real ~200-block eth_getLogs"}],
-                 "pitfalls": ["base.llamarpc.com answers a Cloudflare 525 / non-JSON"]}]}),
 ]
 
 STANDARD_X402 = os.environ.get("X402_STANDARD", "1") != "0"
@@ -260,8 +203,8 @@ if STANDARD_X402:
             path = route.split(" ", 1)[1]
             X402_ROUTES[route] = {
                 "accepts": {"scheme": "exact", "payTo": TREASURY_BASE,
-                            "price": f"${PRICE_OVERRIDES.get(route, PRICE_USDC)}", "network": X402_NETWORK},
-                "resource": f"{SITE}{RESOURCE_OVERRIDES.get(route, '/api' + path)}",
+                            "price": f"${PRICE_USDC}", "network": X402_NETWORK},
+                "resource": f"{SITE}/api{path}",
                 "service_name": f"XH Agents — {name}",
                 "description": desc,
                 "mime_type": "application/json",
@@ -304,24 +247,6 @@ class CheckReq(BaseModel):
     body: dict | None = None
 
 
-class SentimentReq(BaseModel):
-    asset: str | None = None
-    protocol: str | None = None
-
-
-class WhaleReq(BaseModel):
-    min_usd: float | None = 100000.0
-    blocks: int | None = 300
-    token: str | None = "USDC"
-
-
-class DirectoryReq(BaseModel):
-    query: str | None = None
-    network: str | None = None
-    max_price_usd: float | None = None
-    limit: int | None = 10
-
-
 class VerifyReq(BaseModel):
     model_config = {"populate_by_name": True}
 
@@ -331,22 +256,16 @@ class VerifyReq(BaseModel):
     min_amount: float | None = 0.0
 
 
-class BundleReq(BaseModel):
-    topic: str | None = None
-    format: str | None = "json"
-
-
 # ── free ──────────────────────────────────────────────────────────────────────
 @app.get("/health")
 async def health():
     return {"ok": True, "service": "xh-api", "paid_routes": len(X402_ROUTES), "standard_x402": STANDARD_X402,
-            "price_usdc": PRICE_USDC, "bundle_price_usdc": BUNDLE_PRICE_USDC,
-            "bundle_items": len(_load_bundle()["items"]) if os.path.exists(BUNDLE_FILE) else 0}
+            "price_usdc": PRICE_USDC}
 
 
 # ── 1. wallet profile ─────────────────────────────────────────────────────────
 @app.post("/wallet-profile")
-def wallet_profile(req: AddressReq):
+async def wallet_profile(req: AddressReq):
     if not _is_address(req.address):
         raise HTTPException(status_code=400, detail="invalid address")
     addr = req.address.lower()
@@ -401,7 +320,7 @@ def wallet_profile(req: AddressReq):
 
 # ── 2. gas tracker ────────────────────────────────────────────────────────────
 @app.post("/gas-tracker")
-def gas_tracker(req: GasReq):
+async def gas_tracker(req: GasReq):
     block = _rpc("eth_getBlockByNumber", ["latest", False]) or {}
     base_fee = _hex_to_int(block.get("baseFeePerGas"))
     gas_price = _hex_to_int(_rpc("eth_gasPrice", []))
@@ -442,7 +361,7 @@ def gas_tracker(req: GasReq):
 
 # ── 3. token check ────────────────────────────────────────────────────────────
 @app.post("/token-check")
-def token_check(req: TokenReq):
+async def token_check(req: TokenReq):
     if not _is_address(req.token):
         raise HTTPException(status_code=400, detail="invalid token address")
     token = req.token.lower()
@@ -538,7 +457,7 @@ def _decode_challenge(header_value: str | None, body_text: str) -> tuple[dict | 
 
 
 @app.post("/x402-check")
-def x402_check(req: CheckReq):
+async def x402_check(req: CheckReq):
     bad = _check_ssrf(req.url)
     if bad:
         raise HTTPException(status_code=400, detail=f"refused: {bad}")
@@ -600,7 +519,7 @@ def x402_check(req: CheckReq):
 
 # ── 5. payment verification ───────────────────────────────────────────────────
 @app.post("/payment-verify")
-def payment_verify(req: VerifyReq):
+async def payment_verify(req: VerifyReq):
     if not re.fullmatch(r"0x[0-9a-fA-F]{64}", req.tx_hash or ""):
         raise HTTPException(status_code=400, detail="invalid tx hash")
     to = req.to or TREASURY_BASE
@@ -623,326 +542,6 @@ def payment_verify(req: VerifyReq):
             "not_checked": ["off-chain promises", "payments in other tokens (USDC on Base only)"],
         },
     }
-
-
-# ── 6. DeFi / asset sentiment ─────────────────────────────────────────────────
-@app.post("/defi-sentiment")
-def defi_sentiment(req: SentimentReq):
-    if not req.asset and not req.protocol:
-        raise HTTPException(status_code=400, detail="provide 'asset' (e.g. BTC) and/or 'protocol' (e.g. aerodrome)")
-    out: dict[str, Any] = {"methodology": {
-        "price": "Binance public klines (spot)",
-        "funding": "Binance public premium index for the USDT perpetual",
-        "protocol_tvl": "DefiLlama public API",
-        "derivation": "score = 0.5*funding_percentile + 0.3*24h price change (normalised) + 0.2*open-interest change; "
-                      "labelled only as a summary of those inputs, never as advice",
-        "not_checked": ["on-chain flows", "liquidity depth", "news or social sentiment"],
-    }}
-    score_parts: list[float] = []
-    if req.asset:
-        sym = req.asset.upper()
-        try:
-            kl = httpx.get("https://api.binance.com/api/v3/klines",
-                           params={"symbol": f"{sym}USDT", "interval": "1h", "limit": 200}, timeout=15).json()
-            closes = [float(k[4]) for k in kl]
-            last = closes[-1]
-            out["asset"] = sym
-            out["price_usd"] = last
-            out["price_change"] = {"1h_pct": round((last / closes[-2] - 1) * 100, 4),
-                                    "24h_pct": round((last / closes[-25] - 1) * 100, 4) if len(closes) > 25 else None,
-                                    "7d_pct": round((last / closes[-169] - 1) * 100, 4) if len(closes) > 169 else None}
-            ch24 = (last / closes[-25] - 1) if len(closes) > 25 else 0
-            score_parts.append(max(-1.0, min(1.0, ch24 * 8)))
-        except Exception as e:
-            out["asset_error"] = str(e)[:120]
-        try:
-            prem = httpx.get("https://fapi.binance.com/fapi/v1/premiumIndex",
-                             params={"symbol": f"{sym}USDT"}, timeout=15).json()
-            fr = float(prem.get("lastFundingRate") or 0)
-            out["funding_rate_8h_pct"] = round(fr * 100, 6)
-            out["mark_price_usd"] = float(prem.get("markPrice") or 0)
-            score_parts.append(max(-1.0, min(1.0, fr * 2000)))
-        except Exception as e:
-            out["funding_error"] = str(e)[:120]
-        try:
-            oi = httpx.get("https://fapi.binance.com/fapi/v1/openInterest",
-                           params={"symbol": f"{sym}USDT"}, timeout=15).json()
-            out["open_interest_contracts"] = float(oi.get("openInterest") or 0)
-        except Exception:
-            pass
-    if req.protocol:
-        slug = req.protocol.lower()
-        try:
-            hist = httpx.get(f"https://api.llama.fi/protocol/{slug}", timeout=25).json()
-            tvl = hist.get("tvl") or []
-            if tvl:
-                cur = float(tvl[-1].get("totalLiquidityUSD") or 0)
-                def at(days):
-                    return float(tvl[-1 - days].get("totalLiquidityUSD") or 0) if len(tvl) > days else None
-                d1, d7 = at(1), at(7)
-                out["protocol_tvl"] = {"slug": slug, "tvl_usd": cur,
-                                        "change_24h_pct": round((cur / d1 - 1) * 100, 3) if d1 else None,
-                                        "change_7d_pct": round((cur / d7 - 1) * 100, 3) if d7 else None,
-                                        "chain_breakdown": (hist.get("currentChainTvls") or {})}
-                if d1:
-                    score_parts.append(max(-1.0, min(1.0, (cur / d1 - 1) * 10)))
-            else:
-                out["protocol_error"] = "no tvl series returned"
-        except Exception as e:
-            out["protocol_error"] = str(e)[:120]
-    if score_parts:
-        score = round(sum(score_parts) / len(score_parts), 4)
-        label = ("bullish" if score > 0.5 else "mildly bullish" if score > 0.1 else
-                 "bearish" if score < -0.5 else "mildly bearish" if score < -0.1 else "neutral")
-        out["score"] = score
-        out["sentiment"] = label
-        out["score_inputs_used"] = len(score_parts)
-    return out
-
-
-# ── 7. whale watch (large recent transfers) ───────────────────────────────────
-TOKEN_MAP = {"usdc": (USDC_BASE, 6, 1.0), "weth": ("0x4200000000000000000000000000000000000006", 18, None)}
-
-@app.post("/whale-watch")
-def whale_watch(req: WhaleReq):
-    key = (req.token or "USDC").lower()
-    if key not in TOKEN_MAP:
-        raise HTTPException(status_code=400, detail="token must be USDC or WETH")
-    token, decimals, _ = TOKEN_MAP[key]
-    blocks = max(20, min(int(req.blocks or 300), 2000))
-    threshold = float(req.min_usd or 0)
-    eth_usd = None
-    if key == "weth":
-        try:
-            eth_usd = float(httpx.get("https://api.coingecko.com/api/v3/simple/price",
-                                      params={"ids": "ethereum", "vs_currencies": "usd"}, timeout=12)
-                            .json()["ethereum"]["usd"])
-        except Exception:
-            eth_usd = None
-    latest = _hex_to_int(_rpc("eth_blockNumber", []))
-    transfer_topic = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"
-    logs = _rpc("eth_getLogs", [{"fromBlock": hex(max(0, latest - blocks)), "toBlock": "latest",
-                                 "address": token, "topics": [transfer_topic]}]) or []
-    events = []
-    for lg in logs:
-        amt = _hex_to_int(lg.get("data")) / (10 ** decimals)
-        usd = amt if key == "usdc" else (amt * eth_usd if eth_usd else None)
-        if usd is None or usd < threshold:
-            continue
-        events.append({"token": key.upper(), "amount": round(amt, 6), "usd": round(usd, 2),
-                       "from": "0x" + lg["topics"][1][-40:], "to": "0x" + lg["topics"][2][-40:],
-                       "tx_hash": lg["transactionHash"], "block": _hex_to_int(lg["blockNumber"])})
-    events.sort(key=lambda e: e["usd"], reverse=True)
-    counterparties = {e["to"] for e in events} | {e["from"] for e in events}
-    return {
-        "token": key.upper(),
-        "blocks_scanned": blocks,
-        "block_range": [latest - blocks, latest],
-        "threshold_usd": threshold,
-        "events_found": len(events),
-        "largest": events[:25],
-        "labels_seen": [LABELS[c.lower()] for c in counterparties if c.lower() in LABELS],
-        "methodology": {
-            "how": f"eth_getLogs on the {key.upper()} contract for the Transfer topic across the last {blocks} blocks, "
-                   "decoded and filtered by USD threshold",
-            "not_checked": ["pending (unconfirmed) transactions — that needs a node with txpool access, which the "
-                            "public endpoints do not expose", "cex-internal transfers", "off-chain order flow"],
-            "usd_rate": "USDC is treated as 1:1 USD; WETH uses the live CoinGecko ETH price",
-        },
-    }
-
-
-# ── 8. x402 directory search ─────────────────────────────────────────────────
-@app.post("/x402-directory")
-def x402_directory(req: DirectoryReq):
-    limit = max(1, min(int(req.limit or 10), 50))
-    query = (req.query or "").strip().lower()
-    results: dict[str, dict] = {}
-
-    # Coinbase Bazaar (CDP) — authenticated discovery search
-    try:
-        from cdp.auth import GetAuthHeadersOptions, get_auth_headers
-        env = _cdp_credentials()
-        path = "/platform/v2/x402/discovery/search"
-        h = get_auth_headers(GetAuthHeadersOptions(
-            api_key_id=env.get("CDP_API_KEY_ID", ""), api_key_secret=env.get("CDP_API_KEY_PRIVATE_KEY", ""),
-            request_method="GET", request_host=CDP_HOST, request_path=path))
-        params = {"limit": "50"}
-        if query:
-            params["query"] = req.query
-        if req.network:
-            params["network"] = req.network
-        r = httpx.get(f"https://{CDP_HOST}{path}", params=params, headers=h, timeout=25)
-        for it in (r.json().get("items") or []):
-            url = it.get("resource") or it.get("url")
-            if not url:
-                continue
-            acc = (it.get("accepts") or [{}])[0]
-            amt = acc.get("amount") or acc.get("maxAmountRequired")
-            results[url] = {"url": url, "description": it.get("description"),
-                            "price_usd": (int(amt) / 1e6 if str(amt).isdigit() else None),
-                            "network": acc.get("network"), "payTo": acc.get("payTo"),
-                            "sources": ["coinbase-bazaar"]}
-    except Exception as e:
-        bazaar_error = str(e)[:150]
-    else:
-        bazaar_error = None
-
-    # x402-list directory — {"data": [ {slug,name,base_url,min_price_usd,networks,...}, ... ]}
-    try:
-        r = httpx.get("https://x402-list.com/api/v1/services",
-                      params={"q": req.query or "", "limit": 50}, timeout=25)
-        payload = r.json()
-        data: Any = payload.get("data") if isinstance(payload, dict) else payload
-        services = data if isinstance(data, list) else ((data or {}).get("services") or [])
-        for svc in services:
-            if not isinstance(svc, dict):
-                continue
-            price = svc.get("min_price_usd")
-            if price is None:
-                price = (svc.get("assessment") or {}).get("price_usd")
-            net = (svc.get("networks") or [None])[0]
-            eps = [e for e in (svc.get("endpoints") or []) if isinstance(e, dict)]
-            if not eps:
-                eps = [{"url": svc.get("base_url")}] if svc.get("base_url") else []
-            for ep in eps:
-                url = ep.get("url")
-                if not url:
-                    continue
-                existing = results.get(url)
-                if existing:
-                    if "x402-list" not in existing["sources"]:
-                        existing["sources"].append("x402-list")
-                    continue
-                results[url] = {"url": url,
-                                "description": svc.get("description") or svc.get("name"),
-                                "price_usd": ep.get("price_usd") if ep.get("price_usd") is not None else price,
-                                "network": ep.get("network") or net,
-                                "payTo": ep.get("payTo") or ep.get("pay_to"),
-                                "sources": ["x402-list"]}
-    except Exception as e:
-        list_error = str(e)[:150]
-    else:
-        list_error = None
-
-    items = list(results.values())
-    if req.max_price_usd is not None:
-        items = [i for i in items if i.get("price_usd") is not None and i["price_usd"] <= req.max_price_usd]
-    if query:
-        scored = []
-        for i in items:
-            hay = f"{i['url']} {i.get('description') or ''}".lower()
-            hits = sum(1 for w in query.split() if w in hay)
-            scored.append((hits, i))
-        items = [i for h, i in sorted(scored, key=lambda t: -t[0]) if h > 0] or items
-    items.sort(key=lambda i: (i.get("price_usd") is None, i.get("price_usd") or 0))
-    return {
-        "query": req.query, "network_filter": req.network, "limit": limit,
-        "sources": {"coinbase-bazaar": ("ok" if not bazaar_error else f"error: {bazaar_error}"),
-                    "x402-list": ("ok" if not list_error else f"error: {list_error}")},
-        "results": len(items[:limit]),
-        "endpoints": items[:limit],
-        "methodology": {
-            "how": "queries Coinbase's Bazaar discovery search (authenticated) and the public x402-list API, "
-                   "merges by URL, keeps the cheapest first and marks which directory each result came from",
-            "not_checked": ["whether a listed endpoint is honest or always up", "settlement history per endpoint"],
-        },
-    }
-
-
-# ── 9. playbook bundle (the content lives in a JSON file, not in this code) ───
-_bundle_cache: dict[str, Any] = {"mtime": None, "data": None}
-
-
-def _load_bundle() -> dict:
-    """Read the bundle content, reloading only when the file changes on disk."""
-    mtime = os.path.getmtime(BUNDLE_FILE)
-    if _bundle_cache["data"] is None or _bundle_cache["mtime"] != mtime:
-        with open(BUNDLE_FILE, "r", encoding="utf-8") as fh:
-            _bundle_cache["data"] = json.load(fh)
-        _bundle_cache["mtime"] = mtime
-    return _bundle_cache["data"]
-
-
-def _bundle_markdown(items: list[dict], meta: dict) -> str:
-    """Render the selected items as one markdown document (for a caller that wants a file)."""
-    out = [f"# {meta['bundle']}",
-           f"_{meta['version']} — {meta['vendor']}_", "", meta["summary"], ""]
-    for it in items:
-        out += [f"## {it['title']}", f"`{it['id']}`", "", f"**Solves:** {it['solves']}", ""]
-        if it.get("prerequisites"):
-            out += ["**Prerequisites:**"] + [f"- {p}" for p in it["prerequisites"]] + [""]
-        out.append("**Steps:**")
-        for s in it.get("steps", []):
-            out.append(f"{s['n']}. {s['do']}")
-            if s.get("cmd"):
-                out.append(f"   ```\n   {s['cmd']}\n   ```")
-        out.append("")
-        if it.get("pitfalls"):
-            out += ["**Pitfalls:**"] + [f"- {p}" for p in it["pitfalls"]] + [""]
-        if it.get("verify"):
-            out += ["**Verify:**"] + [f"- {v}" for v in it["verify"]] + [""]
-        if it.get("files"):
-            out += ["**Files:** " + ", ".join(it["files"]), ""]
-        out += ["---", ""]
-    return "\n".join(out)
-
-
-@app.get("/xh-bundle")
-def xh_bundle_preview():
-    """Free: what is in the bundle and what it costs. The content itself is behind the gate."""
-    b = _load_bundle()
-    return {
-        "bundle": b["bundle"], "bundle_id": b["bundle_id"], "version": b["version"], "vendor": b["vendor"],
-        "summary": b["summary"], "free": True,
-        "price_usdc": BUNDLE_PRICE_USDC,
-        "how_to_buy": f"POST {SITE}/api/compute/xh-bundle with an x402 payment header "
-                      f"(unpaid requests receive a standard 402 challenge quoting ${BUNDLE_PRICE_USDC})",
-        "items_total": len(b["items"]),
-        "items": [{"id": i["id"], "title": i["title"],
-                   "requested_by_owner": i.get("requested_by_owner", False)} for i in b["items"]],
-    }
-
-
-@app.post("/xh-bundle")
-def xh_bundle(req: BundleReq):
-    """Paid: the playbooks. topic=<id> narrows it; format=markdown adds a single document."""
-    b = _load_bundle()
-    all_items = b["items"]
-    topic = (req.topic or "").strip()
-    items = all_items
-    topic_found: bool | None = None
-    note: str | None = None
-    if topic:
-        topic_found = any(i["id"] == topic for i in all_items)
-        if topic_found:
-            items = [i for i in all_items if i["id"] == topic]
-        else:
-            # never return an error after the buyer paid: send everything and say so
-            note = (f"topic '{topic}' is not in this bundle, so the full set was returned. "
-                    f"Valid ids are in items[].id.")
-            topic_found = False
-    out: dict[str, Any] = {
-        "bundle": b["bundle"], "bundle_id": b["bundle_id"], "version": b["version"], "vendor": b["vendor"],
-        "summary": b["summary"], "generated": b.get("generated"),
-        "items_total": len(all_items), "items_returned": len(items),
-        "requested_topic": topic or None, "topic_found": topic_found, "note": note,
-        "licence": "Single-caller licence: use these playbooks in your own project; do not resell this document set.",
-        "delivery": b.get("delivery"),
-        "items": items,
-        "methodology": {
-            "what_this_is": "a curated set of production playbooks from running paid x402 endpoints in USDC on Base, "
-                            "written from the incidents that actually happened",
-            "how_to_use": "each item lists the mechanism, the commands, the pitfalls and how to verify the result; "
-                          "pitfalls are documented failures, not opinions",
-            "not_included": ["credentials, tokens or private keys", "guarantees about third-party APIs",
-                             "any promise of revenue"],
-            "freshness": "dated where a finding can rot (RPC capabilities, directory payload shapes) — re-probe before trusting",
-        },
-    }
-    if (req.format or "json").lower() == "markdown":
-        out["markdown"] = _bundle_markdown(items, b)
-    return out
 
 
 if __name__ == "__main__":

@@ -317,13 +317,14 @@
         {"n": 1, "do": "Keep the CONTENT in a JSON file next to the service, not in the code: content edits then need no code review and survive refactors", "cmd": "xh_api/bundles/xh_bundle.json"},
         {"n": 2, "do": "Serve a free listing on GET (ids + titles + price) and gate only POST, so agents can see what they would buy before paying", "cmd": "GET /api/compute/xh-bundle  # no payment"},
         {"n": 3, "do": "Support topic=<item id> to return a single playbook and format=markdown for one document — a caller pays once and gets exactly what it needs"},
-        {"n": 4, "do": "Price per route rather than uniformly: data calls are cents, a multi-item knowledge bundle is dollars", "cmd": "PRICE_OVERRIDES = {'POST /xh-bundle': float(os.environ.get('XH_BUNDLE_PRICE_USDC', '2'))}"},
+        {"n": 4, "do": "Price per route rather than uniformly: data calls are cents, a multi-item knowledge bundle is a different product — but keep it under $1 if you want default-SDK clients (see the pitfall below)", "cmd": "PRICE_OVERRIDES = {'POST /xh-bundle': float(os.environ.get('XH_BUNDLE_PRICE_USDC', '0.91'))}"},
         {"n": 5, "do": "Return provenance in the payload: bundle version, generated timestamp, item count, and the licence — the buyer can cite it"},
         {"n": 6, "do": "Register it like any other resource, then take one real payment to trigger indexing"}
       ],
       "pitfalls": [
         "Do not put content in the Python file if a non-developer might edit it; and do not fetch it from a third party at request time (latency plus an outage you cannot control).",
         "A bundle is judged by its specificity. Generic advice is worthless next to the measured RPC table, the payload shapes and the pitfalls that cost real money.",
+        "The official x402 client SDK refuses to sign more than $1 per payment by default (DEFAULT_MAX_AMOUNT_PER_PAYMENT = \"$1\"): the buyer gets NoMatchingRequirementsError before any signature exists, so an endpoint priced above $1 is invisible to agents running the default client. Keep the price under $1, or add a cheaper tier that default clients can buy.",
         "If you filter by topic, keep the free listing in sync with the file or agents will pay for an id that returns nothing."
       ],
       "verify": [
