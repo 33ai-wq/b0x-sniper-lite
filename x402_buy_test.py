@@ -34,8 +34,9 @@ TARGETS = [
     ("new", "https://xhagents.xyz/api/defi-sentiment", {"asset": "BTC", "protocol": "aerodrome"}, "0.10"),
     ("new", "https://xhagents.xyz/api/whale-watch", {"min_usd": 50000, "blocks": 200, "token": "USDC"}, "0.10"),
     ("new", "https://xhagents.xyz/api/x402-directory", {"query": "gas", "limit": 5}, "0.10"),
-    # knowledge product, $2 — kept in its own group so a plain `--group new` never spends it
-    ("bundle", "https://xhagents.xyz/api/compute/xh-bundle", {"format": "json"}, "2.00"),
+    # knowledge product at $0.91 (under the SDK's default $1 per-payment cap) — own group so a
+    # plain `--group new` never spends it
+    ("bundle", "https://xhagents.xyz/api/compute/xh-bundle", {"format": "json"}, "0.91"),
 ]
 
 
@@ -181,6 +182,12 @@ def main():
         status2, headers2, raw2 = post(url, body, hdrs)
         settled = headers2.get(PAYMENT_RESPONSE_HEADER) or headers2.get("payment-response")
         print(f"   paid request   -> HTTP {status2} | settlement header: {'yes' if settled else 'no'}")
+        try:  # keep the delivered body so the content can be verified, not just the preview
+            with open("/tmp/x402_last_paid.json", "wb") as fh:
+                fh.write(raw2)
+            print(f"   body tersimpan : /tmp/x402_last_paid.json ({len(raw2)} byte)")
+        except Exception:
+            pass
         try:
             out = json.loads(raw2)
             preview = out.get("reply") or json.dumps(out.get("best_match") or out.get("matches") or out)[:160]
