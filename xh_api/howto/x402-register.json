@@ -1,0 +1,50 @@
+{
+  "slug": "x402-register",
+  "title": "Register an x402 endpoint so agents can find and pay it (x402scan + Coinbase Bazaar)",
+  "price_usdc": 0.75,
+  "tags": ["x402", "registration", "discovery", "coinbase-bazaar", "x402scan", "openapi", "howto", "sop", "tutorial"],
+  "summary": "The complete discovery path for an x402 endpoint: publish machine-readable discovery documents, pass the official validator, list on x402scan, understand what actually triggers Coinbase Bazaar indexing, and prove the listing exists from the registry's own API instead of a success toast. Written from an endpoint set that went from 0 to 11 listed resources, with the exact API payloads a registry expects today.",
+  "solves": "Your endpoint answers a correct 402 but no agent ever pays it, because directories and agent crawlers cannot find it or read it.",
+  "prerequisites": [
+    "A live endpoint that answers a STANDARD x402 402 (x402Version 2 + accepts[] with scheme/network/asset/amount/payTo)",
+    "A treasury address you control on Base (or any network the CDP facilitator supports)",
+    "Ability to serve static files at your domain root (openapi.json, .well-known/x402, ads.txt-style paths)"
+  ],
+  "steps": [
+    {"n": 1, "do": "Put the resource URL in the 402 challenge — the URL the buyer can actually reach, not your internal path", "cmd": "curl -sD- -o /dev/null -X POST https://your-host/api/compute/xh-bundle -H 'Content-Type: application/json' -d '{}' | grep -i payment-required"},
+    {"n": 2, "do": "Decode the challenge and confirm the standard envelope before touching any registry", "cmd": "python3 -c \"import base64,json;h=open('h.txt').read().split(':',1)[1].strip();d=json.loads(base64.b64decode(h+'='*(-len(h)%4)));print(d['x402Version'],d['accepts'][0],d['resource']['url'])\""},
+    {"n": 3, "do": "Publish /.well-known/x402 with the resource list and ownership proofs (serve it as application/json)", "cmd": "{\"version\":1,\"resources\":[\"https://your-host/api/your-endpoint\"],\"ownershipProofs\":[\"<treasury address>\"]}"},
+    {"n": 4, "do": "Publish an OpenAPI 3.1 document with x-payment-info on every paid operation (registries prioritise OpenAPI over the well-known file)", "cmd": "\"x-payment-info\": {\"protocols\":[\"x402\"],\"price\":{\"mode\":\"fixed\",\"currency\":\"USD\",\"amount\":\"0.91\"},\"network\":\"eip155:8453\",\"asset\":\"USDC\"}  +  a 402 response per operation"},
+    {"n": 5, "do": "For every PAID operation add a free GET preview on the same path so crawlers and agents can see what they would buy", "cmd": "GET /api/your-endpoint  -> 200 (ids, titles, price)   |   POST /api/your-endpoint -> 402"},
+    {"n": 6, "do": "Iterate against the official validator (free, no auth) until preflight is clean — it is the same checklist the directories apply", "cmd": "curl -s -X POST https://api.cdp.coinbase.com/platform/v2/x402/validate -H 'Content-Type: application/json' -d '{\"resource\":\"https://your-host/api/your-endpoint\",\"method\":\"POST\"}'"},
+    {"n": 7, "do": "Read the validator's preflight[] rows: get 'returns_402', x402_version, payment_required_header and has_accepts all passing — a 422/400 first means your gate runs AFTER body validation", "cmd": "# each row: {check, passed, severity}; 25 rows / 0 failed is the healthy state"},
+    {"n": 8, "do": "Submit each URL to x402scan — URL + Add, per resource, no wallet, no fee", "cmd": "https://www.x402scan.com/resources/register"},
+    {"n": 9, "do": "Confirm from their PUBLIC API, never from the toast (the payload shape is an array of OBJECTS and drifts without notice)", "cmd": "POST https://www.x402scan.com/api/trpc/public.resources.checkRegistered\\nbody: {\"json\":{\"resources\":[{\"url\":\"https://your-host/api/your-endpoint\"}]}}\\n-> {\"registered\":[...],\"unregistered\":[]}"},
+    {"n": 10, "do": "For Coinbase Bazaar: submit NOTHING. Indexing follows the first payment settled through the CDP facilitator", "cmd": "# then re-run the validator and read the index field: {\"active\":true,\"lastCrawledAt\":\"...\"}"},
+    {"n": 11, "do": "Take one real payment through the CDP facilitator with a throwaway wallet, then re-check the index field", "cmd": "./venv/bin/python buy_test.py --only your-endpoint   # 402 -> sign -> 200 + PAYMENT-RESPONSE"},
+    {"n": 12, "do": "Record evidence you can re-check later: validator output, registry API response, settlement tx hash — not screenshots", "cmd": "tx on Base: the Transfer to your treasury (token as emitter contract, recipient in topics[2])"},
+    {"n": 13, "do": "When you add a new paid path later, repeat steps 3-9 for that path: registration is per URL, and discovery documents are the source", "cmd": "curl -s https://your-host/openapi.json | python3 -c \"import sys,json;print(list(json.load(sys.stdin)['paths']))\""}
+  ],
+  "pitfalls": [
+    "A hand-rolled 402 body (nonce / payout_address / how_to_pay) is invisible to every directory and agent. If it is not x402Version + accepts[], nothing else you do matters.",
+    "If your gate runs after schema validation, the validator's empty-body probe gets 400/422, returns_402 fails and every envelope check is reported as skipped — the endpoint looks far more broken than it is. Gate in middleware, above the body layer.",
+    "The registry API payload changed: resources must be an array of objects ({\"url\": ...}); an array of plain strings now returns HTTP 400 invalid_type. A missing 'json' wrapper returns 'expected object, received undefined'. Re-read the error text instead of assuming.",
+    "index: null is normal until the first settlement — it is not a rejection and there is no form to submit. Do not pay a third party to 'get indexed'.",
+    "Do not pay x402bazaar.org (1 USDC per service) as a shortcut; its public quick-register was broken server-side (row-level security blocked the public insert) and it is a different platform from Coinbase Bazaar.",
+    "A resource is registered per URL: a host with two listed endpoints still has its newest one unlisted until you submit that URL.",
+    "An MCP server is not registerable — MCP is how agents CALL your tools, x402 is how they get PAID. Register the paid HTTP endpoints.",
+    "Free read APIs and order forms must NOT be submitted: they fail the probe and pollute the listing. Classify your routes first.",
+    "Prices above $1 are unreachable for agents running the default client SDK (its spend cap is $1 per payment). Registration succeeds, discoverability succeeds, and no default client can pay.",
+    "A prose description is what makes you findable. Put the words an agent would search (the service name, the function, 'x402', the network) in the OpenAPI operation summary, the bazaar extension description and the service tags."
+  ],
+  "verify": [
+    "CDP validator: 25 checks, 0 failed, and index.active true after at least one settled payment",
+    "Registry API: registered[] contains every URL you submitted, unregistered[] is empty",
+    "A real buyer flow settles: HTTP 200 with a PAYMENT-RESPONSE header AND a matching USDC Transfer on-chain",
+    "The public 402 quotes the same amount your OpenAPI document declares (a mismatch is the most common silent discovery bug)"
+  ],
+  "files": ["openapi.json (docroot + source copy)", ".well-known/x402", "nginx location for the well-known path with default_type application/json", "registry check script"],
+  "last_verified": "2026-09-27",
+  "provenance": "XH Agents registered 11 live resources this way (kb/ask, chat, 8 data endpoints, a 13-playbook bundle) and verified the whole set from the registry API.",
+  "price_note": "Priced at $0.75: this is the complete registration playbook including the exact API payloads, the validator loop, the evidence checklist and the traps that cost us a full round of wrong assumptions."
+}

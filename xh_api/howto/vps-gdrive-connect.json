@@ -1,0 +1,39 @@
+{
+  "slug": "vps-gdrive-connect",
+  "title": "Connect a headless VPS to a user's Google Drive (rclone, no browser on the server)",
+  "price_usdc": 0.1,
+  "tags": ["rclone", "google-drive", "vps", "backup", "oauth", "howto", "sop"],
+  "summary": "Give a server permanent, scriptable access to someone else's Google Drive: one interactive authorisation on a machine with a browser, then bidirectional sync from the server forever. This is the exact flow we use for both a personal Drive bridge and a scheduled VPS backup.",
+  "solves": "The server has no browser, but a cron job or a worker needs to read and write a Drive folder that belongs to a human account.",
+  "prerequisites": ["A Linux VPS with root or sudo", "rclone", "Any device with a browser to approve the OAuth consent once", "A Google account (a Workspace account works too)"],
+  "steps": [
+    {"n": 1, "do": "Install rclone", "cmd": "curl https://rclone.org/install.sh | sudo bash ; rclone version"},
+    {"n": 2, "do": "Create the remote from the server (the headless path: you do NOT need a browser on the VPS)", "cmd": "rclone config   # n) new remote -> name: gdrive -> type: drive"},
+    {"n": 3, "do": "When it asks for authorisation, run the printed command on a machine WITH a browser and paste the resulting token back", "cmd": "server: 'Use auto config?' -> n   (prints: rclone authorize \"drive\")\\nlaptop: rclone authorize \"drive\"  (opens browser, prints the token JSON)\\nserver: paste the token JSON"},
+    {"n": 4, "do": "Lock the config down — it contains a long-lived refresh token", "cmd": "chmod 600 ~/.config/rclone/rclone.conf ; rclone listremotes   # -> gdrive:"},
+    {"n": 5, "do": "Verify BOTH directions before automating anything", "cmd": "rclone lsd gdrive: ; echo probe > /tmp/probe.txt ; rclone copy /tmp/probe.txt gdrive:tmp-verify/ ; rclone lsjson gdrive:tmp-verify/ ; rclone delete gdrive:tmp-verify/probe.txt"},
+    {"n": 6, "do": "Write a one-way sync with explicit exclusions so secrets and build junk never leave the host", "cmd": "rclone sync /home/<user> gdrive:VPS-Backup/home-<user> --exclude 'node_modules/**' --exclude '.git/**' --exclude '.env' --exclude '*.key' --exclude '.cache/**' --transfers 4 --bwlimit 8M --log-file /var/log/rclone-backup.log --log-level INFO"},
+    {"n": 7, "do": "Schedule it with a lock so a slow run cannot overlap the next one", "cmd": "0 */8 * * * /usr/bin/flock -n /tmp/rclone-backup.lock /home/<user>/backup.sh >> /var/log/rclone-backup.log 2>&1"},
+    {"n": 8, "do": "For a queue workflow (drop folder -> process -> publish), use numbered state folders on the Drive side instead of a local queue", "cmd": "gdrive:Project/01-pending/<id>/ ... 03-done/ 04-failed/"},
+    {"n": 9, "do": "Report the artifact, not the intention: parse the log tail for the transferred/checks/files lines and send those numbers", "cmd": "grep -E 'Transferred:|Checks:|Files:|Elapsed time:' /var/log/rclone-backup.log | tail -4"}
+  ],
+  "pitfalls": [
+    "Never paste rclone.conf anywhere: it holds a refresh token that grants full Drive access. Mode 600, owned by the service user, excluded from every sync and every backup of the backup.",
+    "A sync without --bwlimit on a small VPS starves the other services (our paid API started timing out during an unbounded backup). Cap it: 8M is enough for a nightly job.",
+    "Without flock, an 8-hourly job whose run takes longer than the interval overlaps itself and can corrupt the queue state.",
+    "Excluding .env and *.key is not optional when syncing a home directory. Do it on the FIRST run, not after an incident.",
+    "The famously confusing NOTICE about the shared client_id in the log is harmless — filter it out rather than 'fixing' it.",
+    "rclone sync makes the destination match the source, including deletions. For anything a human also edits, use copy so you cannot delete their files.",
+    "If the account is Workspace with restrictions, an admin may have to allow the rclone OAuth app; a 403 with 'access blocked' is a policy problem, not a code problem.",
+    "Test with a real file and confirm it appears in the Drive UI. A local success log does not prove the remote accepted the upload."
+  ],
+  "verify": [
+    "rclone listremotes shows the remote and rclone lsd gdrive: lists folders",
+    "A test file copied from the server appears in the Drive web UI, and rclone lsjson reports its size",
+    "The scheduled run's log ends with the Transferred/Checks/Files/Elapsed lines and no ERROR lines",
+    "Re-running the job moves no data (idempotent): 'Transferred: 0 B' on a second run with no changes"
+  ],
+  "files": ["~/.config/rclone/rclone.conf (mode 600)", "backup.sh + cron entry", "log at /var/log/rclone-backup.log"],
+  "last_verified": "2026-09-27",
+  "provenance": "XH Agents runs this on its own VPS: a Drive bridge for its affiliate queue and an 8-hourly home-directory backup to gdrive:VPS-Backup."
+}

@@ -37,6 +37,12 @@ TARGETS = [
     # knowledge product at $0.91 (under the SDK's default $1 per-payment cap) — own group so a
     # plain `--group new` never spends it
     ("bundle", "https://xhagents.xyz/api/compute/xh-bundle", {"format": "json"}, "0.91"),
+    # how-to SOPs (group `howto`, $1.70 for all four). The 5th field is the HTTP method, so the
+    # GET form of a paid route is exercised too — proving both methods can be paid.
+    ("howto", "https://xhagents.xyz/api/howto/youtube-auto-ai", {}, "0.10", "POST"),
+    ("howto", "https://xhagents.xyz/api/howto/vps-gdrive-connect", {}, "0.10", "POST"),
+    ("howto", "https://xhagents.xyz/api/howto/x402-register", {}, "0.75", "GET"),
+    ("howto", "https://xhagents.xyz/api/howto/create-x402-endpoint", {}, "0.75", "POST"),
 ]
 
 
@@ -71,15 +77,22 @@ def usdc_balance(address):
     return int(raw, 16) / 1_000_000
 
 
-def post(url, body, extra_headers=None):
-    headers = {"Content-Type": "application/json", "User-Agent": "xh-agents-x402-test/1.0"}
+def call(method, url, body, extra_headers=None):
+    """One HTTP call (POST with a JSON body, or GET with none) that never raises on 4xx/5xx."""
+    headers = {"Content-Type": "application/json", "User-Agent": "xh-agents-x402-test/1.0",
+               "Accept": "*/*"}
     headers.update(extra_headers or {})
-    req = urllib.request.Request(url, data=json.dumps(body).encode(), headers=headers, method="POST")
+    data = json.dumps(body).encode() if method == "POST" else None
+    req = urllib.request.Request(url, data=data, headers=headers, method=method)
     try:
         with urllib.request.urlopen(req, timeout=90) as r:
             return r.status, dict(r.headers), r.read()
     except urllib.error.HTTPError as e:
         return e.code, dict(e.headers), e.read()
+
+
+def post(url, body, extra_headers=None):
+    return call("POST", url, body, extra_headers)
 
 
 def challenge(headers):
@@ -94,7 +107,7 @@ def main():
     ap.add_argument("--check", action="store_true", help="do not pay; only inspect")
     ap.add_argument("--only", help="only buy targets whose URL contains one of these substrings (comma-separated)")
     ap.add_argument("--tx", help="real Base tx hash to feed the payment-verify endpoint")
-    ap.add_argument("--group", default="all", help="core | new | bundle | all")
+    ap.add_argument("--group", default="all", help="core | new | bundle | howto | all")
     args = ap.parse_args()
     only = [s.strip() for s in (args.only or "").split(",") if s.strip()]
 
@@ -150,16 +163,17 @@ def main():
         except Exception as e:
             print(f"(gagal mengambil tx hash contoh: {str(e)[:120]})\n")
 
-    for group, url, body, price in TARGETS:
+    for group, url, body, price, *rest in TARGETS:
+        method = (rest[0] if rest else "POST").upper()
         if args.group and args.group != "all" and group != args.group:
             continue
         if only and not any(s in url for s in only):
             continue
         if body.get("tx_hash") == "__FILL__":
-            print(f"── {url}  (${price}) SKIPPED: needs --tx <hash>")
+            print(f"── {method} {url}  (${price}) SKIPPED: needs --tx <hash>")
             continue
-        print(f"── {url}  (${price})")
-        status, headers, raw = post(url, body)
+        print(f"── {method} {url}  (${price})")
+        status, headers, raw = call(method, url, body)
         ch = challenge(headers)
         print(f"   unpaid request -> HTTP {status}"
               f"{' with PAYMENT-REQUIRED challenge' if ch else ' (no challenge!)'}")
@@ -179,7 +193,7 @@ def main():
         payload = http.create_payment_payload(required)
         sig = encode_payment_signature_header(payload)
         hdrs = {X_PAYMENT_HEADER: sig, PAYMENT_SIGNATURE_HEADER: sig}
-        status2, headers2, raw2 = post(url, body, hdrs)
+        status2, headers2, raw2 = call(method, url, body, hdrs)
         settled = headers2.get(PAYMENT_RESPONSE_HEADER) or headers2.get("payment-response")
         print(f"   paid request   -> HTTP {status2} | settlement header: {'yes' if settled else 'no'}")
         try:  # keep the delivered body so the content can be verified, not just the preview

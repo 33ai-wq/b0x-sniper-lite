@@ -1,0 +1,54 @@
+{
+  "slug": "create-x402-endpoint",
+  "title": "Build an x402 paid endpoint that passes the validator, gets indexed and takes real USDC",
+  "price_usdc": 0.75,
+  "tags": ["x402", "api", "fastapi", "base", "usdc", "paid-api", "howto", "sop", "tutorial", "build"],
+  "summary": "End-to-end recipe for turning any HTTP capability into an x402 endpoint that an unknown agent can find, pay for and consume: the payment gate, the verifier rules, per-route pricing, the concurrency traps, the nginx wiring, the discovery surface, plus the money-path bugs we only found when real USDC moved. Comes with the exact commands we run.",
+  "solves": "You have something useful behind HTTP and want autonomous agents to pay per call in USDC, with no API keys, no subscription and no manual onboarding.",
+  "prerequisites": [
+    "A host with nginx + systemd and HTTPS",
+    "Python 3.11+ with a venv",
+    "An EVM treasury (Base, chain id 8453) to receive USDC",
+    "A Coinbase CDP API key (key id + private key) for the facilitator, stored in a mode-600 file"
+  ],
+  "steps": [
+    {"n": 1, "do": "Install the official SDK and check the facilitator supports your network BEFORE writing the gate", "cmd": "./venv/bin/pip install x402 ; curl -s https://api.cdp.coinbase.com/platform/v2/x402/supported   # must list scheme 'exact' on eip155:8453"},
+    {"n": 2, "do": "Build the resource server with CDP auth (a JWT per method+path)", "cmd": "srv = x402ResourceServer(HTTPFacilitatorClient(FacilitatorConfig(url='https://api.cdp.coinbase.com/platform/v2/x402', auth_provider=CreateHeadersAuthProvider(get_cdp_headers)))); register_exact_evm_server(srv, ['eip155:8453'])"},
+    {"n": 3, "do": "Describe every paid route once — the same description feeds the gate, the bazaar extension and your OpenAPI document", "cmd": "ROUTES['POST /my-endpoint'] = {'accepts': {'scheme':'exact','price':'$0.10','network':'eip155:8453','payTo':TREASURY}, 'resource': SITE+'/api/my-endpoint', 'service_name': 'XH Agents — <name>', 'description': <searchable text>, 'extensions': declare_discovery_extension(input=EXAMPLE_IN, input_schema=SCHEMA_IN, body_type='json', output=OutputConfig(example=EXAMPLE_OUT))}"},
+    {"n": 4, "do": "Gate in HTTP middleware so an empty probe still gets 402 (this is the single most common reason a validator reports 'skipped')", "cmd": "@app.middleware('http')\\nasync def gate(request, call_next): return await payment_middleware(ROUTES, srv)(request, call_next)"},
+    {"n": 5, "do": "Write handlers that do network/chain I/O as plain `def` (FastAPI runs them in a threadpool; `async def` + blocking httpx stalls the event loop and every call behind it)", "cmd": "@app.post('/my-endpoint')\\ndef my_endpoint(req: MyReq): ..."},
+    {"n": 6, "do": "Verify payments with a SHARED verifier that follows the two money rules", "cmd": "1) eth_getLogs filters the TOKEN contract (Transfer events are emitted by the token, not the recipient) with topics[2]=recipient; 2) one payment = at most one credit, bound to sender+recipient+amount+tx hash, recorded so it cannot be replayed"},
+    {"n": 7, "do": "Settle only AFTER the handler produced its answer, so a 5xx never charges the buyer — verify this with real money by checking the payer balance is unchanged after a failure", "cmd": "# middleware settles on success; a 503/504 must leave the balance untouched"},
+    {"n": 8, "do": "Price per route, not per process: data calls in cents, knowledge products in dollars", "cmd": "PRICE_OVERRIDES = {'POST /xh-bundle': float(os.environ.get('XH_BUNDLE_PRICE_USDC','0.91'))}"},
+    {"n": 9, "do": "Make the challenge quote the PUBLIC url (if nginx serves the route under a longer prefix, override the resource path)", "cmd": "RESOURCE_OVERRIDES = {'POST /xh-bundle': '/api/compute/xh-bundle'}  # else the 402 advertises a path that 404s"},
+    {"n": 10, "do": "Expose it through nginx with an explicit location and a read timeout longer than your slowest handler", "cmd": "location = /api/my-endpoint { proxy_pass http://127.0.0.1:8991/my-endpoint; proxy_http_version 1.1; proxy_set_header Host $host; proxy_read_timeout 120s; }"},
+    {"n": 11, "do": "Publish discovery: /.well-known/x402 + OpenAPI 3.1 with x-payment-info and a 402 response per paid operation; add the free GET preview for the same path", "cmd": "curl -s https://your-host/openapi.json | python3 -m json.tool | head"},
+    {"n": 12, "do": "Choose RPC endpoints per METHOD — a paid RPC plan is not automatically good at eth_getLogs", "cmd": "Alchemy Free caps eth_getLogs at a 10-block range (HTTP 400 code -32600); keep the dedicated RPC first for eth_call/eth_blockNumber/eth_getCode and the wide-log-capable public endpoints first for eth_getLogs"},
+    {"n": 13, "do": "Probe with the free validator, then register the URL (see the registration playbook) and take ONE real payment with a throwaway wallet to trigger Bazaar indexing", "cmd": "curl -s -X POST https://api.cdp.coinbase.com/platform/v2/x402/validate -d '{\"resource\":\"https://your-host/api/my-endpoint\",\"method\":\"POST\"}'"},
+    {"n": 14, "do": "Never return 4xx after the payment was verified: an unknown filter or missing optional field should return 200 with the full default payload plus a note (settlement is already committed)", "cmd": "if topic not found: return full set + note='topic X is not in this bundle'"},
+    {"n": 15, "do": "Prove the settlement on-chain, not from a balance read taken immediately after the call (settlement lands a block or two later and a naive script prints 'spent 0.000000')", "cmd": "find_incoming_usdc(TREASURY, from_address=buyer, min_atomic=<amount>, lookback_blocks=800)"}
+  ],
+  "pitfalls": [
+    "x402.org/facilitator does not serve scheme 'exact' on Base mainnet; wiring it in makes the process refuse the route at boot ('does not support scheme exact on network eip155:8453'). Only the CDP facilitator supports Base — and only it feeds Coinbase Bazaar.",
+    "The SDK can abort construction with SystemExit, which `except Exception` does not catch. Wrap it, and verify the unit is still active after a restart instead of assuming.",
+    "Blocking I/O inside `async def` under a single-worker uvicorn serialises everything: one slow handler makes queue growth exceed nginx's read timeout and an innocent endpoint returns 504 on a PAID call. Plain `def` + proxy_read_timeout 120s on every paid location.",
+    "A legacy/manual payment branch that still reads the payment header will parse the x402 signature as its old format and reject a fully paid request with 400 — after the customer already signed. Guard it on 'the standard gate did not verify'.",
+    "Filtering eth_getLogs by `address = treasury` matches nothing, ever. Amount-only matching with no recipient and no tx binding lets one transfer buy unlimited credits.",
+    "A Cloudflare-fronted RPC answers 403 to the default python-requests User-Agent, which surfaces as `verified: false, reason: rpc_error:403` inside an HTTP 200 on a perfectly real payment. Identify your caller and keep a fallback list.",
+    "The official client SDK refuses to sign more than $1 per payment by default (DEFAULT_MAX_AMOUNT_PER_PAYMENT = \"$1\"). Price above $1 only if you accept that default-SDK agents cannot buy.",
+    "An unmatched /api/* route proxied to a catch-all answers HTTP 200 with HTML, so a JSON client fails silently and you debug the wrong layer. Every new paid path needs its own location block.",
+    "Third-party directory APIs change shape without notice ({'data': [...]} vs {'data': {'services': [...]}}): parse defensively, guard with isinstance, and report per-source ok/error in the response.",
+    "Editing the source is not deploying: a fix is not live until the unit restarts. Report 'fixed in source, not yet live' rather than 'done'."
+  ],
+  "verify": [
+    "Unpaid request: 402 with a PAYMENT-REQUIRED header quoting the right amount and the PUBLIC resource URL",
+    "CDP validator: 25 checks / 0 failures; index.active true after the first settlement",
+    "Paid request: HTTP 200 + PAYMENT-RESPONSE header, and read the BODY (three of four bugs we found returned HTTP 200 with wrong content)",
+    "A failing request (5xx) leaves the payer balance unchanged",
+    "On-chain: the USDC Transfer to your treasury, with the payer as topics[1] and your treasury as topics[2]"
+  ],
+  "files": ["paid API service (FastAPI + x402 gate + shared verifier)", "nginx vhost", "openapi.json + .well-known/x402", "buyer test script"],
+  "last_verified": "2026-09-27",
+  "provenance": "XH Agents built and shipped this: 9 paid routes on one service, 11 registered resources, a documented real-money test at $2.00 and $0.91, plus the first paying customer outside the company.",
+  "price_note": "Priced at $0.75: the deepest SOP in the set — build, verify, price, wire, register and prove with real money, including the four bugs that only a real payment exposes."
+}

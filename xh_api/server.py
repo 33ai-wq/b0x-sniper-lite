@@ -48,6 +48,8 @@ PRICE_OVERRIDES: dict[str, float] = {"POST /xh-bundle": BUNDLE_PRICE_USDC}
 # URL a buyer can actually reach, not the internal one
 RESOURCE_OVERRIDES: dict[str, str] = {"POST /xh-bundle": "/api/compute/xh-bundle"}
 BUNDLE_FILE = os.environ.get("XH_BUNDLE_FILE", "/home/ubuntu/prpo_ai/xh_api/bundles/xh_bundle.json")
+# how-to SOPs: one JSON file per SOP, each becomes its own paid route (GET and POST)
+HOWTO_DIR = os.environ.get("XH_HOWTO_DIR", "/home/ubuntu/prpo_ai/xh_api/howto")
 TREASURY_BASE = os.environ.get("XH_TREASURY_BASE", "0x6cb53f00a586f7704e1f7121c2e397b579eb3ed0")
 USDC_BASE = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
 X402_NETWORK = "eip155:8453"
@@ -247,6 +249,41 @@ PAID_ROUTES = [
 ]
 
 STANDARD_X402 = os.environ.get("X402_STANDARD", "1") != "0"
+
+
+# ── how-to SOPs: one file per SOP becomes its own paid route on both GET and POST ─────────────
+def _load_sops() -> dict[str, dict]:
+    out: dict[str, dict] = {}
+    try:
+        for name in sorted(os.listdir(HOWTO_DIR)):
+            if not name.endswith(".json"):
+                continue
+            with open(os.path.join(HOWTO_DIR, name), "r", encoding="utf-8") as fh:
+                doc = json.load(fh)
+            if doc.get("slug"):
+                out[doc["slug"]] = doc
+    except OSError as e:
+        print(f"[xh-api] WARNING: cannot read the how-to directory ({e})", flush=True)
+    return out
+
+
+SOPS = _load_sops()
+
+for _slug, _sop in SOPS.items():
+    _price = float(_sop.get("price_usdc", PRICE_USDC))
+    _search = f"{_sop.get('title', '')}. {_sop.get('summary', '')}"[:900]
+    for _method in ("GET", "POST"):
+        _route = f"{_method} /howto/{_slug}"
+        PRICE_OVERRIDES[_route] = _price
+        RESOURCE_OVERRIDES[_route] = f"/api/howto/{_slug}"
+        PAID_ROUTES.append((
+            _route, f"howto:{_slug}", f"How-To: {_sop.get('title', _slug)}",
+            _search,
+            {"sop": _slug},
+            {"type": "object", "properties": {"sop": {"type": "string"}}, "required": []},
+            {"sop": _slug, "title": _sop.get("title"), "steps": len(_sop.get("steps") or []),
+             "summary": (_sop.get("summary") or "")[:200]},
+        ))
 X402_ROUTES: dict[str, Any] = {}
 if STANDARD_X402:
     try:
@@ -346,7 +383,8 @@ class BundleReq(BaseModel):
 async def health():
     return {"ok": True, "service": "xh-api", "paid_routes": len(X402_ROUTES), "standard_x402": STANDARD_X402,
             "price_usdc": PRICE_USDC, "bundle_price_usdc": BUNDLE_PRICE_USDC,
-            "bundle_items": len(_load_bundle()["items"]) if os.path.exists(BUNDLE_FILE) else 0}
+            "bundle_items": len(_load_bundle()["items"]) if os.path.exists(BUNDLE_FILE) else 0,
+            "howto_sops": len(SOPS), "howto": {s: d.get("price_usdc") for s, d in SOPS.items()}}
 
 
 # ── 1. wallet profile ─────────────────────────────────────────────────────────
@@ -948,6 +986,61 @@ def xh_bundle(req: BundleReq):
     if (req.format or "json").lower() == "markdown":
         out["markdown"] = _bundle_markdown(items, b)
     return out
+
+
+# ── 10. how-to SOPs (content in HOWTO_DIR, one JSON file per SOP) ──────────────
+@app.get("/howto")
+def howto_index():
+    """Free: every SOP on offer with its price. The SOP content itself is behind the gate."""
+    return {
+        "service": "XH Agents How-To",
+        "summary": "Production SOPs from a company that runs its own paid APIs, automation and infrastructure. "
+                   "Each one lists the exact commands, the pitfalls that cost us real time or real money, and how "
+                   "to verify the result — written from the incidents, not from theory.",
+        "free": True,
+        "sops_total": len(SOPS),
+        "sops": [{"slug": s, "title": d.get("title"), "price_usdc": d.get("price_usdc"),
+                  "summary": d.get("summary"), "steps": len(d.get("steps") or []),
+                  "pitfalls": len(d.get("pitfalls") or []), "tags": d.get("tags") or [],
+                  "last_verified": d.get("last_verified")} for s, d in sorted(SOPS.items())],
+        "how_to_buy": f"GET or POST {SITE}/api/howto/<slug> with an x402 payment header; an unpaid request "
+                      f"receives a standard 402 challenge quoting that SOP's price",
+        "all_in_option": {"bundle": "POST " + SITE + "/api/compute/xh-bundle",
+                          "note": "the bundle contains 13 playbooks (including x402 registration and endpoint "
+                                  "building) for a single call — check both prices before buying"},
+    }
+
+
+def _howto_payload(slug: str) -> dict:
+    sop = SOPS.get(slug)
+    if not sop:
+        # never a 4xx after the payment was verified: answer 200 with the index instead
+        return {"error": "unknown_sop", "requested": slug, "available": sorted(SOPS.keys()),
+                "note": "the requested slug does not exist; the list of valid slugs is in 'available'"}
+    out = dict(sop)
+    out["licence"] = "Single-caller licence: use this SOP in your own project; do not resell the document."
+    out["delivery"] = {
+        "methods": ["GET", "POST"], "url": f"{SITE}/api/howto/{slug}",
+        "price_usdc": sop.get("price_usdc"),
+        "field_guide": "steps[] carries the commands; pitfalls[] are documented failures; verify[] is how to "
+                       "prove the result; files[] lists what the SOP touches",
+    }
+    out["methodology"] = {
+        "written_from": "the incidents that actually happened while running this in production",
+        "not_included": ["credentials, tokens or private keys", "guarantees about third-party APIs or quotas"],
+        "freshness": sop.get("last_verified"),
+    }
+    return out
+
+
+@app.get("/howto/{slug}")
+def howto_get(slug: str):
+    return _howto_payload(slug)
+
+
+@app.post("/howto/{slug}")
+def howto_post(slug: str):
+    return _howto_payload(slug)
 
 
 if __name__ == "__main__":
