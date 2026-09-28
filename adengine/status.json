@@ -1,0 +1,26 @@
+{
+  "updatedNote": "Live figures updated 13:54 UTC \u2014 every number below is read from this host or from Base mainnet.",
+  "generatedAt": "2026-09-28T13:54:40.682657+00:00",
+  "groups": [
+    {
+      "label": "Registered endpoints",
+      "value": 15,
+      "detail": "x402scan verified \u00b7 Coinbase Bazaar indexed"
+    },
+    {
+      "label": "Price per call",
+      "value": "$0.03\u2013$0.91",
+      "detail": "USDC on Base \u00b7 settled per request"
+    },
+    {
+      "label": "Base mainnet block",
+      "value": "51,907,166",
+      "detail": "read live from Base mainnet at 13:54 UTC"
+    },
+    {
+      "label": "Backup hosts",
+      "value": 2,
+      "detail": "Cloudflare edge + Solana mainnet \u00b7 both answering"
+    }
+  ]
+}

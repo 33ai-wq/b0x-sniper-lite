@@ -41,7 +41,8 @@ await page.waitForTimeout(600);
 const modalVisible = await page.locator('#rates-modal').isVisible().catch(() => false);
 const modalText = await page.innerText('#rates-modal').catch(() => '');
 check('rates modal opens and lists the same prices', modalVisible && /728/.test(modalText) && /40/.test(modalText), modalText.replace(/\n/g, ' ').slice(0, 90));
-await page.keyboard.press('Escape');
+await page.locator('#rates-modal [data-close]').first().click().catch(() => page.keyboard.press('Escape'));  // the site closes these by button, not Escape
+await page.waitForTimeout(300);
 
 // product links resolve
 const links = await page.$$eval('#exhibition a[href]', (as) => as.map((a) => a.getAttribute('href')));
@@ -49,6 +50,28 @@ check('product links are absolute and complete', links.every((h) => h.startsWith
 
 const catalogBtn = await page.locator('button[data-open-catalog]').count();
 check('catalog button (x402 endpoints) still present', catalogBtn === 1);
+
+// ── endpoint catalogue (compact buttons + per-category pop-ups, no prices on the page) ──
+const status = await page.innerText('#status');
+check('catalogue section describes the endpoints', /x402 endpoints/i.test(status) && /registered on x402scan/i.test(status));
+const catButtons = await page.locator('#status [data-open-ep]').count();
+check('four category buttons open a list', catButtons === 4, String(catButtons));
+const priceOnPage = await page.$$eval('#status .ep-wrap', (els) => els.map((e) => e.innerText).join(' '));
+check('no endpoint prices exposed on the page', !/\$\s?\d+\.\d\d/.test(priceOnPage), (priceOnPage.match(/\$\s?\d+\.\d\d/) || [''])[0]);
+await page.click('#status [data-open-ep="data"]');
+await page.waitForTimeout(400);
+const catModalOpen = await page.locator('#ep-modal-data').isVisible().catch(() => false);
+const catModalText = await page.innerText('#ep-modal-data').catch(() => '');
+const modalLinks = await page.locator('#ep-modal-data a[href^="/endpoints.html#"]').count();
+check('a category opens a pop-up listing its endpoints as links', catModalOpen && modalLinks >= 9, `${modalLinks} links`);
+check('pop-up does not expose prices', !/\$\s?\d+\.\d\d/.test(catModalText));
+await page.keyboard.press('Escape');
+
+const ep = await page.goto('https://xhagents.xyz/endpoints.html?cb=' + Date.now(), { waitUntil: 'load', timeout: 60_000 });
+const epBody = await page.locator('body').textContent().catch(() => '');
+const anchors = await page.locator('article.ep-card[id]').count();
+check('standalone catalogue page is live and lists every endpoint', ep.status() === 200 && anchors === 17, `status ${ep.status()}, ${anchors} entries (15 registered + 2 secondary)`);
+check('standalone page states how an agent pays', /How an agent pays/.test(epBody) && /X-PAYMENT/.test(epBody));
 
 check('no console errors on the landing page', errs.length === 0, errs[0] || 'clean');
 await browser.close();
