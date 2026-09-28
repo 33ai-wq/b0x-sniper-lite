@@ -84,9 +84,12 @@ def secondary_hosts() -> tuple[int, str]:
 
 def build_status() -> dict:
     now = datetime.now(timezone.utc)
-    resources, price_range, price_detail = catalogue_counts()
+    resources, _price_range, _price_detail = catalogue_counts()
     block, block_detail = base_block()
     hosts, hosts_detail = secondary_hosts()
+    # Labels must match the data-label attributes on the homepage cards, or the card is never
+    # updated. No price range here: prices live in the 402 challenge and openapi.json, not on the
+    # public page or its feed.
     return {
         "updatedNote": f"Live figures updated {now.strftime('%H:%M')} UTC — every number below is read "
                        f"from this host or from Base mainnet.",
@@ -94,10 +97,11 @@ def build_status() -> dict:
         "groups": [
             {"label": "Registered endpoints", "value": resources,
              "detail": "x402scan verified · Coinbase Bazaar indexed"},
-            {"label": "Price per call", "value": price_range, "detail": price_detail},
+            {"label": "Payment rail", "value": "x402 · USDC",
+             "detail": "per call on Base · quoted in the 402 challenge"},
             {"label": "Base mainnet block", "value": block,
              "detail": f"{block_detail} at {now.strftime('%H:%M')} UTC"},
-            {"label": "Backup hosts", "value": hosts, "detail": hosts_detail},
+            {"label": "Secondary hosts", "value": hosts, "detail": hosts_detail},
         ],
     }
 
