@@ -204,6 +204,13 @@ app = FastAPI(title="XH Agents paid data API", version="1.0.0")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["GET", "POST", "OPTIONS"],
                    allow_headers=["*"])
 
+# ── arkham-intel (2026-10-02): the five Arkham use-case endpoints, computed on public Base data ──
+# Handlers live in arkham_intel.py; the RPC helpers are injected so the module stays import-safe.
+import arkham_intel  # noqa: E402
+
+arkham_intel.register(app, arkham_intel.Ctx(
+    rpc=_rpc, erc20=erc20_call, is_address=_is_address, hex_to_int=_hex_to_int))
+
 PAID_ROUTES = [
     ("POST /wallet-profile", "walletProfile", "EVM address profile on Base",
      "Balances, contract status, nonce, recent USDC activity and known-address labels for any Base address.",
@@ -348,8 +355,80 @@ PAID_ROUTES.append((
      "stream_url": "https://xhagents.xyz/api/video-stream/<token>",
      "licence": {"scope": "stream or download", "ttl_seconds": 3600, "range_requests": True}},
 ))
-STANDARD_X402 = os.environ.get("X402_STANDARD", "1") != "0"
+# ── arkham-intel (2026-10-02): five intel products answering Arkham's published API use cases ──
+# Same honesty rules as the rest of the catalogue: we are not Arkham and hold no Arkham key; every
+# response states its sources and what was NOT checked. Entity names come only from a curated label
+# file; otherwise addresses are reported with an on-chain verified interface class.
+_ARKHAM_PRICE = float(os.environ.get("XH_ARKHAM_PRICE_USDC", "0.1"))
+_ARKHAM = [
+    ("use-cases", "arkhamIntelUseCases", "Arkham-style intel — use-case router",
+     "Given a role (traders, builders, brokers, investigators) or a task in plain words, returns the ordered "
+     "call plan across the XH Arkham-intel endpoints, mapped to the use cases Arkham published (inflow/outflow "
+     "monitoring, portfolio monitoring, counterparty due diligence, know-your-users, competitor analysis, AML, "
+     "ransomware, darknet). Says explicitly what we cannot answer.",
+     {"role": "traders", "task": "are coins piling into an exchange or draining out?"},
+     {"type": "object", "properties": {"role": {"type": "string"},
+                                       "task": {"type": "string"}}, "required": []},
+     {"playbooks": [{"goal": "Are coins piling into an exchange or draining out?",
+                     "arkham_use_case": "Inflow & Outflow Monitoring",
+                     "plan": ["POST /api/arkham-intel/exchange-flow", "POST /api/arkham-intel/counterparties"]}],
+      "not_checked": ["we do not call Arkham's API", "no Arkham entity graph"]}),
+    ("exchange-flow", "arkhamIntelExchangeFlow", "Arkham-style intel — pool inflow/outflow",
+     "Inflow/outflow for an ERC-20 token on Base over a window, measured where it is actually verifiable: "
+     "each of the token's deepest pools has its own balance of that token read at two blocks, so the change, "
+     "direction (into pool = sell side, out of pool = bought) and USD value are real numbers, plus the pool's "
+     "price move from slot0 where the pool exposes it. Pools that cannot be read are listed with the reason.",
+     {"token": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913", "hours": 6},
+     {"type": "object", "properties": {"token": {"type": "string"},
+                                       "hours": {"type": "integer", "minimum": 1, "maximum": 24}},
+      "required": ["token"]},
+     {"token": "0x8335…2913", "pool_totals": {"into_pools": 1200.5, "out_of_pools": 800.25, "net": 400.25},
+      "pools": [{"pair": "0x…", "dex": "aerodrome", "reserve_then": 91000.0, "reserve_now": 89800.0,
+                 "token_change": -1200.0, "direction": "out_of_pool (bought)", "usd_change": 1200.0}],
+      "price": {"price_usd": 1.0, "method": "derived_from_quote_side"}}),
+    ("portfolio", "arkhamIntelPortfolio", "Arkham-style intel — wallet portfolio snapshot",
+     "Holdings of a Base wallet with USD values at request time (native + the ERC-20s you name), each token's "
+     "verified class, and the totals. A snapshot, not a historical curve — that limit is stated in the response.",
+     {"address": "0x6cb53f00a586f7704e1f7121c2e397b579eb3ed0",
+      "tokens": ["0x833589fcd6edb6e08f4c7c32d4f71b54bda02913"], "hours": 6},
+     {"type": "object", "properties": {"address": {"type": "string"},
+                                       "tokens": {"type": "array", "items": {"type": "string"}},
+                                       "hours": {"type": "integer"}}, "required": ["address"]},
+     {"address": "0x6cb5…3ed0", "native": {"eth": 0.0, "value_usd": 0.0},
+      "holdings": [{"token": "0x8335…2913", "amount": 12.5, "price_usd": 1.0, "value_usd": 12.5}],
+      "total_value_usd": 12.5, "not_checked": ["other chains", "staked positions", "historical curve"]}),
+    ("counterparties", "arkhamIntelCounterparties", "Arkham-style intel — counterparty due diligence",
+     "Who an address transacts with inside a window: counterparties ranked by USD volume and transfer count, each "
+     "with an on-chain verified class, first/last seen, and a flag only if the operator's curated label file marks "
+     "it. An empty flag list means 'nothing curated', never 'clean'.",
+     {"address": "0x6cb53f00a586f7704e1f7121c2e397b579eb3ed0", "hours": 24, "limit": 15},
+     {"type": "object", "properties": {"address": {"type": "string"}, "hours": {"type": "integer"},
+                                       "limit": {"type": "integer"}}, "required": ["address"]},
+     {"counterparties": [{"address": "0x…", "class": "eoa", "in": 40.0, "out": 0.0, "usd_volume": 40.0,
+                          "flag": False, "first_seen": "2026-10-02T10:00:00Z"}],
+      "labels_configured": 3}),
+    ("trace", "arkhamIntelTrace", "Arkham-style intel — fund trace for investigations",
+     "Hop-by-hop follow of USDC outflows from an address (up to 3 hops), with each destination's verified class, "
+     "curated labels and any flagged venues on the path. Answers 'where did the money go' with evidence and an "
+     "explicit boundary: it is not an attribution or sanctions product.",
+     {"address": "0x6cb53f00a586f7704e1f7121c2e397b579eb3ed0", "hops": 2, "hours": 24},
+     {"type": "object", "properties": {"address": {"type": "string"}, "hops": {"type": "integer", "minimum": 1, "maximum": 3},
+                                       "hours": {"type": "integer"}}, "required": ["address"]},
+     {"origin": "0x6cb5…3ed0", "hops": [{"hop": 1, "transfers": [{"to": "0x…", "class": "dex_router", "usd": 40.0}]}],
+      "flags": [], "not_checked": ["tokens other than USDC", "off-chain identity"]}),
+]
+for _slug, _op, _name, _desc, _ex_in, _schema, _ex_out in _ARKHAM:
+    _route = f"POST /arkham-intel/{_slug}"
+    PRICE_OVERRIDES[_route] = _ARKHAM_PRICE
+    RESOURCE_OVERRIDES[_route] = f"/api/arkham-intel/{_slug}"
+    PAID_ROUTES.append((_route, _op, _name, _desc, _ex_in, _schema, _ex_out))
+    # GET twin: directory crawlers probe GET first, and a 405 reads as "broken" to a validator
+    _groute = f"GET /arkham-intel/{_slug}"
+    PRICE_OVERRIDES[_groute] = _ARKHAM_PRICE
+    RESOURCE_OVERRIDES[_groute] = f"/api/arkham-intel/{_slug}"
+    PAID_ROUTES.append((_groute, _op + "Get", _name + " (GET)", _desc, _ex_in, _schema, _ex_out))
 
+STANDARD_X402 = os.environ.get("X402_STANDARD", "1") != "0"
 
 # ── how-to SOPs: one file per SOP becomes its own paid route on both GET and POST ─────────────
 def _load_sops() -> dict[str, dict]:

@@ -1,0 +1,27 @@
+{
+  "_comment": "Curated venue labels for the arkham-intel endpoints. Only add an entry you can point at a public source for — the endpoints publish these as attributed names, and an unverified label would be a false claim. Empty or missing entries are reported to the buyer as 'no label', never as 'clean'.",
+  "_format": {
+    "<address>": {
+      "label": "human name",
+      "type": "cex | bridge | mixer | marketplace | sanctioned | exploit | dex | token | treasury | other",
+      "source": "where this label comes from (official docs URL, announcement, filing)"
+    }
+  },
+  "venues": {
+    "0x4200000000000000000000000000000000000010": {
+      "label": "Base L2 Standard Bridge (predeploy)",
+      "type": "bridge",
+      "source": "Base predeploy address list (docs.base.org)"
+    },
+    "0x4200000000000000000000000000000000000006": {
+      "label": "WETH on Base (predeploy)",
+      "type": "token",
+      "source": "Base predeploy address list (docs.base.org)"
+    },
+    "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913": {
+      "label": "USDC on Base",
+      "type": "token",
+      "source": "Circle's published USDC contract address for Base"
+    }
+  }
+}
