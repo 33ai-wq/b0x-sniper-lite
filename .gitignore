@@ -52,3 +52,5 @@ BossyFactory/
 .hermes/
 .bazaar_env
 *_env
+litcount_repo/
+probe_nvidia_nim*_result.json

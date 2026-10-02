@@ -1,6 +1,6 @@
 {
-  "updatedNote": "Live figures updated 13:11 UTC \u2014 every number below is read from this host or from Base mainnet.",
-  "generatedAt": "2026-10-02T13:11:02.082643+00:00",
+  "updatedNote": "Live figures updated 13:47 UTC \u2014 every number below is read from this host or from Base mainnet.",
+  "generatedAt": "2026-10-02T13:47:31.373791+00:00",
   "groups": [
     {
       "label": "Registered endpoints",
@@ -14,8 +14,8 @@
     },
     {
       "label": "Base mainnet block",
-      "value": "52,078,657",
-      "detail": "read live from Base mainnet at 13:11 UTC"
+      "value": "52,079,752",
+      "detail": "read live from Base mainnet at 13:47 UTC"
     },
     {
       "label": "Secondary hosts",
