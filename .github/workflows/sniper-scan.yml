@@ -1,0 +1,53 @@
+name: prpo_ai Sniper Scan
+
+# Signal-only scan + Telegram alert
+# Runs every 15 minutes via GitHub Actions (free 2000 min/month)
+# Fallback untuk SnapDeploy jika container down/credit habis
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'  # every 15 minutes
+  workflow_dispatch:        # manual trigger
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install sniper deps
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests==2.31.0
+
+      - name: Run signal scan + Telegram alert
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: |
+          python .github/scripts/scan_and_alert.py
+
+  healthcheck:
+    runs-on: ubuntu-latest
+    # Send ping to SnapDeploy every 14 minutes to prevent sleep
+    needs: []
+    steps:
+      - name: Ping SnapDeploy
+        if: env.SNAPDEPLOY_URL != ''
+        run: |
+          if [ -n "${{ secrets.SNAPDEPLOY_URL }}" ]; then
+            curl -sS -m 8 "${{ secrets.SNAPDEPLOY_URL }}/health" || echo "snapdeploy down"
+          fi
+        env:
+          SNAPDEPLOY_URL: ${{ secrets.SNAPDEPLOY_URL }}

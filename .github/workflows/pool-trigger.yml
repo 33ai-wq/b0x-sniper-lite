@@ -1,0 +1,20 @@
+name: LitCount Pool Auto Trigger
+
+on:
+  schedule:
+    # Run every hour
+    - cron: '0 * * * *'
+  workflow_dispatch: # manual trigger juga bisa
+
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger Pool Draw
+        run: |
+          curl -s -X GET \
+            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
+            https://litcount.vercel.app/api/cron
+
+      - name: Log result
+        run: echo "Pool trigger executed at $(date)"
