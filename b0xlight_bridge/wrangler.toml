@@ -1,0 +1,10 @@
+name = "b0xlight-bridge"
+main = "src/index.js"
+compatibility_date = "2026-07-11"
+account_id = "b9f2219c5fc157dbab0250ea33e19e52"
+
+[vars]
+LF_API_BASE = "https://lightningfaucet.com/ai-agents/api"
+X402_BASE = "https://x402-cf-worker.mulberry-boar.workers.dev"
+AGENT_ID = "664"
+ENDPOINTS_PRICING = "meme-hunter:25,defi-sentiment:25,dinalibrium:50,wallet-profile:100"

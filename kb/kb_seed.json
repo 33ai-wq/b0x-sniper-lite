@@ -1,0 +1,152 @@
+[
+  {
+    "id": "ataraxia-white-bg-fix",
+    "category": "devops-vps",
+    "title": "Ataraxia landing page white background instead of dark web3 UI",
+    "problem": "Tailwind CSS v4 not compiling because @tailwindcss/vite plugin was missing from vite.config.js, causing @theme and @tailwind utilities to not generate CSS variables like --color-bg:#0a0a0f",
+    "solution": "1. Install @tailwindcss/vite: `npm install --save-dev @tailwindcss/vite`. 2. Update vite.config.js to import and use the plugin: `import tailwindcss from '@tailwindcss/vite'` + `plugins: [react(), tailwindcss()]`. 3. Add critical inline CSS in index.html for immediate dark background: `<meta name=\"color-scheme\" content=\"dark\"/><meta name=\"theme-color\" content=\"#0a0a0f\"/><style>:root{color-scheme:dark} html{background:#0a0a0f} html,body{background-color:#0a0a0f!important;color:#f0f0f5} #root{min-height:100vh;background:#0a0a0f}</style>`. 4. Build and deploy: `npm run build` + `rsync dist/ -> /var/www/ataraxia/` + `nginx reload`",
+    "tags": ["tailwind-v4", "vite", "nginx", "dark-theme", "css-variables"],
+    "date_solved": "2026-08-31",
+    "source_file": "addendum-NOTE71-20260915-ataraxia-hedera-monetization.md"
+  },
+  {
+    "id": "ataraxia-wallet-multimodal",
+    "category": "ai-infra",
+    "title": "Ataraxia connect wallet only 2 simple buttons, poor UX",
+    "problem": "Connect wallet flow used inline `phase === 'connecting'` with only 2 basic buttons (MetaMask/Phantom), not matching web3 aesthetic",
+    "solution": "Created new WalletModal.jsx component (13KB) with Reown AppKit: overlay with backdrop-blur, gradient orbs, modal card with 8 wallet options in 2x2 grids (EVM: MetaMask, Coinbase, WalletConnect, Rabby/Brave; Solana: Phantom, Solflare, Backpack, Glow). Auto-detects installed wallets with green dots. Connected state shows address + chain badge + Pay on Base/Solana buttons. Integrated into App.jsx replacing old connecting phase. Reown Project ID: 886f8719c01b034b65dad40b625434a8",
+    "tags": ["walletconnect", "reown", "web3-ux", "multi-chain", "solana", "evm"],
+    "date_solved": "2026-08-31",
+    "source_file": "addendum-NOTE71-20260915-ataraxia-hedera-monetization.md"
+  },
+  {
+    "id": "xhagents-trading-scroll-fix",
+    "category": "devops-vps",
+    "title": "xhagents.xyz/trading page not scrollable, wallet UX broken",
+    "problem": "Body had overflow:hidden, catalog-modal had no CSS (position:fixed missing), overlay blocked layout. Wallet connect in header didn't work, functional one was at bottom with basic select dropdown",
+    "solution": "1. Frontend: Fixed scroll with `html { overflow-y:auto; overflow-x:hidden; }`, body `overflow:visible`. New catalog-modal with proper fixed positioning, backdrop-filter, opacity transitions. Moved wallet connect to header with green CONNECT WALLET button opening WalletModal (same 8-option design as Ataraxia). Removed bottom walletSection. 2. Nginx: Added 3 location blocks proxying /api/chat/pay, /api/chat/verify-payment, /api/markets to :8001. 3. Backend: chat_engine.py migrated to ThreadingHTTPServer, added CoinGecko 60s cache with lock, coingecko_brief() injects live market data into AI system_prompt. Fixed db connection with timeout=10, check_same_thread=False, fixed SQL column mismatch (8 cols). Health endpoint returns coingecko:true, markets:8",
+    "tags": ["nginx", "threadinghttpserver", "coingecko", "wallet-modal", "scroll-fix", "css"],
+    "date_solved": "2026-08-31",
+    "source_file": "addendum-NOTE71-20260915-ataraxia-hedera-monetization.md"
+  },
+  {
+    "id": "xhagents-banner-top-of-page",
+    "category": "devops-vps",
+    "title": "Add responsive IAB banner above Live on Base section",
+    "problem": "Need to replace hero-anim (XH logo animation) with house ads banner for Ataraxia + AI Trading in 3 responsive sizes (320x50 mobile, 480x60 tablet, 729x90 desktop)",
+    "solution": "1. Removed 50 lines of hero-anim CSS and 20 lines of SVG HTML. 2. Added .xh-top-banner-wrap + .xh-top-banner with single slot using media queries for 3 sizes. Gradient border animation via ::before with bannerGradient 6s linear infinite. Tag 'Ad · Exhibition Hall' absolute positioned. Two flex:1 sides with hover effects, icons (orange/green for Ataraxia, cyan/purple for Trading), CTA buttons. 3. Reduced hero padding from 75vh to 2.5rem, section padding from 6rem to 3.5rem to balance whitespace. Deployed via sudo cp to /var/www/nomad7/index.html + nginx reload",
+    "tags": ["responsive-design", "iab-banner", "css-media-queries", "gradient-animation"],
+    "date_solved": "2026-08-31",
+    "source_file": "addendum-NOTE71-20260915-ataraxia-hedera-monetization.md"
+  },
+  {
+    "id": "robindayo-treasury-remove",
+    "category": "payments-x402",
+    "title": "Remove treasury balance display from Robindayo (XH Agents policy: never show asset value)",
+    "problem": "Robindayo GitHub Pages showed treasury section with House treasury address + Blockscout balance fetch displaying RHO holdings, violating XH Agents 'NO token, NEVER show asset value' policy",
+    "solution": "Cloned 33ai-wq/robindayo, used Python patch to remove entire `<section class=\"treasury\" id=\"treasury\">` including House treasury display and IIFE fetch to robinhoodchain.blockscout.com/api?module=account&action=balance. Committed with message 'remove treasury balance display (hide asset value per XH Agents policy)' hash 69704fe, pushed via GITHUB_PAT. Verified live at https://33ai-wq.github.io/robindayo/ - treasury section gone (CSS remains but not rendered)",
+    "tags": ["policy-compliance", "github-pages", "asset-value-hidden", "x402-policy"],
+    "date_solved": "2026-09-01",
+    "source_file": "addendum-NOTE71-20260915-ataraxia-hedera-monetization.md"
+  },
+  {
+    "id": "xhagents-catalog-11-repos",
+    "category": "devops-vps",
+    "title": "Expand x402 catalog from 4 to 11 repos with only Landing + Repo links",
+    "problem": "Catalog modal had only 4 detailed cards with descriptions and old Vercel link for AI Trading. Need 11 repos, no descriptions, only Landing + Repo pill links",
+    "solution": "Patched BossyFactory/Bossy-xhagents.html via Python: replaced old catalogModal (4 items with catalog-meta descriptions) with 11 catalog-item divs each containing catalog-name + catalog-links (Landing + Repo pills). List: Dinalibrium, AI Trading Assistant (fixed to xhagents.xyz/trading), b0x402 Endpoint, b0x402-data, bx02-cf-worker, RobinDayo, litcount, b0x-sniper-lite, awesome-x402, awesome-x402-src, claw402-open-fork. CSS: catalog-inner max-height 88vh, catalog-list max-height 62vh, scrollbar styling. Synced to /var/www/nomad7/index.html + nginx reload",
+    "tags": ["catalog", "x402", "responsive-grid", "github-pages"],
+    "date_solved": "2026-09-01",
+    "source_file": "addendum-NOTE71-20260915-ataraxia-hedera-monetization.md"
+  },
+  {
+    "id": "nginx-root-confusion-xhagents",
+    "category": "devops-vps",
+    "title": "nginx root confusion: /var/www/nomad7 vs /var/www/xhagents-web",
+    "problem": "nginx -T showed root for xhagents.xyz as /var/www/nomad7, not /var/www/xhagents-web as expected. Source Astro project and nginx docroot are separate locations",
+    "solution": "Confirmed nginx -T is authoritative. Source project at /home/ubuntu/xhagents-web (has astro.config.mjs, package.json, .git). Build outputs to /home/ubuntu/xhagents-web/dist/. Deploy workflow: update source -> `npm run build` -> copy dist/ to /var/www/nomad7 (nginx docroot, preserves /trading/). Git init + push Private happens in SOURCE folder (/home/ubuntu/xhagents-web), not docroot. Verified: /var/www/xhagents-web is old stale copy, /var/www/nomad7 is actual docroot",
+    "tags": ["nginx", "astro", "build-deploy", "docroot", "git-workflow"],
+    "date_solved": "2026-09-16",
+    "source_file": "addendum-NOTE71-20260916c-nginx-root-confusion.md"
+  },
+  {
+    "id": "favicon-adorder-wiring-fix",
+    "category": "devops-vps",
+    "title": "Favicon missing + ad-order Submit button only reloads page",
+    "problem": "1. No favicon on xhagents.xyz. 2. ad-order.astro Submit button had no form action, just reloaded page",
+    "solution": "1. Added public/favicon.svg (placeholder) + link tag in Layout.astro. 2. Fixed src/pages/ad-order.astro: form now POSTs to /api/ad-order with correct schema from Hermes (size, network, email, etc). Added result panel showing order_id, treasury address, amount, memo, Complete Payment button if pay_url exists. 3. Updated src/data/exhibition.js adding 'code' field (728x90 etc) matching backend expectation. Deploy: copy to /var/www/nomad7 + npm run build",
+    "tags": ["favicon", "astro", "form-handling", "ad-engine", "nginx"],
+    "date_solved": "2026-09-17",
+    "source_file": "addendum-NOTE71-20260917-favicon-adorder-fix.md"
+  },
+  {
+    "id": "xh-agents-mcp-server",
+    "category": "ai-infra",
+    "title": "XH Agents MCP server wrapping endpoints as tools for AI agents",
+    "problem": "XH Agents endpoints only accessible via browser/human. Need machine-to-machine interface for other AI agents to interact/transact automatically",
+    "solution": "Built FastMCP server (/home/ubuntu/prpo_ai/xh_mcp/xh_mcp_server.py) with 8 tools: create_ad_order, list_ads, chat_trading, chat_get_invoice, chat_check_balance, get_status, get_markets, raw_http. Resources: xh://status, xh://ads. systemd service xh-mcp (SSE port 8989). nginx location ^~ /mcp/ proxy to 8989 with critical fix: `proxy_set_header Host 127.0.0.1:8989` (uvicorn 0.53 rejects Host != socket). Verified: tools/list=8, create_ad_order->200, chat_check_balance->200, GET /mcp/sse->200. No secrets in MCP server (calls public endpoints)",
+    "tags": ["mcp", "fastmcp", "ai-agents", "sse", "nginx-proxy", "x402"],
+    "date_solved": "2026-09-19",
+    "source_file": "addendum-NOTE71-20260919-xh-mcp.md"
+  },
+  {
+    "id": "xhokaya-monetag-install",
+    "category": "content-automation",
+    "title": "Install Monetag publisher ads on Xhokaya static site",
+    "problem": "Xhokaya (Shopee affiliate static site) needed publisher ad revenue via Monetag alongside affiliate commissions",
+    "solution": "Installed 3 components on /var/www/xhokaya/: 1. /sw.js service worker (domain 5gvci.com, zoneId 11834752, imports https://5gvci.com/act/files/service-worker.min.js?r=sw). 2. Head tag: `<script src=\"https://quge5.com/88/tag.min.js\" data-zone=\"282795\" async data-cfasync=\"false\"></script>`. 3. JS registration: `navigator.serviceWorker.register('/sw.js', {scope:'/'})`. Replaced old sw.js (zoneId 11834683, domain 3nbf4.com). Backups kept. Verified Monetag dashboard shows 'installed correctly'",
+    "tags": ["monetag", "service-worker", "publisher-ads", "static-site", "affiliate"],
+    "date_solved": "2026-09-19",
+    "source_file": "addendum-NOTE71-20260919-xhokaya-monetag.md"
+  },
+  {
+    "id": "solana-meme-radar-helius-dexscreener",
+    "category": "trading-bots",
+    "title": "Solana Meme Radar prototype with Helius webhook + DexScreener free fallback",
+    "problem": "Need meme token radar without paid Birdeye API. Helius webhook for real-time token events, DexScreener free API for scoring/alerting",
+    "solution": "1. Extracted prototype from gdrive:SolanaMemeRadar/solana_meme_radar.tar.gz.tar to /home/ubuntu/solana-meme-radar/. Stack: FastAPI + Postgres 16 + Redis 7, docker compose port 8002. 2. setup_credentials.sh interactive: POSTGRES_PASSWORD, HELIUS_WEBHOOK_SECRET, DATABASE_URL, HELIUS_WEBHOOK_URL=https://xhagents.xyz/helius/webhook. Auto nginx snippet for webhook. 3. Helius-only mode: REQUIRE_BIRDEYE_FOR_LIVE=false, DISCOVERY_ENABLED=false. Provisioned Helius webhook ID 511b69bf-59c0-4d94-b762-96aa2d8f6749. 4. Created app/dexscreener.py reusing logic from mcp_sniper/screener.py: fetch_dexscreener_pair(mint) -> parse_pair() mapping fdv/liq/vol/tx/age. 5. Engine rewrite: analyze_token_dexscreener() with 7 signals (volume_breakout, momentum, new_listing_momentum, pump_alert, mean_reversion, steady_growth, high_activity). Router uses Birdeye if key exists, else DexScreener free. 6. DB JSON fix: asyncpg DataError fixed with json.dumps() for jsonb columns. 7. Telegram bot switched to N0xte70 (mmx3prpo_bot). Threshold retuned from 78 to 60 for DexScreener free path. Verified: webhook accepted, health/ready 200, manual alert sent to Telegram",
+    "tags": ["helius", "dexscreener", "webhook", "fastapi", "postgres", "telegram", "solana", "meme-tokens"],
+    "date_solved": "2026-09-03",
+    "source_file": "addendum-NOTE71-20260915-ataraxia-hedera-monetization.md"
+  },
+  {
+    "id": "auto-sniper-bug-fixes-documented",
+    "category": "trading-bots",
+    "title": "Auto-sniper 3 critical bugs fixed but held for explicit Boss approval",
+    "problem": "auto_sniper had 3 bugs: 1) Fake safety check - claimed honeypot/rug/liquidity-lock checks but only checked DEXScreener liquidity. 2) Position accounting bug - monitor_positions() didn't check close_position() return; failed sells marked position closed while token still in wallet. 3) Fee economics broken - TP 2.5% on $5 position (~$0.125) < priority fee (~$0.14), no circuit breaker",
+    "solution": "Created 3 new modules (NOT yet applied to production): safety_checks.py (real mint/freeze authority checks, holder concentration), risk_manager.py (position sizing, fee-aware TP/SL, circuit breakers), position_manager.py (atomic open/close with return value verification, state persistence). README_INTEGRATION.md documents integration. Files saved to gdrive:SolanaMemeRadar/ for reference. INSTRUCTION: Do NOT apply to /home/ubuntu/prpo_ai/auto_sniper/sniper.py or restart auto_sniper until explicit Boss instruction",
+    "tags": ["sniper-bot", "safety-checks", "risk-management", "position-accounting", "jupiter", "circuit-breaker"],
+    "date_solved": "2026-09-03",
+    "source_file": "addendum-NOTE71-20260915-ataraxia-hedera-monetization.md"
+  },
+  {
+    "id": "cdp-onramp-rejected-pivot-x402",
+    "category": "payments-x402",
+    "title": "Coinbase CDP Onramp application rejected, pivot to x402 pay-per-message + direct USDC",
+    "problem": "Coinbase rejected Onramp/Offramp application: 'project did not meet specific compliance requirements' (XH Agents = ad marketplace without KYC). Onramp endpoint built but non-functional",
+    "solution": "1. Kept /api/onramp endpoint + button placeholder (harmless) but marked NON-ACTIVE. 2. Pivot monetization to: (a) x402 pay-per-message on trading assistant (/api/chat/invoice + X-Payment gate) - LIVE, $0.10 USDC Base per message. (b) Ad engine direct USDC - advertisers with USDC pay directly to treasury (already live, polling detect-payment). 3. Future: reapply after KYB/Business verification + KYC advertiser + proper terms/privacy. 4. Verified live: POST /api/chat/invoice -> 402 with nonce, payout 0x6cb53f...ed0, USDC Base 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913, amount_atomic 100000. POST /api/chat with X-Payment -> verify USDC on Base -> reply served",
+    "tags": ["cdp", "onramp", "compliance", "x402", "pay-per-message", "usdc-base", "pivot"],
+    "date_solved": "2026-09-18",
+    "source_file": "addendum-NOTE71-20260917-cdp-integration-prototype.md"
+  },
+  {
+    "id": "ad-engine-contentlength-fix",
+    "category": "ai-infra",
+    "title": "ad_engine.py /api/* endpoints hanging - missing Content-Length + Connection:close",
+    "problem": "All /api/* endpoints on ad_engine.py (port 8000) were hanging indefinitely",
+    "solution": "Fixed _j() helper function in ad_engine.py to send Content-Length header + Connection:close. This ensures proper HTTP response termination. Restarted systemd xh-adengine. POST /api/ad-order now completes in ~5s (2 synchronous emails). Verified all /api/* endpoints responsive",
+    "tags": ["http", "content-length", "connection-close", "ad-engine", "hanging-fix"],
+    "date_solved": "2026-09-17",
+    "source_file": "addendum-NOTE71-20260917-cdp-integration-prototype.md"
+  },
+  {
+    "id": "x402-pay-per-message-chat-engine",
+    "category": "payments-x402",
+    "title": "Implement x402 pay-per-message on trading assistant chat engine",
+    "problem": "Trading assistant chat was free. Need monetization via x402 USDC per message ($0.10)",
+    "solution": "Modified chat_engine.py: added /api/chat/invoice endpoint returning 402 with x402 payment requirements (nonce, payout address 0x6cb53f...ed0, USDC Base 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913, amount_atomic 100000). Added X-Payment header verification on /api/chat using x402_lib (tested on b0x402). Verified: invoice returns 402, payment with valid X-Payment -> reply served, insufficient balance -> clear error. nginx exact-match location = /api/chat/invoice -> :8001. Backup: chat_engine.py.bak.20260918_x402. Treasury unified to 0x6cb5...ed0",
+    "tags": ["x402", "pay-per-message", "usdc-base", "chat-engine", "nonce", "x402-lib"],
+    "date_solved": "2026-09-18",
+    "source_file": "addendum-NOTE71-20260917-cdp-integration-prototype.md"
+  }
+]

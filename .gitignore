@@ -13,3 +13,36 @@ node_modules/
 # OS
 .DS_Store
 Thumbs.db
+# ── added 2026-10-02 before the first real sync (repo is PUBLIC) ──
+# secrets and local state: never publish
+keys/
+*.key
+*.pem
+adengine/.gmail_pass
+*.db
+*.sqlite*
+pending_invoices.json
+# caches and virtualenvs
+__pycache__/
+*.pyc
+.venv/
+venv/
+node_modules/
+.wrangler/
+# local archives, build output, logs
+_archive/
+_build_guide/
+cache/
+logs/
+dist/
+out/
+# nested checkouts of OTHER git repos (each has its own remote)
+b0x402_repo/
+b0x402_repo_mirror/
+b0x402_data/
+BossyFactory/
+*.env
+!*.env.example
+*.log
+*.env.*
+*credentials*

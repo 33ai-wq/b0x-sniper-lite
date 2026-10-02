@@ -1,0 +1,76 @@
+{
+  "date": "2026-10-02",
+  "hours": 24,
+  "treasury": {
+    "hdrs": [
+      {
+        "tx": "0xb05bd66853a616eca70f45f951ed8b00f53162e64170c9b33181e0a8e15e947d",
+        "block": 52021049,
+        "from": "0x85fc53d6a89bf64e563588efc37b12ee89c4e421",
+        "amount_usdc": 0.25
+      },
+      {
+        "tx": "0xb5e10f18e5839a79182ef9c6721aa1cb7496203738ac62e20ac2ab84779cda06",
+        "block": 52021051,
+        "from": "0x85fc53d6a89bf64e563588efc37b12ee89c4e421",
+        "amount_usdc": 0.05
+      },
+      {
+        "tx": "0xf5240656e8328b82d14f64c918b50ca5a5604e61854a02ae3c312f258ae094b7",
+        "block": 52021052,
+        "from": "0x85fc53d6a89bf64e563588efc37b12ee89c4e421",
+        "amount_usdc": 0.05
+      },
+      {
+        "tx": "0x8846c42ebdd914b8bb57f18c6e2ab0f54557f6ff1dc30af94d5d9b45860fbec9",
+        "block": 52043305,
+        "from": "0x7e6b6556322c4e26c567a867964ac793f5ee2b1c",
+        "amount_usdc": 0.03
+      },
+      {
+        "tx": "0x362df8f40c081af5f72c647fc10ca557dd2cd848be0096f7a87bd7f2f55ef1ed",
+        "block": 52062607,
+        "from": "0x85fc53d6a89bf64e563588efc37b12ee89c4e421",
+        "amount_usdc": 0.03
+      }
+    ],
+    "scanned_hours": 24,
+    "revenue_usd": 0.41,
+    "transfers": 5,
+    "senders": {
+      "0x85fc53d6a89bf64e563588efc37b12ee89c4e421": {
+        "usd": 0.38,
+        "label": "our buyer test wallet"
+      },
+      "0x7e6b6556322c4e26c567a867964ac793f5ee2b1c": {
+        "usd": 0.03,
+        "label": "payapi.market canary wallet"
+      }
+    },
+    "error": null,
+    "blocks": {
+      "from": 52019571,
+      "to": 52062771
+    }
+  },
+  "our_stats": {
+    "db": "/home/ubuntu/prpo_ai/xh_api/logs/xh_api.db",
+    "available": true,
+    "requests_24h": 15,
+    "paid_calls_24h": 1,
+    "revenue_usd_24h_proxy": 0.03,
+    "by_route_status": {
+      "POST /company-enrich 402": 2,
+      "POST /daily-drop 200": 1,
+      "POST /daily-drop 402": 3,
+      "POST /defi-sentiment 402": 2,
+      "POST /social-data 402": 1,
+      "POST /whale-watch 402": 1,
+      "POST /x402-directory 402": 1,
+      "POST /xh-bundle 402": 2
+    },
+    "revenue_note": "proxy = sum of the quoted price on calls that returned 200; the on-chain treasury scan in `treasury` is the source of truth"
+  },
+  "payers_not_ours_usd": 0,
+  "target_usd_day": 1.0
+}

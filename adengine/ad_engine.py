@@ -13,7 +13,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from urllib.parse import urlparse, parse_qs
 import requests
 
-ROOT = "/var/www/nomad7"
+ROOT = "/var/www/xhagents-www"  # renamed from /var/www/nomad7 (2026-09-23)
 DB = os.path.join(os.path.dirname(__file__), "ads.db")
 ADS_JSON = os.path.join(os.path.dirname(__file__), "ads.json")
 PORT = 8000

@@ -1,0 +1,97 @@
+import { createPublicClient, createWalletClient, http } from "viem";
+import { privateKeyToAccount } from "viem/accounts";
+import { LITVM_TESTNET } from "@/lib/config";
+import { LITCOUNT_POOL_ABI } from "@/lib/abi";
+
+const POOL_ADDRESS = "0x437F3401e3C45fe385873D3Cf5651D403ECADeE4" as `0x${string}`;
+const RPC_URL      = "https://liteforge.rpc.caldera.xyz/http";
+const CHAIN        = LITVM_TESTNET as any;
+
+export async function GET(request: Request) {
+  const auth = request.headers.get("authorization");
+  if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
+    return Response.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  try {
+    const account = privateKeyToAccount(
+      process.env.DEPLOYER_PRIVATE_KEY as `0x${string}`
+    );
+
+    const publicClient = createPublicClient({
+      chain: CHAIN,
+      transport: http(RPC_URL),
+    });
+
+    const walletClient = createWalletClient({
+      account,
+      chain: CHAIN,
+      transport: http(RPC_URL),
+    });
+
+    // Read pool status using getCurrentRoundInfo
+    const status = await publicClient.readContract({
+      address: POOL_ADDRESS,
+      abi: LITCOUNT_POOL_ABI,
+      functionName: "getCurrentRoundInfo",
+    }) as any;
+
+    const timeLeft = Number(status[5]); // timeUntilDraw
+    const inDraw   = Boolean(status[4]); // inDrawPhase
+    const count    = Number(status[2]); // userCount
+
+    console.log(`timeLeft=${timeLeft} inDraw=${inDraw} count=${count}`);
+
+    // Pool expired (21 hours elapsed) and not in draw phase -> trigger draw
+    if (timeLeft === 0 && !inDraw) {
+      const hash = await walletClient.writeContract({
+        address: POOL_ADDRESS,
+        abi: LITCOUNT_POOL_ABI,
+        functionName: "triggerDrawPhase",
+        chain: CHAIN,
+        account,
+      });
+      return Response.json({ action: "triggerDrawPhase", participants: count, hash });
+    }
+
+    // In draw phase
+    if (inDraw) {
+      const drawLeft = await publicClient.readContract({
+        address: POOL_ADDRESS,
+        abi: LITCOUNT_POOL_ABI,
+        functionName: "getDrawPhaseTimeLeft",
+      }) as bigint;
+
+      if (Number(drawLeft) > 0) {
+        const hash = await walletClient.writeContract({
+          address: POOL_ADDRESS,
+          abi: LITCOUNT_POOL_ABI,
+          functionName: "executeDraw",
+          chain: CHAIN,
+          account,
+        });
+        return Response.json({ action: "executeDraw", participants: count, hash });
+      } else {
+        const hash = await walletClient.writeContract({
+          address: POOL_ADDRESS,
+          abi: LITCOUNT_POOL_ABI,
+          functionName: "forceReset" as any,
+          chain: CHAIN,
+          account,
+        });
+        return Response.json({ action: "forceReset", participants: count, hash });
+      }
+    }
+
+    return Response.json({
+      action: "none",
+      message: "Pool still running",
+      timeLeft,
+      participants: count,
+    });
+
+  } catch (error: any) {
+    console.error("Cron error:", error);
+    return Response.json({ error: error.message }, { status: 500 });
+  }
+}

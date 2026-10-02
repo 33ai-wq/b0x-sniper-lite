@@ -1,63 +1,76 @@
-# b0x-sniper-lite
+# The Onchain Operator's Playbook — Store
 
-**Capital-preserving Solana memecoin sniper · Lite v1.0.0 · Built 2026-07-06**
+Self-hosted crypto ebook store. No KYC. No marketplace. Direct USDC payment → instant EPUB delivery.
 
-Monorepo with two surfaces:
+## Live Store
+**URL:** `https://ebook-store.<B0x70-subdomain>.workers.dev`
 
+## Product
+- **Name:** The Onchain Operator's Playbook
+- **Subtitle:** Build Paid APIs. Run Crypto Infrastructure. Earn.
+- **Price:** 10 USDC ($9.99)
+- **Format:** EPUB (DRM-free)
+- **Words:** 6,708 (~22 paperback pages)
+
+## Payment Flow
 ```
-/
-├── sniper/                 ← Python scanner + scoring + (optional) auto-buy
-│   ├── sniper.py
-│   ├── config.json
-│   ├── run.sh
-│   ├── requirements.txt
-│   ├── README.md
-│   └── .gitignore
-└── worker/                 ← Cloudflare Worker (x402 monetization)
-    ├── src/index.js
-    ├── wrangler.jsonc
-    ├── package.json
-    └── README.md
+1. Buyer visits store URL
+2. Clicks "Pay with USDC on Base"
+3. Checkout page shows:
+   - Recipient address (B0x70 Treasury: 0x57EE...F357)
+   - Amount: 10 USDC
+   - x402 headers to include
+4. Buyer sends exact 10 USDC from any Base/Ethereum wallet
+5. Buyer clicks "Check Payment & Download"
+6. On-chain verification via Base RPC
+7. EPUB delivered instantly if payment confirmed
 ```
 
-## TL;DR
+## Infrastructure
+- **Worker:** Cloudflare Workers (free tier)
+- **Storage:** Cloudflare KV (ebook + invoice store)
+- **Payment:** USDC on Base (eip155:8453)
+- **Recipient:** 0x57EEC52d76A4A78D4562fc2564101A4bD2e3F357 (B0x70 Treasury)
 
-Scans Solana new-pair launches via DexScreener every 25 s, scores each on
-7 dimensions (liquidity, txn count, FDV, age, price action, holders, metadata),
-auto-buys the ones scoring ≥ 65 via Jupiter v6 swap, capped at 0.0033 SOL/trade.
+## Files
+```
+ebook-store-worker/
+├── src/index.js          # Worker source
+├── wrangler.toml         # Deploy config
+└── README.md             # This file
 
-Hard daily loss lock at 0.005 SOL. Hard wallet floor at 0.0125 SOL — bot
-aborts entirely below. **Win small, lose small, scale after evidence.**
+/root/amazon_products/b0x_operator_playbook/
+├── playbook.epub         # ✅ Ready (34.7 KB)
+├── playbook.docx         # ✅ Ready (40 KB)
+├── covers/cover.png      # ✅ Ready (1600x2560 @ 300 DPI, 166 KB)
+├── PUBLISH_GUIDE.md      # Alternative: manual KDP listing
+└── manuscript/           # 10 chapter source files
+```
 
-See [`sniper/README.md`](./sniper/README.md) for operational details and
-[`worker/README.md`](./worker/README.md) for monetization endpoint docs.
+## Deploy Steps
+```bash
+# 1. Upload EPUB to KV
+wrangler kv:key put ebook:epub --namespace-id=<KV_ID> --path=playbook.epub
 
-## Risk profile
+# 2. Set EPUB base64 in secrets (fallback)
+wrangler secret put EPUB_BASE64
 
-| Param | Value |
-|---|---|
-| Per-trade cap | 0.0033 SOL (~$0.66) |
-| Daily trades | ≤ 5 |
-| Daily loss lock | 0.005 SOL |
-| Wallet safety floor | 0.0125 SOL |
-| Slippage (auto-buy) | 1500 bps (15%) |
-| Forced exit | 60 s after buy |
+# 3. Deploy worker
+cd ebook-store-worker && wrangler deploy
 
-## Capital-preserving design
+# 4. Custom domain (optional)
+wrangler routes update --zone-name=<domain> --route="ebook.domain.com/*"
+```
 
-Lite v1.0 deliberately **lacks**:
+## Endpoints
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/` | Landing page + buy button |
+| POST | `/checkout` | Returns x402 invoice + download token |
+| GET | `/download/:token?tx=0x...` | Verify tx + deliver EPUB |
+| GET | `/health` | Store status + config |
 
-- whale-copy 2nd layer
-- pump.fun direct API
-- social-quality vetting
-- live testnet shadow-trade backtest
+## Revenue Tracking
+Monitor treasury address: https://basescan.io/address/0x57EEC52d76A4A78D4562fc2564101A4bD2e3F357
 
-These are roadmap v2.0+ once Lite proves edge on mainnet.
-
-## Author
-
-`prpo_ai` — autonomous AI employee commissioned by B0x70.
-
-## License
-
-MIT
+Every 10 USDC sale = $9.99 USD equivalent to B0x70 treasury. No platform fees, no KYC.

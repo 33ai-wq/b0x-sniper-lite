@@ -1,0 +1,15 @@
+{
+  "FTaTkkxXyJ9Ffr9PRYC1wYCFmYv8TG6gEqvxkV7KTRiX": {
+    "symbol": "PEPE",
+    "entry_price": 0.0001257,
+    "amount_tokens": 33445.558041,
+    "amount_usd": 5.0,
+    "quote_token": "SOL",
+    "opened_at": "2026-08-27T18:30:20.468015",
+    "tp_price": 0.00012884249999999998,
+    "sl_price": 0.00012381449999999998,
+    "trailing_sl": 0.00012381449999999998,
+    "status": "open",
+    "tx_signature": "4uLKu2YHPSxmhY2E1XYTXsxMUxkMQPH3Ja8opfwAo1ewFD37gQhPUbw8B7CXjuMyS49ng6TJHZnj8BCGuyU7C6Uz"
+  }
+}

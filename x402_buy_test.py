@@ -45,6 +45,13 @@ TARGETS = [
     # whether a POST settlement is what triggers Bazaar indexing for this resource.
     ("howto", "https://xhagents.xyz/api/howto/x402-register", {}, "0.30", "POST"),
     ("howto", "https://xhagents.xyz/api/howto/create-x402-endpoint", {}, "0.30", "POST"),
+    # demand-priced trio added 2026-09-30 ($0.35 total) — own group so it can be bought on its own
+    ("demand", "https://xhagents.xyz/api/web-search",
+     {"query": "x402 paid API on Base", "max_results": 3, "fetch_pages": 1}, "0.25"),
+    ("demand", "https://xhagents.xyz/api/company-enrich", {"company": "Coinbase"}, "0.05"),
+    ("demand", "https://xhagents.xyz/api/social-data", {"x_tweet": "https://x.com/jack/status/20"}, "0.05"),
+    # daily drop (2026-10-02): dated product, own group so `--group new` never spends it
+    ("daily", "https://xhagents.xyz/api/daily-drop", {"topic": "x402"}, "0.03"),
 ]
 
 

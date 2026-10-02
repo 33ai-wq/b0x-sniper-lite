@@ -1,0 +1,285 @@
+#!/usr/bin/env python3
+"""
+KB API Server for XH Agents
+Serves knowledge base entries from kb_seed.json
+Port: 8990
+"""
+
+import json
+import os
+from pathlib import Path
+from typing import Optional
+
+from fastapi import FastAPI, HTTPException, Query, Request, Header
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel
+
+# Add x402_lib to path
+import sys
+sys.path.insert(0, "/home/ubuntu/prpo_ai")
+from x402_lib import get_manager, verify_usdc_settlement
+
+KB_PATH = Path(__file__).parent / "kb_seed.json"
+
+# Load KB at startup
+with KB_PATH.open("r", encoding="utf-8") as f:
+    KB_DATA: list[dict] = json.load(f)
+
+# Build indexes
+KB_BY_ID = {e["id"]: e for e in KB_DATA}
+CATEGORIES = {}
+for e in KB_DATA:
+    cat = e["category"]
+    CATEGORIES[cat] = CATEGORIES.get(cat, 0) + 1
+
+# x402 config
+TREASURY_BASE = "0x6cb53f00a586f7704e1f7121c2e397b579eb3ed0"
+USDC_BASE = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
+ASK_PRICE_USDC = 0.03
+ASK_PRICE_ATOMIC = int(ASK_PRICE_USDC * 1_000_000)
+CHAIN_ID = 8453  # Base mainnet
+
+app = FastAPI(title="XH Agents KB API", version="1.0.0")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["*"],
+)
+
+
+class KBEntry(BaseModel):
+    id: str
+    category: str
+    title: str
+    problem: str
+    solution: str
+    tags: list[str]
+    date_solved: str
+    source_file: str
+
+
+class KBListItem(BaseModel):
+    id: str
+    title: str
+    category: str
+
+
+class AskRequest(BaseModel):
+    question: str
+
+
+class AskResponse(BaseModel):
+    question: str
+    matches: list[KBListItem]
+    best_match: Optional[KBEntry] = None
+
+
+def find_best_match(question: str) -> tuple[list[KBListItem], Optional[KBEntry]]:
+    """Find best matching KB entries for a question"""
+    ql = question.lower()
+    scored = []
+    
+    for e in KB_DATA:
+        score = 0
+        title_l = e["title"].lower()
+        problem_l = e["problem"].lower()
+        
+        # Score: title match > problem match > tag match
+        for word in ql.split():
+            if word in title_l:
+                score += 3
+            if word in problem_l:
+                score += 2
+            if any(word in tag.lower() for tag in e["tags"]):
+                score += 1
+        
+        if score > 0:
+            scored.append((score, e))
+    
+    scored.sort(key=lambda x: x[0], reverse=True)
+    
+    top_items = [KBListItem(id=e["id"], title=e["title"], category=e["category"]) 
+                 for _, e in scored[:3]]
+    best = scored[0][1] if scored else None
+    
+    return top_items, best
+
+
+async def check_x402_payment(
+    request: Request,
+    x_payment: Optional[str] = Header(None, alias="X-Payment")
+) -> tuple[bool, Optional[dict]]:
+    """Verify x402 payment from X-Payment header"""
+    if not x_payment:
+        return False, None
+    
+    # Parse X-Payment header: tx_hash=<hash>,nonce=<nonce>
+    parsed = {}
+    for chunk in x_payment.split(","):
+        chunk = chunk.strip()
+        if "=" in chunk:
+            k, v = chunk.split("=", 1)
+            parsed[k.strip()] = v.strip()
+    
+    tx_hash = parsed.get("tx_hash", "")
+    nonce = parsed.get("nonce", "")
+    
+    if not tx_hash or not nonce:
+        return False, None
+    
+    inv = get_manager().get(nonce)
+    if inv is None:
+        return False, None
+    
+    if inv.is_expired():
+        return False, None
+    
+    ok, reason = verify_usdc_settlement(
+        tx_hash=tx_hash,
+        expected_recipient=inv.address,
+        expected_amount_atomic=inv.amount_atomic,
+        expected_token=inv.token,
+    )
+    
+    if not ok:
+        return False, None
+    
+    ok2, reason2, _pop = get_manager().verify_and_pop(nonce, tx_hash)
+    if not ok2:
+        return False, None
+    
+    return True, {"tx_hash": tx_hash, "nonce": nonce}
+
+
+@app.get("/health")
+async def health():
+    return {"ok": True, "entries": len(KB_DATA), "categories": len(CATEGORIES)}
+
+
+@app.get("/", response_model=list[KBListItem])
+async def list_kb():
+    """List all entries (summary: id, title, category)"""
+    return [KBListItem(id=e["id"], title=e["title"], category=e["category"]) for e in KB_DATA]
+
+
+@app.get("/categories")
+async def list_categories():
+    """List all categories with entry counts"""
+    return {"categories": [{"name": k, "count": v} for k, v in sorted(CATEGORIES.items())]}
+
+
+@app.get("/categories/{category}", response_model=list[KBListItem])
+async def get_by_category(category: str):
+    """Get all entries in a category"""
+    if category not in CATEGORIES:
+        raise HTTPException(status_code=404, detail="Category not found")
+    return [
+        KBListItem(id=e["id"], title=e["title"], category=e["category"])
+        for e in KB_DATA if e["category"] == category
+    ]
+
+
+@app.get("/search", response_model=list[KBListItem])
+async def search_kb(q: str = Query(..., min_length=1)):
+    """Search entries by title, problem, or tags (substring match)"""
+    ql = q.lower()
+    results = []
+    for e in KB_DATA:
+        if (
+            ql in e["title"].lower()
+            or ql in e["problem"].lower()
+            or any(ql in tag.lower() for tag in e["tags"])
+        ):
+            results.append(KBListItem(id=e["id"], title=e["title"], category=e["category"]))
+    return results
+
+
+@app.post("/ask", response_model=AskResponse)
+async def ask_kb(
+    request: Request,
+    ask_req: AskRequest,
+    x_payment: Optional[str] = Header(None, alias="X-Payment")
+):
+    """
+    Ask KB a question - returns best matching entry.
+    Requires x402 payment: $0.03 USDC on Base.
+    Send X-Payment header with tx_hash and nonce.
+    """
+    # Check x402 payment
+    paid, payment_info = await check_x402_payment(request, x_payment)
+    
+    if not paid:
+        # Issue invoice
+        inv = get_manager().issue(
+            seller_address=TREASURY_BASE,
+            amount_atomic=ASK_PRICE_ATOMIC,
+            token=USDC_BASE,
+            chain_id=CHAIN_ID,
+            endpoint="/api/kb/ask",
+        )
+        
+        return JSONResponse(
+            status_code=402,
+            content={
+                "error": "payment_required",
+                "message": f"x402 payment required. Transfer {ASK_PRICE_USDC} USDC on Base to {TREASURY_BASE} then retry with X-Payment header.",
+                "nonce": inv.nonce,
+                "payout_address": inv.address,
+                "chain_id": inv.chain_id,
+                "token": inv.token,
+                "amount_atomic": inv.amount_atomic,
+                "amount_usdc": ASK_PRICE_USDC,
+                "expires_at": int(inv.expires_at),
+                "how_to_pay": (
+                    f"Transfer >= {ASK_PRICE_USDC} USDC to {inv.address} on Base "
+                    f"(chain {CHAIN_ID}), then re-request /api/kb/ask with header "
+                    f"X-Payment: tx_hash=<tx_hash>,nonce={inv.nonce}"
+                ),
+            }
+        )
+    
+    # Payment verified, process question
+    matches, best = find_best_match(ask_req.question)
+    
+    return AskResponse(
+        question=ask_req.question,
+        matches=matches,
+        best_match=best
+    )
+
+
+@app.post("/invoice")
+async def get_invoice():
+    """Get x402 invoice for /api/kb/ask ($0.03 USDC Base)"""
+    inv = get_manager().issue(
+        seller_address=TREASURY_BASE,
+        amount_atomic=ASK_PRICE_ATOMIC,
+        token=USDC_BASE,
+        chain_id=CHAIN_ID,
+        endpoint="/api/kb/ask",
+    )
+    return {
+        "nonce": inv.nonce,
+        "payout_address": inv.address,
+        "chain_id": inv.chain_id,
+        "token": inv.token,
+        "amount_atomic": inv.amount_atomic,
+        "amount_usdc": ASK_PRICE_USDC,
+        "expires_at": int(inv.expires_at),
+    }
+
+
+@app.get("/{entry_id}", response_model=KBEntry)
+async def get_kb(entry_id: str):
+    """Get full entry by ID"""
+    if entry_id not in KB_BY_ID:
+        raise HTTPException(status_code=404, detail="Entry not found")
+    return KB_BY_ID[entry_id]
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="127.0.0.1", port=8990)

@@ -1,0 +1,41 @@
+{
+  "treasury": {
+    "nomad7": {
+      "evm": {
+        "address": "0x57EEC52d76A4A78D4562fc2564101A4bD2e3F357",
+        "chain": "Base (eip155:8453)",
+        "asset": "USDC",
+        "asset_contract": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+        "status": "active",
+        "used_by": [
+          "b0x402-base-worker",
+          "b0x402-data-cf-worker",
+          "base-x402-worker"
+        ]
+      },
+      "solana": {
+        "address": "GhFbGgNxERN6pQ7boSFLFJuPwXJuvJ8Tx7EgoJ9LV2Aw",
+        "chain": "Solana mainnet-beta",
+        "asset": "USDC",
+        "asset_mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+        "status": "active",
+        "used_by": [
+          "solana-x402-worker"
+        ]
+      },
+      "deprecated": {
+        "address": "0x0c3dc9eca78D2F245c0d7e30620d80EAF0caDF47",
+        "note": "DO NOT USE — retired 2026-08-03"
+      }
+    },
+    "settlement_summary": {
+      "total_workers": 3,
+      "total_endpoints": 10,
+      "chains": ["Base", "Solana"],
+      "payment_asset": "USDC",
+      "protocol": "x402 V2"
+    }
+  },
+  "last_updated": "2026-08-11",
+  "maintained_by": "Agent Treasury (Hermes)"
+}

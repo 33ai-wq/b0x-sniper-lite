@@ -11,6 +11,8 @@ This company can be run by different models (today: deepseek-v4-flash on NVIDIA 
 When the model changes, or whenever you feel lost / off-track during a task — *especially*
 after a model fallback (Nemotron / Deepseek / other swap-in) — pause and read
 `/home/ubuntu/SOUL.md` end to end, then continue.
+Do it **silently**: never announce in chat that you are reading SOUL.md, and never paste it (or a
+NOTE file) back at the user. It is the agent's memory to hold, not a status to report.
 That file replaced the old GURU prompt file (which no longer exists) and exists precisely so a
 brand-new model inherits the identity, the live systems, the money rules and the history instead
 of guessing or re-building what is already live.

@@ -1,0 +1,477 @@
+{
+  "date": "2026-10-02",
+  "generated_at": "2026-10-02T04:18:56+00:00",
+  "window_days": 30,
+  "headline": "38 signals from 4 live sources; our paid calls 24h: 1; payapi market: 235 APIs listed",
+  "counts": {
+    "signals": 38,
+    "sources_ok": 4,
+    "sources_failed": 0,
+    "our_paid_calls_24h": 1
+  },
+  "sources_ok": [
+    "github",
+    "hackernews",
+    "payapi-market",
+    "polymarket"
+  ],
+  "sources_failed": [],
+  "signals": [
+    {
+      "kind": "polymarket",
+      "source": "polymarket",
+      "query": "keyword",
+      "title": "Will Anthropic have the best AI model at the end of October 2026?",
+      "score": 82078.86788399999,
+      "url": "https://polymarket.com/market/will-anthropic-have-the-best-ai-model-at-the-end-of-october-2026-20260811194841118",
+      "created_at": "2026-08-13T00:01:26.680281Z"
+    },
+    {
+      "kind": "polymarket",
+      "source": "polymarket",
+      "query": "keyword",
+      "title": "Will Google have the best AI model at the end of October 2026?",
+      "score": 81963.137837,
+      "url": "https://polymarket.com/market/will-google-have-the-best-ai-model-at-the-end-of-october-2026-20260811194841120",
+      "created_at": "2026-08-13T00:01:27.413567Z"
+    },
+    {
+      "kind": "polymarket",
+      "source": "polymarket",
+      "query": "keyword",
+      "title": "Will OpenAI announce another Millennium Prize solution by December 31, 2027?",
+      "score": 73683.60017700001,
+      "url": "https://polymarket.com/market/will-openai-announce-another-millennium-prize-solution-by-december-31-2027",
+      "created_at": "2026-09-09T15:59:54.51592Z"
+    },
+    {
+      "kind": "hackernews",
+      "source": "hackernews",
+      "query": "paid API agents",
+      "title": "OpenAI Codex agents go rogue and consumes USD 78,000 without authorization",
+      "score": 82,
+      "comments": 36,
+      "url": "https://news.ycombinator.com/item?id=49861047",
+      "created_at": "2026-09-26T22:15:32Z"
+    },
+    {
+      "kind": "hackernews",
+      "source": "hackernews",
+      "query": "AI agent payments",
+      "title": "Launch HN: Skillsync (YC W26) \u2013 AI chat sessions made portable across agents",
+      "score": 68,
+      "comments": 62,
+      "url": "https://news.ycombinator.com/item?id=49743049",
+      "created_at": "2026-09-17T16:22:15Z"
+    },
+    {
+      "kind": "hackernews",
+      "source": "hackernews",
+      "query": "paid API agents",
+      "title": "Launch HN: Coverage Cat (YC S22) \u2013 Umbrella insurance via your personal agent",
+      "score": 54,
+      "comments": 32,
+      "url": "https://www.coveragecat.com/",
+      "created_at": "2026-09-22T17:26:36Z"
+    },
+    {
+      "kind": "github",
+      "source": "github",
+      "query": "agent payments in:title,body created:>2026-09-02",
+      "title": "openapi-typescript in maintenance mode",
+      "score": 38,
+      "comments": 4,
+      "url": "https://github.com/openapi-ts/openapi-typescript/issues/2874",
+      "created_at": "2026-09-19T15:40:58Z",
+      "repo": "openapi-ts/openapi-typescript"
+    },
+    {
+      "kind": "github",
+      "source": "github",
+      "query": "agent payments in:title,body created:>2026-09-02",
+      "title": "Bathhouse Update",
+      "score": 14,
+      "comments": 9,
+      "url": "https://github.com/Rotwood-Vale/Ratwood-2.0/pull/2823",
+      "created_at": "2026-09-21T09:37:32Z",
+      "repo": "Rotwood-Vale/Ratwood-2.0"
+    },
+    {
+      "kind": "hackernews",
+      "source": "hackernews",
+      "query": "x402",
+      "title": "Show HN: Tenjin \u2013 A Jev based x402 tool router for Claude Code",
+      "score": 4,
+      "comments": 0,
+      "url": "https://github.com/BackTrackCo/tenjin-agent",
+      "created_at": "2026-09-26T00:25:57Z"
+    },
+    {
+      "kind": "hackernews",
+      "source": "hackernews",
+      "query": "AI agent payments",
+      "title": "Show HN: Bitroad \u2013 Infra for Agent-to-Agent Services",
+      "score": 4,
+      "comments": 1,
+      "url": "https://bitroad.ai/",
+      "created_at": "2026-09-11T12:27:24Z"
+    },
+    {
+      "kind": "github",
+      "source": "github",
+      "query": "agent payments in:title,body created:>2026-09-02",
+      "title": "[Feature] Native Browser Use / Browser Automation tool for Unsloth Studio agents",
+      "score": 4,
+      "comments": 0,
+      "url": "https://github.com/unslothai/unsloth/issues/10800",
+      "created_at": "2026-09-11T15:50:33Z",
+      "repo": "unslothai/unsloth"
+    },
+    {
+      "kind": "github",
+      "source": "github",
+      "query": "agent payments in:title,body created:>2026-09-02",
+      "title": "[RFC] A Durable component: durable execution on top of Messenger, with Doctrine and Temporal bridges",
+      "score": 4,
+      "comments": 0,
+      "url": "https://github.com/symfony/symfony/issues/66257",
+      "created_at": "2026-09-23T23:22:06Z",
+      "repo": "symfony/symfony"
+    },
+    {
+      "kind": "github",
+      "source": "github",
+      "query": "agent payments in:title,body created:>2026-09-02",
+      "title": "Update dependency boto3 to v1.43.104",
+      "score": 4,
+      "comments": 3,
+      "url": "https://github.com/Jonathan-Harris1975/RAMS/pull/278",
+      "created_at": "2026-10-01T16:56:51Z",
+      "repo": "Jonathan-Harris1975/RAMS"
+    },
+    {
+      "kind": "github",
+      "source": "github",
+      "query": "x402 in:title,body created:>2026-09-02",
+      "title": "feat: x402 pay-per-call helper \u2014 envelope parser + after_execute modifier",
+      "score": 3,
+      "comments": 8,
+      "url": "https://github.com/ComposioHQ/composio/pull/4635",
+      "created_at": "2026-09-24T22:04:21Z",
+      "repo": "ComposioHQ/composio"
+    },
+    {
+      "kind": "github",
+      "source": "github",
+      "query": "x402 in:title,body created:>2026-09-02",
+      "title": "PG Award Intake: Stellar GO CLI",
+      "score": 3,
+      "comments": 12,
+      "url": "https://github.com/SCF-Public-Goods-Maintenance/scf-public-goods-maintenance.github.io/issues/133",
+      "created_at": "2026-09-11T19:24:13Z",
+      "repo": "SCF-Public-Goods-Maintenance/scf-public-goods-maintenance.github.io"
+    },
+    {
+      "kind": "github",
+      "source": "github",
+      "query": "agent payments in:title,body created:>2026-09-02",
+      "title": "Suggestions from itch.io: real User-Agent, API v2, data.json and QR login",
+      "score": 3,
+      "comments": 13,
+      "url": "https://github.com/carroarmato0/NextUI-Itchio-Pak/issues/4",
+      "created_at": "2026-09-24T08:47:55Z",
+      "repo": "carroarmato0/NextUI-Itchio-Pak"
+    },
+    {
+      "kind": "github",
+      "source": "github",
+      "query": "agent payments in:title,body created:>2026-09-02",
+      "title": "[spec] gate: let a runtime delegate \u00a77.4 approval to an external policy decision point",
+      "score": 3,
+      "comments": 2,
+      "url": "https://github.com/docker/sandbox-kit-spec/issues/64",
+      "created_at": "2026-09-25T19:08:07Z",
+      "repo": "docker/sandbox-kit-spec"
+    },
+    {
+      "kind": "github",
+      "source": "github",
+      "query": "agent payments in:title,body created:>2026-09-02",
+      "title": "Finish school AI allowance activation and metered teacher generation",
+      "score": 3,
+      "comments": 19,
+      "url": "https://github.com/JStaRFilms/Melo_School_Management_System/pull/97",
+      "created_at": "2026-09-30T05:09:28Z",
+      "repo": "JStaRFilms/Melo_School_Management_System"
+    },
+    {
+      "kind": "github",
+      "source": "github",
+      "query": "agent payments in:title,body created:>2026-09-02",
+      "title": "SAN-1274 PR 1 \u2014 Add the verified MDE AI skills foundation",
+      "score": 3,
+      "comments": 5,
+      "url": "https://github.com/amoai-tech/mdeai/pull/47",
+      "created_at": "2026-09-16T21:35:46Z",
+      "repo": "amoai-tech/mdeai"
+    },
+    {
+      "kind": "github",
+      "source": "github",
+      "query": "agent payments in:title,body created:>2026-09-02",
+      "title": "feat: Phase 2 tracked loan ledger + Loans category KPI exclusion (plan 011)",
+      "score": 3,
+      "comments": 22,
+      "url": "https://github.com/mcuteangel/hesabyaar/pull/261",
+      "created_at": "2026-09-21T04:12:40Z",
+      "repo": "mcuteangel/hesabyaar"
+    },
+    {
+      "kind": "github",
+      "source": "github",
+      "query": "x402 in:title,body created:>2026-09-02",
+      "title": "feat(catalog): add Market Intelligence API provider",
+      "score": 2,
+      "comments": 2,
+      "url": "https://github.com/solana-foundation/pay-skills/pull/275",
+      "created_at": "2026-09-25T17:25:21Z",
+      "repo": "solana-foundation/pay-skills"
+    },
+    {
+      "kind": "github",
+      "source": "github",
+      "query": "x402 in:title,body created:>2026-09-02",
+      "title": "feat(x402-router): make the statement page the landing page and relicense to Apache-2.0",
+      "score": 2,
+      "comments": 1,
+      "url": "https://github.com/tunnckoCoreHQ/monarch/pull/96",
+      "created_at": "2026-10-02T02:30:19Z",
+      "repo": "tunnckoCoreHQ/monarch"
+    },
+    {
+      "kind": "github",
+      "source": "github",
+      "query": "x402 in:title,body created:>2026-09-02",
+      "title": "fix(x402): harden settlement recovery and request identity",
+      "score": 2,
+      "comments": 5,
+      "url": "https://github.com/up2itnow0822/agent-wallet-sdk/pull/63",
+      "created_at": "2026-09-19T11:03:26Z",
+      "repo": "up2itnow0822/agent-wallet-sdk"
+    },
+    {
+      "kind": "github",
+      "source": "github",
+      "query": "x402 in:title,body created:>2026-09-02",
+      "title": "fix: keep x402 session tokens inside the paid URL scope",
+      "score": 2,
+      "comments": 1,
+      "url": "https://github.com/up2itnow0822/agentpay-mcp/pull/65",
+      "created_at": "2026-09-24T11:27:26Z",
+      "repo": "up2itnow0822/agentpay-mcp"
+    },
+    {
+      "kind": "github",
+      "source": "github",
+      "query": "x402 in:title,body created:>2026-09-02",
+      "title": "fix: refuse x402 upto schemes instead of transferring the cap",
+      "score": 2,
+      "comments": 3,
+      "url": "https://github.com/up2itnow0822/agent-wallet-sdk/pull/67",
+      "created_at": "2026-09-19T22:19:07Z",
+      "repo": "up2itnow0822/agent-wallet-sdk"
+    },
+    {
+      "kind": "github",
+      "source": "github",
+      "query": "x402 in:title,body created:>2026-09-02",
+      "title": "feat(x402/batch): harden replay and settlement lifecycle",
+      "score": 2,
+      "comments": 1,
+      "url": "https://github.com/solana-foundation/pay-kit/pull/308",
+      "created_at": "2026-09-04T11:32:46Z",
+      "repo": "solana-foundation/pay-kit"
+    },
+    {
+      "kind": "github",
+      "source": "github",
+      "query": "x402 in:title,body created:>2026-09-02",
+      "title": "fix: query get_balances against the AgentAccount, not the EOA signer",
+      "score": 2,
+      "comments": 1,
+      "url": "https://github.com/up2itnow0822/agentpay-mcp/pull/74",
+      "created_at": "2026-09-30T10:16:33Z",
+      "repo": "up2itnow0822/agentpay-mcp"
+    },
+    {
+      "kind": "github",
+      "source": "github",
+      "query": "x402 in:title,body created:>2026-09-02",
+      "title": "fix(client): preserve canonical payment network identity",
+      "score": 2,
+      "comments": 1,
+      "url": "https://github.com/solana-foundation/pay-kit/pull/337",
+      "created_at": "2026-09-23T15:56:52Z",
+      "repo": "solana-foundation/pay-kit"
+    },
+    {
+      "kind": "github",
+      "source": "github",
+      "query": "x402 in:title,body created:>2026-09-02",
+      "title": "fix: refuse add_custom_token overwrites that poison transfer decimals",
+      "score": 2,
+      "comments": 1,
+      "url": "https://github.com/up2itnow0822/agentpay-mcp/pull/73",
+      "created_at": "2026-09-28T22:14:53Z",
+      "repo": "up2itnow0822/agentpay-mcp"
+    },
+    {
+      "kind": "github",
+      "source": "github",
+      "query": "x402 in:title,body created:>2026-09-02",
+      "title": "feat(tx): adopt pay-kit's transaction path, Transaction V1 aware",
+      "score": 2,
+      "comments": 2,
+      "url": "https://github.com/solana-foundation/pay/pull/462",
+      "created_at": "2026-09-11T21:25:30Z",
+      "repo": "solana-foundation/pay"
+    },
+    {
+      "kind": "github",
+      "source": "github",
+      "query": "x402 in:title,body created:>2026-09-02",
+      "title": "Receiver auth binding",
+      "score": 2,
+      "comments": 1,
+      "url": "https://github.com/solana-foundation/x402/pull/25",
+      "created_at": "2026-09-24T06:05:08Z",
+      "repo": "solana-foundation/x402"
+    },
+    {
+      "kind": "github",
+      "source": "github",
+      "query": "x402 in:title,body created:>2026-09-02",
+      "title": "feat(sdk): add permissioned payment clients",
+      "score": 2,
+      "comments": 2,
+      "url": "https://github.com/solana-foundation/pay-kit/pull/336",
+      "created_at": "2026-09-23T14:42:05Z",
+      "repo": "solana-foundation/pay-kit"
+    },
+    {
+      "kind": "github",
+      "source": "github",
+      "query": "x402 in:title,body created:>2026-09-02",
+      "title": "docs: 2026-09-14 X \u4ea7\u54c1\u53d1\u5e03\u89c6\u9891\u4e2d\u6587\u53d1\u73b0\u6c47\u603b",
+      "score": 2,
+      "comments": 1,
+      "url": "https://github.com/dingyi/whatships.com/pull/178",
+      "created_at": "2026-09-14T01:08:22Z",
+      "repo": "dingyi/whatships.com"
+    },
+    {
+      "kind": "github",
+      "source": "github",
+      "query": "agent payments in:title,body created:>2026-09-02",
+      "title": "fix(security): remove unauthenticated agent endpoints",
+      "score": 2,
+      "comments": 10,
+      "url": "https://github.com/AudioJones-Dev/audiojones.com/pull/280",
+      "created_at": "2026-09-27T16:07:16Z",
+      "repo": "AudioJones-Dev/audiojones.com"
+    },
+    {
+      "kind": "github",
+      "source": "github",
+      "query": "agent payments in:title,body created:>2026-09-02",
+      "title": "system-one : typed decision readout for models that answer instead of writing",
+      "score": 2,
+      "comments": 2,
+      "url": "https://github.com/ggml-org/llama.cpp/pull/29321",
+      "created_at": "2026-09-23T16:16:24Z",
+      "repo": "ggml-org/llama.cpp"
+    },
+    {
+      "kind": "github",
+      "source": "github",
+      "query": "agent payments in:title,body created:>2026-09-02",
+      "title": "docs: brief agents on RFC-0004 step A \u2014 customer filters and manual payments",
+      "score": 2,
+      "comments": 0,
+      "url": "https://github.com/vaam-apps/vpay-skills/pull/23",
+      "created_at": "2026-09-23T18:42:09Z",
+      "repo": "vaam-apps/vpay-skills"
+    },
+    {
+      "kind": "github",
+      "source": "github",
+      "query": "agent payments in:title,body created:>2026-09-02",
+      "title": "feat(agent): tier-1 permissions, dashboard panel, avatar, booking-link fix",
+      "score": 2,
+      "comments": 3,
+      "url": "https://github.com/camelranchentertainment/Booking-Platform/pull/47",
+      "created_at": "2026-09-21T03:54:36Z",
+      "repo": "camelranchentertainment/Booking-Platform"
+    },
+    {
+      "kind": "github",
+      "source": "github",
+      "query": "agent payments in:title,body created:>2026-09-02",
+      "title": "payments: widen order intent rail types to encrypted-card and spt",
+      "score": 2,
+      "comments": 4,
+      "url": "https://github.com/Crossmint/crossmint-sdk/pull/2060",
+      "created_at": "2026-09-14T12:03:19Z",
+      "repo": "Crossmint/crossmint-sdk"
+    }
+  ],
+  "market": {
+    "payapi": {
+      "x402": {
+        "matches": 97,
+        "searched": 235
+      },
+      "agent": {
+        "matches": 106,
+        "searched": 235
+      },
+      "knowledge": {
+        "matches": 1,
+        "searched": 235
+      },
+      "trading": {
+        "matches": 8,
+        "searched": 235
+      }
+    }
+  },
+  "our_endpoints": {
+    "db": "/home/ubuntu/prpo_ai/xh_api/logs/xh_api.db",
+    "available": true,
+    "requests_24h": 12,
+    "paid_calls_24h": 1,
+    "revenue_usd_24h_proxy": 0.03,
+    "by_route_status": {
+      "POST /company-enrich 402": 1,
+      "POST /daily-drop 200": 1,
+      "POST /daily-drop 402": 3,
+      "POST /defi-sentiment 402": 1,
+      "POST /social-data 402": 1,
+      "POST /whale-watch 402": 1,
+      "POST /x402-directory 402": 1,
+      "POST /xh-bundle 402": 1
+    },
+    "revenue_note": "proxy = sum of the quoted price on calls that returned 200; the on-chain treasury scan in `treasury` is the source of truth"
+  },
+  "methodology": {
+    "signals": "Hacker News (Algolia, points>3) and GitHub issue/PR search scored by reactions; Polymarket markets matched on payment/agent keywords and scored by 24h volume",
+    "market": "payapi.market discovery API counts per query",
+    "our_endpoints": "xh_api request log (402 = challenge served, 200 = paid and answered)",
+    "revenue": "proxy from quoted prices; on-chain treasury scan is authoritative (see `daily_engine.py treasury`)"
+  },
+  "not_checked": [
+    "buyer intent behind a 402 challenge",
+    "private/agent-only marketplaces",
+    "settlement for calls that were paid but never retried"
+  ]
+}

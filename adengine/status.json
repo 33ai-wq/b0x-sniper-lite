@@ -1,24 +1,24 @@
 {
-  "updatedNote": "Live figures updated 13:54 UTC \u2014 every number below is read from this host or from Base mainnet.",
-  "generatedAt": "2026-09-28T13:54:40.682657+00:00",
+  "updatedNote": "Live figures updated 13:11 UTC \u2014 every number below is read from this host or from Base mainnet.",
+  "generatedAt": "2026-10-02T13:11:02.082643+00:00",
   "groups": [
     {
       "label": "Registered endpoints",
-      "value": 15,
+      "value": 20,
       "detail": "x402scan verified \u00b7 Coinbase Bazaar indexed"
     },
     {
-      "label": "Price per call",
-      "value": "$0.03\u2013$0.91",
-      "detail": "USDC on Base \u00b7 settled per request"
+      "label": "Payment rail",
+      "value": "x402 \u00b7 USDC",
+      "detail": "per call on Base \u00b7 quoted in the 402 challenge"
     },
     {
       "label": "Base mainnet block",
-      "value": "51,907,166",
-      "detail": "read live from Base mainnet at 13:54 UTC"
+      "value": "52,078,657",
+      "detail": "read live from Base mainnet at 13:11 UTC"
     },
     {
-      "label": "Backup hosts",
+      "label": "Secondary hosts",
       "value": 2,
       "detail": "Cloudflare edge + Solana mainnet \u00b7 both answering"
     }

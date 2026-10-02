@@ -45,6 +45,9 @@ SAMPLES = {
     "/api/kb/ask": '{"best_match":{"id":"nginx-docroot","title":"Which docroot does nginx really serve?"},\n "matches":3}',
     "/api/chat": '{"reply":"BTC is trading near …","engine":"xh-chatengine","credits_left":1}',
     "/api/compute/xh-bundle": '{"bundle":"XH Agents — Build & Ship an x402 Paid API","version":"1.0.0",\n "items_total":13,"items_returned":13,\n "items":[{"id":"ship-x402-endpoint","title":"Ship a new x402 paid endpoint end to end"}]}',
+    "/api/web-search": '{"query":"x402 paid API on Base","results_returned":5,"pages_retrieved":3,\n "results":[{"rank":1,"title":"Quickstart for Sellers - x402","domain":"docs.x402.org",\n "url":"https://docs.x402.org/getting-started/quickstart-for-seller",\n "retrieval":{"status":200,"chars_total":8123,"content":"…"}}]}',
+    "/api/company-enrich": '{"query":"Coinbase","sources":["wikidata","linkedin-public","clearbit-autocomplete"],\n "resolved":{"wikidata_id":"Q16972754","industry":["cryptocurrency exchange","fintech"],\n "headquarters":"San Francisco","inception":"2012","stock_exchange":["Nasdaq"]},\n "linkedin":{"company_size":"1,001-5,000 employees","followers":1489647}}',
+    "/api/social-data": '{"sources":["x-syndication","linkedin-public"],\n "x_tweet":{"id":"20","text":"just setting up my twttr","author":{"screen_name":"jack"},\n "metrics":{"likes":310997}},\n "linkedin":{"name":"Coinbase","industry":"Financial Services","headquarters":"Remote First"}}',
 }
 
 BACKUP = [

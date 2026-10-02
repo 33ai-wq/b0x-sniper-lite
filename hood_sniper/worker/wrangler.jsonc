@@ -1,0 +1,22 @@
+{
+  "name": "hood-sniper",
+  "main": "src/index.js",
+  "compatibility_date": "2026-07-16",
+  "workers_dev": true,
+  "vars": {
+    "X402_PAYOUT_ADDRESS": "0x57EEC52d76A4A78D4562fc2564101A4bD2e3F357",
+    "X402_BYPASS": "false",
+    "ARCUS_BASE_URL": "https://api.arcus.xyz",
+    "BLOCKSCOUT_BASE_URL": "https://robinhoodchain.blockscout.com",
+    "ROBIDY_BASE_URL": "https://robidy.app",
+    "RADAR_TTL_SECONDS": "60",
+    "RADAR_FREE_EVENT_LIMIT": "5"
+  },
+  "triggers": [
+    {
+      "name": "radar-cron",
+      "type": "cron",
+      "schedule": "*/5 * * * *"
+    }
+  ]
+}

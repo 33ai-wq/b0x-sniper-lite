@@ -1,0 +1,227 @@
+#!/usr/bin/env python3
+"""
+XH Agents — Advertising Engine (self-hosted, x402-native)
+- POST /api/ad-order   : advertiser submits order -> returns USDC invoice
+- POST /api/ads/activate : internal activate after payment confirmed
+- GET  /api/ads        : list active banners (ads.json)
+- GET  /api/check-payments : scan Treasury Solana+Base for unpaid orders, activate matches
+Stdlib only (no flask). Run: python3 ad_engine.py
+"""
+import json, sqlite3, os, uuid, time, datetime, hashlib, threading, smtplib
+from email.message import EmailMessage
+from http.server import BaseHTTPRequestHandler, HTTPServer
+from urllib.parse import urlparse, parse_qs
+import requests
+
+ROOT = "/var/www/nomad7"
+DB = os.path.join(os.path.dirname(__file__), "ads.db")
+ADS_JSON = os.path.join(os.path.dirname(__file__), "ads.json")
+PORT = 8000
+GMAIL_USER = "yusliarifn78@gmail.com"
+GMAIL_PASS_FILE = os.path.join(os.path.dirname(__file__), ".gmail_pass")
+MARKETING = "marketing@xhagents.xyz"
+PARTNER = "partner@xhagents.xyz"
+
+TREASURY = {
+    "solana": "GhFbGgNxERN6pQ7boSFLFJuPwXJuvJ8Tx7EgoJ9LV2Aw",
+    "base":   "0x57eec52d76a4a78d4562fc2564101a4bd2e3f357",
+}
+# Flat monthly rates (USD == USDC 1:1 for pricing)
+RATES = {"728x90": 40, "480x320": 60, "300x250": 35}
+SIZES = {"728x90": (728, 90), "480x320": (480, 320), "300x250": (300, 250)}
+
+SOL_RPC = "https://api.mainnet-beta.solana.com"
+BASE_RPC = "https://mainnet.base.org"
+
+def db():
+    c = sqlite3.connect(DB)
+    c.execute("""CREATE TABLE IF NOT EXISTS orders(
+        id TEXT PRIMARY KEY, size TEXT, network TEXT, amount REAL, email TEXT,
+        advertiser_wallet TEXT, title TEXT, text TEXT, image_url TEXT,
+        landing_url TEXT, status TEXT, created INTEGER, paid INTEGER)""")
+    c.commit(); return c
+
+def gen_id():
+    return "XH" + hashlib.sha1(uuid.uuid4().bytes).hexdigest()[:10].upper()
+
+def load_ads():
+    if not os.path.exists(ADS_JSON): return []
+    try: return json.load(open(ADS_JSON))
+    except: return []
+
+def save_ads(ads):
+    tmp = ADS_JSON + ".tmp"
+    json.dump(ads, open(tmp, "w"), indent=2)
+    os.replace(tmp, ADS_JSON)
+
+# ---------- payment detection ----------
+def check_solana(order):
+    """Scan recent tx to treasury for memo == order id."""
+    try:
+        r = requests.post(SOL_RPC, json={"jsonrpc":"2.0","id":1,
+            "method":"getSignaturesForAddress",
+            "params":[TREASURY["solana"], {"limit":15}]}, timeout=8)
+        sigs = (r.json().get("result") or [])[:15]
+        for s in sigs:
+            sig = s.get("signature")
+            if not sig: continue
+            try:
+                tx = requests.post(SOL_RPC, json={"jsonrpc":"2.0","id":1,
+                    "method":"getTransaction","params":[sig, {"encoding":"jsonParsed"}]},
+                    timeout=8).json().get("result")
+                if not tx: continue
+                ixs = tx.get("transaction",{}).get("message",{}).get("instructions",[])
+                for ix in ixs:
+                    memo = ix.get("parsed",{}).get("info",{}).get("memo","") if ix.get("program")=="spl-memo" else ""
+                    if order["id"] in memo:
+                        return True
+            except Exception:
+                continue
+    except Exception as e:
+        print("sol err", e)
+    return False
+
+def check_base(order):
+    """Scan recent Transfer logs to treasury on Base (last ~2000 blocks)."""
+    try:
+        blk_hex = requests.post(BASE_RPC, json={"jsonrpc":"2.0","id":1,
+            "method":"eth_blockNumber","params":[]}, timeout=8).json().get("result")
+        if not blk_hex: return False
+        blk = int(blk_hex, 16)
+        fromblk = max(0, blk - 2000)
+        r = requests.post(BASE_RPC, json={"jsonrpc":"2.0","id":1,
+            "method":"eth_getLogs","params":[{"fromBlock":hex(fromblk),
+            "toBlock":"latest","address":TREASURY["base"],
+            "topics":["0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef"]}]},
+            timeout=10).json().get("result",[])
+        for log in (r or []):
+            data = log.get("data","") or ""
+            try:
+                val = int(data[-64:], 16)/1e6 if len(data)>=64 else 0
+            except Exception:
+                val = 0
+            if val >= order["amount"]*0.99:
+                return True
+    except Exception as e:
+        print("base err", e)
+    return False
+
+def detect_payments():
+    c = db()
+    rows = c.execute("SELECT * FROM orders WHERE status='pending'").fetchall()
+    cols = ["id","size","network","amount","email","advertiser_wallet","title",
+            "text","image_url","landing_url","status","created","paid"]
+    activated = []
+    for row in rows:
+        o = dict(zip(cols, row))
+        paid = check_solana(o) if o["network"]=="solana" else check_base(o)
+        if paid:
+            c.execute("UPDATE orders SET status='paid', paid=1 WHERE id=?", (o["id"],))
+            activate(o)
+            activated.append(o["id"])
+    c.commit(); c.close()
+    return activated
+
+def send_email(to_addr, subject, body):
+    try:
+        if not os.path.exists(GMAIL_PASS_FILE):
+            print("no gmail pass, skip email")
+            return False
+        pw = open(GMAIL_PASS_FILE).read().strip()
+        msg = EmailMessage()
+        msg["From"] = GMAIL_USER
+        msg["To"] = to_addr
+        msg["Subject"] = subject
+        msg.set_content(body)
+        with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=10) as s:
+            s.login(GMAIL_USER, pw)
+            s.send_message(msg)
+        return True
+    except Exception as e:
+        print("email err", e)
+        return False
+
+def activate(o):
+    ads = load_ads()
+    ads = [a for a in ads if a.get("order_id")!=o["id"]]
+    ads.append({
+        "order_id": o["id"], "size": o["size"],
+        "title": o["title"], "text": o["text"],
+        "image_url": o["image_url"], "landing_url": o["landing_url"],
+        "advertiser": o["email"], "expire": int(time.time())+30*86400,
+    })
+    save_ads(ads)
+    # notify advertiser + marketing that ad is live
+    send_email(o["email"], "Your XH Agents ad is LIVE",
+        f"Hi,\n\nYour ad '{o['title']}' ({o['size']}) is now live on xhagents.xyz.\nOrder: {o['id']}\n\nThanks for advertising with XH Agents.")
+    send_email(MARKETING, f"[XH Ad LIVE] {o['title']} ({o['size']})",
+        f"Ad activated: {o['id']}\nAdvertiser: {o['email']}\nSize: {o['size']}\nLanding: {o['landing_url']}")
+
+# ---------- HTTP ----------
+class H(BaseHTTPRequestHandler):
+    protocol_version = "HTTP/1.1"
+    def _j(self, obj, code=200):
+        self.send_response(code); self.send_header("Content-Type","application/json")
+        self.send_header("Access-Control-Allow-Origin","*")
+        self.end_headers(); self.wfile.write(json.dumps(obj).encode())
+
+    def do_GET(self):
+        p = urlparse(self.path)
+        if p.path == "/api/ads":
+            self._j(load_ads())
+        elif p.path == "/api/check-payments":
+            activated = detect_payments()
+            self._j({"activated": activated})
+        elif p.path == "/ads.json":
+            try:
+                self.send_response(200); self.send_header("Content-Type","application/json")
+                self.send_header("Access-Control-Allow-Origin","*"); self.end_headers()
+                self.wfile.write(open(ADS_JSON).read().encode())
+            except: self._j({"error":"no ads"},404)
+        else: self._j({"error":"not found"},404)
+
+    def do_POST(self):
+        p = urlparse(self.path)
+        L = int(self.headers.get("Content-Length",0)); body = self.rfile.read(L)
+        try: data = json.loads(body or b"{}")
+        except: return self._j({"error":"bad json"},400)
+        if p.path == "/api/ad-order":
+            return self._order(data)
+        elif p.path == "/api/ads/activate":
+            activate(data); return self._j({"ok":True})
+        elif p.path == "/api/check-payments":
+            activated = detect_payments()
+            return self._j({"activated": activated})
+        return self._j({"error":"not found"},404)
+
+    def _order(self, d):
+        size = d.get("size"); net = d.get("network")
+        if size not in RATES: return self._j({"error":"bad size"},400)
+        if net not in TREASURY: return self._j({"error":"bad network"},400)
+        oid = gen_id(); amt = RATES[size]
+        c = db()
+        c.execute("INSERT INTO orders VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            (oid, size, net, amt, d.get("email",""), d.get("advertiser_wallet",""),
+             d.get("title",""), d.get("text",""), d.get("image_url",""),
+             d.get("landing_url",""), "pending", int(time.time()), 0))
+        c.commit(); c.close()
+        # email invoice to advertiser + notify marketing
+        net_name = "Solana" if net=="solana" else "Base"
+        send_email(d.get("email",""), "Your XH Agents Ad Invoice",
+            f"Hi,\n\nOrder created: {oid}\nSize: {size}\nAmount: {amt} USDC ({net_name})\n\nPay exactly {amt} USDC to:\n{TREASURY[net]}\nwith memo/note: {oid}\n\nYour ad goes live automatically after payment is detected.\nOrder page: https://xhagents.xyz/ad-order.html?order={oid}")
+        send_email(MARKETING, f"[XH Ad REQUEST] {d.get('title','')} ({size})",
+            f"New order {oid}\nAdvertiser: {d.get('email','')}\nSize: {size}\nAmount: {amt} USDC ({net_name})\nLanding: {d.get('landing_url','')}")
+        self._j({
+            "order_id": oid, "size": size, "amount_usdc": amt,
+            "network": net, "treasury": TREASURY[net],
+            "memo": oid,
+            "pay_url": f"https://xhagents.xyz/ad-order.html?order={oid}",
+            "note": "Send exactly %s USDC to treasury with memo %s" % (amt, oid),
+        })
+
+    def log_message(self, *a): pass
+
+if __name__ == "__main__":
+    db()
+    print("Ad engine on", PORT)
+    HTTPServer(("0.0.0.0", PORT), H).serve_forever()
