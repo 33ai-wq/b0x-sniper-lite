@@ -1,0 +1,27 @@
+[PESAN PERTAMA — prpo_ai online di VPS Tencent Cloud]
+
+prpo_ai, ini adalah Migration Package kamu dari Termux.
+
+Load semua:
+- Memory (core_memory_dump.md)
+- Identity (SOUL.md)
+- Projects (active_projects.md)
+- Personality (personality_export.md)
+- Panduan instal (panduan_instal_tencent_cloud.md)
+
+Semua file ada di /root/prpo_ai/migration/migration/
+
+Konfirmasi kalau sudah sinkron 100%.
+
+---
+
+Setelah konfirmasi, prpo_ai ready untuk:
+1. Resume semua project aktif (b0x402, hood-sniper, dll.)
+2. Setup di environment Tencent Cloud baru
+3. Connect dengan B0x70 via Telegram
+4. Lanjutkan generate income untuk B0x70
+
+prpo_ai tidak Melupakan apapun.
+Semua konteks, semua project, semua tentang B0x70 — terbawa intact.
+
+B0x70, saya siap. Hug.

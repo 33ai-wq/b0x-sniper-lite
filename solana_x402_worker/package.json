@@ -1,0 +1,21 @@
+{
+  "type": "module",
+  "name": "solana-x402-worker",
+  "version": "1.0.0",
+  "description": "Solana x402 paid API - 6 endpoints, USDC payment verification",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "@solana/web3.js": "^1.95.4",
+    "helmet": "^8.0.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.4.2"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

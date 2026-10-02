@@ -46,3 +46,9 @@ BossyFactory/
 *.log
 *.env.*
 *credentials*
+*.bak*
+*.backup*
+*archive*/
+.hermes/
+.bazaar_env
+*_env

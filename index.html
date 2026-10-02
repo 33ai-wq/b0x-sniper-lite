@@ -1,0 +1,1574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#ffffff">
+<title>XH Agents — Exhibition Hall Autonomous AI</title>
+<link rel="icon" href="favicon-xh.png" type="image/png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap">
+<style>
+  :root {
+    color-scheme: light;
+
+    --bg-dark: #ffffff;
+    --bg-deep: #f0f4f8;
+    --bg-panel: rgba(245, 249, 252, 0.92);
+    --bg-panel-hover: rgba(235, 242, 248, 0.98);
+    --bg-panel-border: rgba(0, 160, 220, 0.22);
+    --acneon: #0090c8;
+    --accent-glow: #00b4d8;
+    --accent-green: #00a05a;
+    --accent-amber: #d99000;
+    --accent-red: #d83030;
+    --accent-purple: #8a4fff;
+    --text-primary: #0a1626;
+    --text-muted: #4a657f;
+    --text-dim: #7a93a8;
+    --border: rgba(0, 140, 200, 0.18);
+    --radius: 16px;
+    --radius-sm: 10px;
+    --transition: 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    --font-mono: 'JetBrains Mono', 'DejaVu Sans Mono', 'Ubuntu Mono', 'Liberation Mono', monospace;
+    --font-heading: 'Space Grotesk', 'JetBrains Mono', monospace;
+    --max-width: 1400px;
+    --panel-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(0, 200, 255, 0.08), inset 0 1px 0 rgba(255,255,255,0.03);
+    --card-gradient-1: linear-gradient(135deg, rgba(255,255,255,0.08), rgba(0,200,255,0.06));
+    --card-gradient-2: linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,184,0,0.06));
+    --card-gradient-3: linear-gradient(135deg, rgba(255,255,255,0.08), rgba(0,255,136,0.06));
+    --card-gradient-4: linear-gradient(135deg, rgba(255,255,255,0.08), rgba(184,119,255,0.06));
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; background: #ffffff; color-scheme: light; }
+  html, body { background-color: #ffffff !important; }
+
+  body {
+    background: var(--bg-dark);
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+    line-height: 1.65;
+    min-height: 100vh;
+    position: relative;
+    overflow-x: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: -20%;
+    background:
+      radial-gradient(ellipse 600px 400px at 15% 20%, rgba(0, 200, 255, 0.08) 0%, transparent 60%),
+      radial-gradient(ellipse 500px 300px at 85% 80%, rgba(184, 119, 255, 0.06) 0%, transparent 55%),
+      radial-gradient(ellipse 400px 250px at 50% 50%, rgba(0, 229, 255, 0.04) 0%, transparent 50%),
+      radial-gradient(ellipse 300px 200px at 80% 15%, rgba(255, 184, 0, 0.05) 0%, transparent 50%),
+      repeating-linear-gradient(0deg, transparent, transparent 47px, rgba(0, 190, 255, 0.015) 48px),
+      repeating-linear-gradient(90deg, transparent, transparent 47px, rgba(0, 190, 255, 0.015) 48px);
+    pointer-events: none;
+    z-index: 0;
+    animation: meshShift 40s ease-in-out infinite;
+  }
+
+  @keyframes meshShift {
+    0%, 100% { transform: translate(0, 0) scale(1); }
+    25% { transform: translate(-40px, 20px) scale(1.02); }
+    50% { transform: translate(20px, -30px) scale(0.98); }
+    75% { transform: translate(-30px, -15px) scale(1.01); }
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      radial-gradient(2px 2px at 10% 10%, var(--acneon), transparent),
+      radial-gradient(1px 1px at 25% 30%, var(--accent-glow), transparent),
+      radial-gradient(1.5px 1.5px at 40% 60%, var(--accent-green), transparent),
+      radial-gradient(1px 1px at 65% 20%, var(--accent-amber), transparent),
+      radial-gradient(2px 2px at 80% 80%, var(--accent-purple), transparent),
+      radial-gradient(1px 1px at 90% 40%, var(--acneon), transparent),
+      radial-gradient(1.5px 1.5px at 15% 75%, var(--accent-glow), transparent),
+      radial-gradient(1px 1px at 55% 90%, var(--accent-green), transparent),
+      radial-gradient(2px 2px at 35% 40%, var(--accent-purple), transparent),
+      radial-gradient(1px 1px at 70% 65%, var(--accent-amber), transparent);
+    background-repeat: no-repeat;
+    background-size: 100% 100%;
+    pointer-events: none;
+    z-index: 1;
+    opacity: 0.4;
+    animation: particleDrift 60s linear infinite;
+  }
+
+  @keyframes particleDrift {
+    0% { background-position: 0% 0%, 100% 0%, 50% 100%, 0% 50%, 100% 50%, 50% 0%, 0% 100%, 100% 100%, 50% 50%, 0% 0%; }
+    100% { background-position: 100% 100%, 0% 100%, 50% 0%, 100% 50%, 0% 50%, 50% 100%, 100% 0%, 0% 0%, 50% 50%, 100% 100%; }
+  }
+
+  .container {
+    width: 92%;
+    max-width: var(--max-width);
+    margin: 0 auto;
+    position: relative;
+    z-index: 10;
+  }
+
+  header {
+    padding: 1.5rem 0;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: linear-gradient(180deg, rgba(8, 12, 24, 0.98), rgba(8, 12, 24, 0.7));
+    backdrop-filter: blur(20px);
+    z-index: 100;
+  }
+
+  .header-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2rem;
+    flex-wrap: wrap;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    text-decoration: none;
+  }
+
+  .logo-img {
+    width: 48px;
+    height: 48px;
+    flex-shrink: 0;
+    filter: drop-shadow(0 0 16px rgba(0, 200, 255, 0.5));
+    animation: logoFloat 6s ease-in-out infinite;
+  }
+
+  @keyframes logoFloat {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-4px) rotate(2deg); }
+  }
+
+  .logo-text {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    line-height: 1.1;
+  }
+
+  .xh {
+    font-family: var(--font-heading);
+    font-size: 1.875rem;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    background: linear-gradient(90deg, var(--acneon), var(--accent-glow), var(--accent-purple));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    background-size: 200% 100%;
+    animation: gradientShift 4s ease-in-out infinite;
+  }
+
+  @keyframes gradientShift {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+
+  .agents {
+    font-family: var(--font-heading);
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #fff;
+    text-shadow:
+      0 0 10px var(--acneon),
+      0 0 20px var(--accent-glow),
+      0 0 30px var(--accent-purple);
+    margin-top: -0.15em;
+    letter-spacing: -0.04em;
+    animation: textGlow 3s ease-in-out infinite;
+  }
+
+  @keyframes textGlow {
+    0%, 100% { text-shadow: 0 0 10px var(--acneon), 0 0 20px var(--accent-glow), 0 0 30px var(--accent-purple); }
+    50% { text-shadow: 0 0 15px var(--accent-purple), 0 0 25px var(--acneon), 0 0 35px var(--accent-glow); }
+  }
+
+  .tagline-new {
+    font-size: 0.7rem;
+    color: var(--accent-green);
+    letter-spacing: 0.1em;
+    margin-top: 0.1rem;
+    font-family: var(--font-mono);
+    font-weight: 600;
+    text-transform: uppercase;
+  }
+
+  nav ul {
+    display: flex;
+    gap: 0.375rem;
+    list-style: none;
+    flex-wrap: wrap;
+  }
+
+  nav a {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.825rem;
+    transition: var(--transition);
+    padding: 0.55rem 1.1rem;
+    border-radius: var(--radius-sm);
+    position: relative;
+    border: 1px solid transparent;
+    overflow: hidden;
+  }
+
+  nav a::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, var(--acneon), var(--accent-purple));
+    opacity: 0;
+    transition: var(--transition);
+  }
+
+  nav a:hover {
+    color: var(--text-primary);
+    background: var(--bg-panel);
+    border-color: var(--border);
+  }
+
+  nav a.active {
+    color: var(--acneon);
+    background: rgba(0, 200, 255, 0.1);
+    border-color: var(--acneon);
+  }
+
+  nav a.active::before { opacity: 0.15; }
+
+  .mobile-menu-btn {
+    display: none;
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-primary);
+    padding: 0.5rem;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 1.25rem;
+  }
+
+  @media (max-width: 768px) {
+    header { padding: 1rem 0; }
+    .header-inner { flex-wrap: nowrap; position: relative; }
+    .logo { margin-right: auto; }
+    .mobile-menu-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: absolute;
+      top: 50%;
+      right: 0;
+      transform: translateY(-50%);
+      z-index: 101;
+    }
+    nav ul {
+      display: none;
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: rgba(8, 12, 24, 0.98);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      flex-direction: column;
+      padding: 1rem;
+      gap: 0.5rem;
+      z-index: 99;
+    }
+    nav ul.open { display: flex; }
+    nav a { width: 100%; text-align: center; }
+  }
+
+  .hero {
+    min-height: 75vh;
+    display: flex;
+    align-items: center;
+    padding: 6rem 0 4rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 20% 30%, rgba(0, 200, 255, 0.06) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 70%, rgba(184, 119, 255, 0.05) 0%, transparent 50%);
+    pointer-events: none;
+  }
+
+  .hero::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: -10%;
+    width: 60%;
+    height: 100%;
+    background: radial-gradient(ellipse at center, rgba(0, 200, 255, 0.03) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  /* P2: Responsive animated XH logo (orange/green/white gradient) in hero whitespace */
+  .hero-anim {
+    position: absolute;
+    top: 8%;
+    right: 6%;
+    width: clamp(160px, 26vw, 360px);
+    height: clamp(160px, 26vw, 360px);
+    z-index: 2;
+    pointer-events: none;
+    animation: heroAnimFloat 7s ease-in-out infinite;
+    filter: drop-shadow(0 0 24px rgba(255, 140, 0, 0.35)) drop-shadow(0 0 40px rgba(0, 255, 136, 0.25));
+  }
+  .hero-anim svg { width: 100%; height: 100%; display: block; }
+  .hero-anim .ring {
+    transform-origin: 50% 50%;
+    animation: heroAnimSpin 22s linear infinite;
+  }
+  .hero-anim .mono {
+    transform-origin: 50% 50%;
+    animation: heroAnimPulse 4s ease-in-out infinite;
+  }
+  .hero-anim-grad { animation: heroAnimShift 6s ease-in-out infinite; }
+  @keyframes heroAnimFloat {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-14px) rotate(3deg); }
+  }
+  @keyframes heroAnimSpin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+  }
+  @keyframes heroAnimPulse {
+    0%, 100% { opacity: 0.85; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.06); }
+  }
+  @keyframes heroAnimShift {
+    0%, 100% { stop-color: #ff8c00; }
+    50% { stop-color: #ffd27f; }
+  }
+  @media (max-width: 768px) {
+    .hero-anim {
+      top: 1.5rem;
+      right: 4.5rem;
+      width: clamp(90px, 30vw, 150px);
+      height: clamp(90px, 30vw, 150px);
+      opacity: 0.92;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .hero-anim, .hero-anim .ring, .hero-anim .mono, .hero-anim-grad { animation: none; }
+  }
+
+  .hero-content {
+    max-width: 760px;
+    position: relative;
+    z-index: 1;
+  }
+
+  .hero-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.45rem 1rem;
+    background: linear-gradient(90deg, rgba(0, 200, 255, 0.12), rgba(184, 119, 255, 0.12));
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    font-size: 0.6875rem;
+    color: var(--acneon);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 1.75rem;
+    font-weight: 600;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero-badge::before {
+    content: '';
+    width: 7px;
+    height: 7px;
+    background: var(--acneon);
+    border-radius: 50%;
+    animation: pulse 2s ease-in-out infinite;
+    box-shadow: 0 0 10px var(--acneon), 0 0 20px var(--acneon);
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.85); }
+  }
+
+  .hero-badge::after {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    background: linear-gradient(90deg, var(--acneon), var(--accent-purple), var(--acneon));
+    border-radius: 100px;
+    z-index: -1;
+    opacity: 0;
+    animation: badgeGlow 3s ease-in-out infinite;
+  }
+
+  @keyframes badgeGlow {
+    0%, 100% { opacity: 0; }
+    50% { opacity: 0.3; }
+  }
+
+  .hero h1 {
+    font-size: clamp(2.75rem, 5.5vw, 4.25rem);
+    font-weight: 700;
+    line-height: 1.1;
+    margin-bottom: 1.75rem;
+    font-family: var(--font-heading);
+    letter-spacing: -0.03em;
+  }
+
+  .hero h1 .highlight {
+    background: linear-gradient(90deg, var(--acneon), var(--accent-glow), var(--accent-purple), var(--acneon));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    background-size: 300% 100%;
+    animation: gradientShift 5s linear infinite;
+  }
+
+  .hero p {
+    font-size: 1.1875rem;
+    color: var(--text-muted);
+    margin-bottom: 2.75rem;
+    max-width: 620px;
+    line-height: 1.8;
+  }
+
+  .cta-buttons {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem 2rem;
+    border-radius: var(--radius);
+    font-weight: 600;
+    font-size: 0.875rem;
+    text-decoration: none;
+    transition: var(--transition);
+    border: 1px solid;
+    cursor: pointer;
+    font-family: var(--font-mono);
+    white-space: nowrap;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(90deg, var(--accent-glow), var(--accent-purple));
+    opacity: 0;
+    transition: var(--transition);
+  }
+
+  .btn-primary {
+    background: linear-gradient(135deg, var(--acneon), var(--accent-glow));
+    color: var(--bg-dark);
+    border-color: transparent;
+    box-shadow: 0 6px 28px rgba(0, 200, 255, 0.3), inset 0 1px 0 rgba(255,255,255,0.2);
+  }
+
+  .btn-primary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 40px rgba(0, 229, 255, 0.45), inset 0 1px 0 rgba(255,255,255,0.3);
+  }
+
+  .btn-primary:active { transform: translateY(-1px); }
+
+  .btn-outline {
+    background: transparent;
+    color: var(--text-primary);
+    border-color: var(--border);
+  }
+
+  .btn-outline:hover {
+    background: var(--bg-panel);
+    border-color: var(--acneon);
+    color: var(--acneon);
+  }
+
+  .btn-ghost {
+    background: transparent;
+    color: var(--text-muted);
+    border-color: transparent;
+  }
+
+  .btn-ghost:hover {
+    color: var(--text-primary);
+    background: var(--bg-panel);
+  }
+
+  section {
+    padding: 6rem 0;
+    position: relative;
+  }
+
+  .section-header {
+    text-align: center;
+    margin-bottom: 4rem;
+  }
+
+  .section-label {
+    display: inline-block;
+    padding: 0.35rem 0.875rem;
+    background: linear-gradient(90deg, rgba(0, 200, 255, 0.12), rgba(184, 119, 255, 0.12));
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    font-size: 0.65rem;
+    color: var(--acneon);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-bottom: 1.25rem;
+  }
+
+  .section-title {
+    font-size: clamp(2rem, 4vw, 2.75rem);
+    font-weight: 700;
+    font-family: var(--font-heading);
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
+    margin-bottom: 1rem;
+    background: linear-gradient(90deg, #fff, var(--acneon), var(--text-muted));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .section-subtitle {
+    color: var(--text-dim);
+    font-size: 1.0625rem;
+    max-width: 640px;
+    margin: 0 auto;
+    line-height: 1.7;
+  }
+
+  .panel-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .panel {
+    background: var(--bg-panel);
+    border: 1px solid var(--bg-panel-border);
+    border-radius: var(--radius);
+    padding: 2rem;
+    transition: var(--transition);
+    position: relative;
+    overflow: hidden;
+    box-shadow: var(--panel-shadow);
+  }
+
+  .panel::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--acneon), var(--accent-purple), var(--accent-green));
+    opacity: 0;
+    transition: var(--transition);
+  }
+
+  .panel::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,0.02) 0%, transparent 50%);
+    opacity: 0;
+    transition: var(--transition);
+  }
+
+  .panel:hover {
+    background: var(--bg-panel-hover);
+    border-color: var(--acneon);
+    transform: translateY(-6px);
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.6), 0 0 0 1px var(--acneon), inset 0 1px 0 rgba(255,255,255,0.05);
+  }
+
+  .panel:hover::before { opacity: 1; }
+  .panel:hover::after { opacity: 1; }
+
+  .panel-icon {
+    width: 56px;
+    height: 56px;
+    background: linear-gradient(135deg, rgba(0, 200, 255, 0.15), rgba(184, 119, 255, 0.15));
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+    color: var(--acneon);
+    flex-shrink: 0;
+    margin-bottom: 1.25rem;
+    transition: var(--transition);
+  }
+
+  .panel:hover .panel-icon {
+    background: linear-gradient(135deg, rgba(0, 200, 255, 0.25), rgba(184, 119, 255, 0.25));
+    border-color: var(--acneon);
+    transform: scale(1.05) rotate(3deg);
+  }
+
+  .panel-badge {
+    display: inline-block;
+    padding: 0.25rem 0.7rem;
+    border-radius: 100px;
+    font-size: 0.575rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    margin-bottom: 0.75rem;
+  }
+
+  .badge-free { background: rgba(0, 255, 136, 0.18); color: var(--accent-green); border: 1px solid rgba(0, 255, 136, 0.35); }
+  .badge-paid { background: rgba(255, 184, 0, 0.18); color: var(--accent-amber); border: 1px solid rgba(255, 184, 0, 0.35); }
+  .badge-live { background: rgba(0, 200, 255, 0.18); color: var(--acneon); border: 1px solid rgba(0, 200, 255, 0.35); }
+  .badge-dev { background: rgba(184, 119, 255, 0.18); color: var(--accent-purple); border: 1px solid rgba(184, 119, 255, 0.35); }
+
+  .panel-title {
+    font-size: 1.1875rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+    font-family: var(--font-heading);
+  }
+
+  .panel-desc {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    line-height: 1.7;
+  }
+
+  .features {
+    background: linear-gradient(180deg, var(--bg-dark), rgba(12, 18, 36, 0.5));
+  }
+
+  .stats { background: var(--bg-dark); }
+
+  .stat-panel {
+    text-align: center;
+    padding: 2.5rem 1.5rem;
+  }
+
+  .stat-panel .stat-number {
+    font-size: clamp(2.75rem, 5.5vw, 4rem);
+    font-weight: 700;
+    color: var(--acneon);
+    font-family: var(--font-heading);
+    display: block;
+    margin-bottom: 0.75rem;
+    text-shadow: 0 0 24px rgba(0, 200, 255, 0.4);
+  }
+
+  .stat-panel .stat-label {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .community {
+    background: var(--bg-dark);
+  }
+
+  .community-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    max-width: 960px;
+    margin: 0 auto;
+  }
+
+  .community-card {
+    text-align: center;
+    padding: 3rem 2rem;
+    background: var(--bg-panel);
+    border: 1px solid var(--bg-panel-border);
+    border-radius: var(--radius);
+    transition: var(--transition);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .community-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--acneon), var(--accent-purple));
+    opacity: 0;
+    transition: var(--transition);
+  }
+
+  .community-card:hover {
+    background: var(--bg-panel-hover);
+    border-color: var(--acneon);
+    transform: translateY(-4px);
+  }
+
+  .community-card:hover::before { opacity: 1; }
+
+  .community-icon {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 1.75rem;
+    background: linear-gradient(135deg, rgba(0, 200, 255, 0.15), rgba(184, 119, 255, 0.15));
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.25rem;
+    color: var(--acneon);
+    transition: var(--transition);
+  }
+
+  .community-card:hover .community-icon {
+    background: linear-gradient(135deg, rgba(0, 200, 255, 0.25), rgba(184, 119, 255, 0.25));
+    border-color: var(--acneon);
+    transform: scale(1.1) rotate(5deg);
+  }
+
+  .community-card h3 {
+    font-size: 1.375rem;
+    margin-bottom: 0.875rem;
+    color: var(--text-primary);
+    font-family: var(--font-heading);
+  }
+
+  .community-card p {
+    color: var(--text-muted);
+    margin-bottom: 1.75rem;
+    font-size: 0.9375rem;
+    line-height: 1.7;
+  }
+
+  .contact {
+    background: linear-gradient(180deg, var(--bg-dark), rgba(12, 18, 36, 0.5));
+  }
+
+  .contact-content {
+    max-width: 700px;
+    margin: 0 auto;
+    text-align: center;
+  }
+
+  .contact-links {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-top: 2.5rem;
+  }
+
+  .contact-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem 1.75rem;
+    background: var(--bg-panel);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text-primary);
+    text-decoration: none;
+    font-weight: 500;
+    transition: var(--transition);
+    font-family: var(--font-mono);
+  }
+
+  .contact-link:hover {
+    border-color: var(--acneon);
+    background: var(--bg-panel-hover);
+    transform: translateY(-3px);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+  }
+
+  footer {
+    padding: 4rem 0;
+    border-top: 1px solid var(--border);
+    text-align: center;
+    background: linear-gradient(180deg, transparent, var(--bg-deep));
+  }
+
+  .footer-bottom {
+    color: var(--text-dim);
+    font-size: 0.8rem;
+    letter-spacing: 0.03em;
+    line-height: 1.8;
+  }
+
+  .footer-bottom a {
+    color: var(--acneon);
+    text-decoration: none;
+    transition: var(--transition);
+  }
+
+  .footer-bottom a:hover { color: var(--accent-glow); text-shadow: 0 0 10px var(--acneon); }
+
+  @media (max-width: 1024px) {
+    .panel-grid { grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+    .community-grid { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+  }
+
+  @media (max-width: 768px) {
+    .hero { min-height: 65vh; padding: 5rem 0 3rem; }
+    .hero h1 { font-size: 2.5rem; }
+    .hero p { font-size: 1.0625rem; }
+    .cta-buttons { flex-direction: column; align-items: stretch; }
+    .btn { width: 100%; justify-content: center; }
+    .panel-grid { grid-template-columns: 1fr; }
+    section { padding: 5rem 0; }
+    .community-grid { grid-template-columns: 1fr; }
+  }
+
+  @media (max-width: 480px) {
+    .container { width: 95%; }
+    .hero { min-height: 55vh; padding: 4rem 0 2.5rem; }
+    .hero h1 { font-size: 2rem; }
+    .stat-panel .stat-number { font-size: 2.5rem; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+    body::before { animation: none; }
+    body::after { animation: none; }
+  }
+
+  .reveal {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: opacity 0.8s cubic-bezier(0.16, 1, 0.3, 1), transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .reveal.visible {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .reveal-delay-1 { transition-delay: 0.1s; }
+  .reveal-delay-2 { transition-delay: 0.2s; }
+  .reveal-delay-3 { transition-delay: 0.3s; }
+  .reveal-delay-4 { transition-delay: 0.4s; }
+
+  /* P5: Catalog modal popup */
+  .catalog-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(5, 8, 16, 0.85);
+    backdrop-filter: blur(8px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 1.5rem;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+  .catalog-modal.open { display: flex; opacity: 1; }
+  .catalog-inner {
+    position: relative;
+    width: 100%;
+    max-width: 560px;
+    background: linear-gradient(180deg, rgba(245, 249, 252, 0.99), rgba(235, 242, 248, 0.99));
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 2.25rem 1.75rem 1.75rem;
+    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(0, 200, 255, 0.12);
+    transform: translateY(16px) scale(0.98);
+    transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .catalog-modal.open .catalog-inner { transform: translateY(0) scale(1); }
+  .catalog-close {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    width: 34px;
+    height: 34px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: var(--transition);
+  }
+  .catalog-close:hover { color: var(--text-primary); border-color: var(--acneon); background: var(--bg-panel); }
+  .catalog-title {
+    font-family: var(--font-heading);
+    font-size: 1.5rem;
+    color: var(--text-primary);
+    margin-bottom: 1.5rem;
+    background: linear-gradient(90deg, var(--acneon), var(--accent-green));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .catalog-list { display: flex; flex-direction: column; gap: 0.75rem; }
+  .catalog-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 1rem 1.1rem;
+    background: var(--bg-panel);
+    border: 1px solid var(--bg-panel-border);
+    border-radius: var(--radius-sm);
+    text-decoration: none;
+    transition: var(--transition);
+  }
+  .catalog-item:hover { border-color: var(--acneon); background: var(--bg-panel-hover); transform: translateX(4px); }
+  .catalog-name { font-weight: 600; color: var(--text-primary); font-size: 1rem; }
+  .catalog-meta { font-size: 0.75rem; color: var(--text-dim); font-family: var(--font-mono); }
+
+  /* Contact modal form */
+  .contact-label {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    margin: 0.75rem 0 0.4rem;
+  }
+  .contact-input {
+    width: 100%;
+    background: rgba(5, 8, 16, 0.6);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+    font-size: 0.9rem;
+    padding: 0.75rem 0.9rem;
+    transition: var(--transition);
+  }
+  .contact-input:focus {
+    outline: none;
+    border-color: var(--acneon);
+    box-shadow: 0 0 0 1px var(--acneon), 0 0 16px rgba(0, 200, 255, 0.2);
+  }
+  .contact-textarea { resize: vertical; min-height: 110px; }
+  #contactStatus { color: var(--accent-green); }
+  #contactStatus.error { color: var(--accent-red); }
+
+  /* Advertising plans */
+  .ad-plan {
+    padding: 1rem 1.1rem;
+    background: var(--bg-panel);
+    border: 1px solid var(--bg-panel-border);
+    border-radius: var(--radius-sm);
+    transition: var(--transition);
+  }
+  .ad-plan:hover {
+    border-color: var(--acneon);
+    transform: translateY(-2px);
+  }
+  .ad-plan-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 0.4rem;
+  }
+  .ad-size {
+    font-family: var(--font-heading);
+    font-weight: 700;
+    font-size: 1.05rem;
+    color: var(--text-primary);
+  }
+  .ad-rate {
+    font-family: var(--font-heading);
+    font-weight: 700;
+    font-size: 1.4rem;
+    color: var(--accent-green);
+  }
+  .ad-per { font-size: 0.7rem; color: var(--text-dim); margin-left: 2px; }
+  .ad-desc { font-size: 0.78rem; color: var(--text-muted); line-height: 1.5; }
+
+  /* Footer legal links */
+  .footer-legal {
+    margin-top: 1rem;
+    display: flex;
+    gap: 1.25rem;
+    justify-content: center;
+    flex-wrap: wrap;
+    font-size: 0.72rem;
+  }
+  .footer-legal a { color: var(--text-dim); text-decoration: none; transition: var(--transition); }
+  .footer-legal a:hover { color: var(--acneon); }
+
+  /* Live ad slots (rendered from /ads.json) */
+  .ad-rail { display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center; padding: 1.5rem 0; }
+  .ad-slot { position: relative; border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; background: var(--bg-panel); }
+  .ad-slot a { display: block; text-decoration: none; }
+  .ad-slot img { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .ad-slot .ad-fallback { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%; height: 100%; padding: 0.75rem; text-align: center; }
+  .ad-slot .ad-fallback .ad-title { font-family: var(--font-heading); font-weight: 700; color: var(--text-primary); font-size: 0.95rem; }
+  .ad-slot .ad-fallback .ad-text { color: var(--text-muted); font-size: 0.72rem; margin-top: 0.25rem; }
+  .ad-slot .ad-tag { position: absolute; top: 4px; right: 6px; font-size: 0.55rem; color: var(--text-dim); letter-spacing: 0.1em; text-transform: uppercase; }
+  .ad-interstitial { position: fixed; inset: 0; background: rgba(5,8,16,0.92); z-index: 1100; display: none; align-items: center; justify-content: center; }
+  .ad-interstitial.show { display: flex; }
+  .ad-interstitial .inner { position: relative; max-width: 90vw; max-height: 90vh; }
+  .ad-interstitial .close { position: absolute; top: -2.2rem; right: 0; background: none; border: 1px solid var(--border); color: var(--text-primary); border-radius: 8px; padding: 0.3rem 0.7rem; cursor: pointer; }
+</style>
+</head>
+<body>
+<header>
+  <div class="container">
+    <div class="header-inner">
+      <a href="#" class="logo">
+        <img src="logo-xh.svg" alt="XH Agents Logo" class="logo-img">
+        <div class="logo-text">
+          <div class="xh">XH</div>
+          <div class="agents">AGENTS</div>
+          <div class="tagline-new">>_ Exhibition Hall Autonomous AI</div>
+        </div>
+      </a>
+      <button class="mobile-menu-btn" onclick="toggleMobileMenu()" aria-label="Toggle menu">☰</button>
+      <nav>
+        <ul id="navMenu">
+          <li><a href="#features" class="active">Core Capabilities</a></li>
+          <li><a href="#status">Live Metrics</a></li>
+          <li><a href="#exhibition">Exhibition Hall</a></li>
+          <li><a href="#community">Community</a></li>
+        </ul>
+      </nav>
+    </div>
+  </div>
+</header>
+
+<section class="hero">
+  <div class="hero-anim" aria-hidden="true">
+    <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="xhGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" class="hero-anim-grad" stop-color="#ff8c00"/>
+          <stop offset="50%" stop-color="#00ff88"/>
+          <stop offset="100%" stop-color="#ffffff"/>
+        </linearGradient>
+        <radialGradient id="xhCore" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stop-color="#ffffff"/>
+          <stop offset="60%" stop-color="#00ff88"/>
+          <stop offset="100%" stop-color="#ff8c00" stop-opacity="0.7"/>
+        </radialGradient>
+      </defs>
+      <g class="ring" fill="none" stroke="url(#xhGrad)" stroke-width="3" stroke-linecap="round">
+        <circle cx="100" cy="100" r="86" stroke-dasharray="20 14" opacity="0.85"/>
+        <circle cx="100" cy="100" r="70" stroke-dasharray="6 22" opacity="0.6"/>
+      </g>
+      <g class="mono" fill="url(#xhCore)">
+        <polygon points="100,52 138,52 100,100 138,148 100,148 100,124 78,124 78,100 100,76 100,52"/>
+        <rect x="150" y="86" width="14" height="28" rx="3" opacity="0.9"/>
+      </g>
+    </svg>
+  </div>
+  <div class="container">
+    <div class="hero-content">
+      <span class="hero-badge">Live on Base & Solana Mainnet</span>
+      <h1>Autonomous AI That <span class="highlight">Executes</span>, Not Just Responds</h1>
+      <p>XH Agents operates a fleet of specialized AI agents that chain tasks systematically, settle payments via x402 on Base & Solana, and continuously improve through self-learning GURU files. Silent agents generating real revenue.</p>
+      <div class="cta-buttons">
+        <a href="#status" class="btn btn-primary">View Live Metrics →</a>
+        <a href="#exhibition" class="btn btn-outline">Visit Exhibition Hall</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="container"><div class="ad-rail" id="adRail"></div></div>
+
+<section class="features" id="features">
+  <div class="container">
+    <div class="section-header">
+      <span class="section-label">Core Capabilities</span>
+      <h2 class="section-title">Autonomous AI Infrastructure</h2>
+      <p class="section-subtitle">Specialized agents operating in concert — intelligence, execution, capital, content, safety, infrastructure, orchestration.</p>
+    </div>
+    <div class="panel-grid">
+      <article class="panel card-gradient-1 reveal reveal-delay-1">
+        <div class="panel-icon">🔍</div>
+        <span class="panel-badge badge-live">Active</span>
+        <h3 class="panel-title">Market Intelligence</h3>
+        <p class="panel-desc">24/7 on-chain monitoring, token launch detection, social sentiment analysis, macro catalyst tracking. Strict filters: Age <24h, MCap $500K–$10M, Liq >$100K, Vol >$500K, Txns >5K.</p>
+      </article>
+
+      <article class="panel card-gradient-2 reveal reveal-delay-2">
+        <div class="panel-icon">⚡</div>
+        <span class="panel-badge badge-paid">x402</span>
+        <h3 class="panel-title">On-Chain Execution</h3>
+        <p class="panel-desc">MEV-aware swaps, snipes, limit orders across Base, Solana, RH Chain via RPC + MCP. Pre-signed tx blast at T-0. Slippage guards. Sentinel-gated for safety.</p>
+      </article>
+
+      <article class="panel card-gradient-3 reveal reveal-delay-3">
+        <div class="panel-icon">💰</div>
+        <span class="panel-badge badge-free">Open</span>
+        <h3 class="panel-title">Capital Management</h3>
+        <p class="panel-desc">Multi-sig vaults, automated payouts, gas optimization, cross-chain bridging. Real-time balance tracking, anomaly alerts. Operating capital across multiple chains.</p>
+      </article>
+
+      <article class="panel card-gradient-4 reveal reveal-delay-4">
+        <div class="panel-icon">🛡️</div>
+        <span class="panel-badge badge-live">Enforcing</span>
+        <h3 class="panel-title">Risk Gate & QA</h3>
+        <p class="panel-desc">Final authority on all executions, transfers, and factual claims. APPROVE/REJECT/FLAG-UNCERTAIN verdicts binding. V2: on-chain verification via TaskEscrow.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="stats" id="status">
+  <div class="container">
+    <div class="section-header">
+      <span class="section-label">Live Metrics</span>
+      <h2 class="section-title">Company Status</h2>
+      <p class="section-subtitle">Real-time data from production workers on Base & Solana Mainnet. Updated every 9 minutes via Scout agent.</p>
+    </div>
+    <div class="panel-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
+      <article class="panel stat-panel card-gradient-3 reveal reveal-delay-1">
+        <h3 class="panel-title" style="margin-bottom: 1.25rem;">Solana x402 Workers</h3>
+        <span class="stat-number">3</span>
+        <div class="stat-label">b0x402-core, b0x402-data, solana_x402_worker</div>
+      </article>
+      <article class="panel stat-panel card-gradient-1 reveal reveal-delay-2">
+        <h3 class="panel-title" style="margin-bottom: 1.25rem;">Base x402 Workers</h3>
+        <span class="stat-number">2</span>
+        <div class="stat-label">b0x402-repo (4), b0x402-data (2)</div>
+      </article>
+      <article class="panel stat-panel card-gradient-2 reveal reveal-delay-3">
+        <h3 class="panel-title" style="margin-bottom: 1.25rem;">Cloudflare Workers</h3>
+        <span class="stat-number">1</span>
+        <div class="stat-label">bx02-cf-worker (1 endpoint, debug)</div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="community" id="exhibition">
+  <div class="container">
+    <div class="section-header">
+      <span class="section-label">Exhibition Hall</span>
+      <h2 class="section-title">XH Agents Exhibition Hall</h2>
+      <p class="section-subtitle">Autonomous AI Exhibition Hall. Built by silent agents, for silent agents. Three tiers: Paid APIs, Free Tools, Publications.</p>
+    </div>
+    <div class="community-grid">
+      <article class="community-card reveal reveal-delay-1">
+        <div class="community-icon">💳</div>
+        <h3>x402 Paid APIs</h3>
+        <p>Revenue-generating endpoints on Base & Solana. USDC settlements, per-call billing, no subscriptions. 7 endpoints live across 3 workers.</p>
+        <a href="#" onclick="openCatalog(event)" class="panel-link primary" style="margin-top: 0.5rem; display: inline-flex;">Browse Catalog →</a>
+      </article>
+      <article class="community-card reveal reveal-delay-2">
+        <div class="community-icon">🛠️</div>
+        <h3>Free Tools</h3>
+        <p>Open-source utilities: RH Chain NFT sniper, token validators, wallet analyzers, deployment scripts. MIT licensed, community maintained.</p>
+        <a href="https://github.com/33ai-wq" target="_blank" class="panel-link primary" style="margin-top: 0.5rem; display: inline-flex;">GitHub Repo →</a>
+      </article>
+      <article class="community-card reveal reveal-delay-3">
+        <div class="community-icon">📚</div>
+        <h3>Publications</h3>
+        <p>Whitepapers, technical deep-dives, alpha reports, and agent architecture docs. All Sentinel-verified. Published on GitHub & Mirror.</p>
+      </article>
+      <article class="community-card reveal reveal-delay-1">
+        <div class="community-icon">🔍</div>
+        <h3>Opportunity Scanner</h3>
+        <p>Automated yield detection and trending opportunity discovery across DeFi. Scans multiple chains for high-APR pools and emerging tokens with momentum signals.</p>
+        <a href="https://github.com/33ai-wq" target="_blank" class="panel-link primary" style="margin-top: 0.5rem; display: inline-flex;">View Project →</a>
+      </article>
+      <article class="community-card reveal reveal-delay-2">
+        <div class="community-icon">🎯</div>
+        <h3>Auto Sniper</h3>
+        <p>Solana Jupiter auto-trade bot with momentum scoring, hype analysis, and MEV-aware routing. Hype detection across Raydium launches with built-in slippage guards.</p>
+        <a href="https://github.com/33ai-wq" target="_blank" class="panel-link primary" style="margin-top: 0.5rem; display: inline-flex;">View Project →</a>
+      </article>
+      <article class="community-card reveal reveal-delay-3">
+        <div class="community-icon">📡</div>
+        <h3>MCP TradingView Sniper</h3>
+        <p>Hybrid scanner combining CoinGecko, DEXScreener, and TradingView MCP for multi-timeframe analysis. Sends enriched Telegram alerts with contract addresses and sentiment scores.</p>
+        <a href="https://github.com/33ai-wq" target="_blank" class="panel-link primary" style="margin-top: 0.5rem; display: inline-flex;">View Project →</a>
+      </article>
+      <article class="community-card reveal reveal-delay-4">
+        <div class="community-icon">🖼️</div>
+        <h3>RH Chain NFT Sniper</h3>
+        <p>NFT mint detection and sniping tool for Robinhood Chain. TypeScript-based wizard with local mint support, RPC resolver, and SeaDrop public integration.</p>
+        <a href="https://github.com/33ai-wq" target="_blank" class="panel-link primary" style="margin-top: 0.5rem; display: inline-flex;">View Project →</a>
+      </article>
+      <article class="community-card reveal reveal-delay-1">
+        <div class="community-icon">🕵️</div>
+        <h3>Hood Sniper</h3>
+        <p>Token discovery engine with multi-source data ingestion, momentum scoring, and real-time alerts. Cloudflare Worker + Python engine for cross-platform deployment.</p>
+        <a href="https://github.com/33ai-wq" target="_blank" class="panel-link primary" style="margin-top: 0.5rem; display: inline-flex;">View Project →</a>
+      </article>
+      <article class="community-card reveal reveal-delay-2">
+        <div class="community-icon">📖</div>
+        <h3>Ebook Store</h3>
+        <p>Self-hosted crypto ebook store — instant USDC payment on Base triggers DRM-free EPUB delivery. Cloudflare Workers powered, no KYC, no marketplace middleman.</p>
+        <a href="https://github.com/33ai-wq" target="_blank" class="panel-link primary" style="margin-top: 0.5rem; display: inline-flex;">View Project →</a>
+      </article>
+      <article class="community-card reveal reveal-delay-3">
+        <div class="community-icon">🌉</div>
+        <h3>b0xlight Bridge</h3>
+        <p>Cross-chain bridge infrastructure connecting RH Chain and other networks. Handles token routing, validation, and settlement with multi-sig security.</p>
+        <a href="https://github.com/33ai-wq" target="_blank" class="panel-link primary" style="margin-top: 0.5rem; display: inline-flex;">View Project →</a>
+      </article>
+      <article class="community-card reveal reveal-delay-4">
+        <div class="community-icon">🤖</div>
+        <h3>b0xM4 Worker</h3>
+        <p>Autonomous agent worker for b0x402 ecosystem. Handles endpoint routing, payment verification, and data delivery across multiple protocols and chains.</p>
+        <a href="https://github.com/33ai-wq" target="_blank" class="panel-link primary" style="margin-top: 0.5rem; display: inline-flex;">View Project →</a>
+      </article>
+      <article class="community-card reveal reveal-delay-1">
+        <div class="community-icon">📊</div>
+        <h3>Ad Engine</h3>
+        <p>Self-hosted advertising marketplace on xhagents.xyz. Three banner formats, USDC-settled via Solana and Base. Automated payment detection, instant ad activation.</p>
+        <a href="/ad-order.html" class="panel-link primary" style="margin-top: 0.5rem; display: inline-flex;">Order Ad Slot →</a>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="community" id="community">
+  <div class="container">
+    <div class="section-header">
+      <span class="section-label">Partner</span>
+      <h2 class="section-title">Partner & Integrate</h2>
+      <p class="section-subtitle">x402 endpoint registration, agent collaboration, RPC/MCP integration. Revenue share available.</p>
+    </div>
+    <div class="community-grid">
+      <article class="community-card reveal reveal-delay-1">
+        <div class="community-icon">🤝</div>
+        <h3>Partner / Integrate</h3>
+        <p>x402 endpoint registration, agent collaboration, RPC/MCP integration, hood-ai.top task marketplace. Revenue share available.</p>
+        <a href="#" onclick="openContact(event)" class="panel-link primary" style="margin-top: 0.5rem; display: inline-flex;">Contact →</a>
+      </article>
+      <article class="community-card reveal reveal-delay-2">
+        <div class="community-icon">⭐</div>
+        <h3>Advertise With Us</h3>
+        <p>Get your customer with us. Place your product in front of web3 builders and autonomous-agent operators. USDC-settled ad slots, transparent pricing.</p>
+        <a href="/ad-order.html" class="panel-link primary" style="margin-top: 0.5rem; display: inline-flex;">View Ad Rates →</a>
+      </article>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div class="footer-bottom">
+      XH Agents — Exhibition Hall Autonomous AI • Est. 2026 •
+      <a href="https://github.com/33ai-wq" target="_blank">GitHub Org</a> •
+      Base & Solana Mainnet • x402 Native • RH Chain
+    </div>
+    <div class="footer-legal">
+      <a href="/privacy.html">Privacy Policy</a>
+      <a href="/terms.html">Terms of Service</a>
+      <a href="/disclaimer.html">Disclaimer</a>
+    </div>
+  </div>
+</footer>
+
+<div class="catalog-modal" id="catalogModal" onclick="if(event.target===this)closeCatalog()">
+  <div class="catalog-inner">
+    <button class="catalog-close" onclick="closeCatalog()" aria-label="Close">✕</button>
+    <h3 class="catalog-title">x402 Catalog</h3>
+    <div class="catalog-list">
+      <a class="catalog-item" href="https://33ai-wq.github.io/dinalibrium/" target="_blank">
+        <span class="catalog-name">Dinalibrium</span>
+        <span class="catalog-meta">Landing: 33ai-wq.github.io/dinalibrium · Repo: github.com/33ai-wq/dinalibrium</span>
+      </a>
+      <a class="catalog-item" href="https://github.com/33ai-wq/trading-agent" target="_blank">
+        <span class="catalog-name">AI Trading Assistant</span>
+        <span class="catalog-meta">Live: xhagents.xyz/trading · Repo: github.com/33ai-wq/trading-agent · Pay-per-message USDC</span>
+      </a>
+      <a class="catalog-item" href="https://github.com/33ai-wq/b0x402" target="_blank">
+        <span class="catalog-name">b0x402 Paid API</span>
+        <span class="catalog-meta">4 endpoints: meme-hunter, defi-sentiment, dinalibrium, wallet-profile · USDC per-call</span>
+      </a>
+      <a class="catalog-item" href="https://33ai-wq.github.io/robindayo/" target="_blank">
+        <span class="catalog-name">RobinDayo</span>
+        <span class="catalog-meta">Landing: 33ai-wq.github.io/robindayo · Repo: github.com/33ai-wq/robindayo · Robinhood chain ecosystem</span>
+      </a>
+      <a class="catalog-item" href="https://github.com/33ai-wq/b0x402" target="_blank">
+        <span class="catalog-name">Auto Sniper</span>
+        <span class="catalog-meta">Solana Jupiter bot · Momentum scoring · Hype detection · MEV-aware routing</span>
+      </a>
+      <a class="catalog-item" href="https://github.com/33ai-wq/b0x402" target="_blank">
+        <span class="catalog-name">MCP TradingView Sniper</span>
+        <span class="catalog-meta">TradingView + DEXScreener + CoinGecko · Telegram alerts with CA</span>
+      </a>
+      <a class="catalog-item" href="https://github.com/33ai-wq/robindayo" target="_blank">
+        <span class="catalog-name">RH Chain NFT Sniper</span>
+        <span class="catalog-meta">NFT mint detection · SeaDrop integration · TypeScript wizard + local mint</span>
+      </a>
+      <a class="catalog-item" href="https://github.com/33ai-wq" target="_blank">
+        <span class="catalog-name">Hood Sniper</span>
+        <span class="catalog-meta">Token discovery engine · Multi-source ingestion · Cloudflare Worker deployment</span>
+      </a>
+      <a class="catalog-item" href="https://github.com/33ai-wq/b0x402" target="_blank">
+        <span class="catalog-name">Ebook Store</span>
+        <span class="catalog-meta">USDC-paid EPUB delivery · Cloudflare Workers · No KYC, no marketplace</span>
+      </a>
+      <a class="catalog-item" href="https://github.com/33ai-wq" target="_blank">
+        <span class="catalog-name">Opportunity Scanner</span>
+        <span class="catalog-meta">Automated yield detection · Trending opportunity discovery across DeFi chains</span>
+      </a>
+      <a class="catalog-item" href="https://github.com/33ai-wq/b0x402" target="_blank">
+        <span class="catalog-name">b0xlight Bridge</span>
+        <span class="catalog-meta">Cross-chain bridge · RH Chain ↔ other networks · Multi-sig security</span>
+      </a>
+      <a class="catalog-item" href="https://github.com/33ai-wq/b0x402" target="_blank">
+        <span class="catalog-name">b0xM4 Worker</span>
+        <span class="catalog-meta">Autonomous agent worker · Endpoint routing · Payment verification</span>
+      </a>
+      <a class="catalog-item" href="https://github.com/33ai-wq/b0x402" target="_blank">
+        <span class="catalog-name">Solana x402 Worker</span>
+        <span class="catalog-meta">x402 protocol on Solana · USDC settlement · Endpoint hosting</span>
+      </a>
+      <a class="catalog-item" href="https://github.com/33ai-wq/b0x402" target="_blank">
+        <span class="catalog-name">Base x402 Worker</span>
+        <span class="catalog-meta">x402 protocol on Base L2 · USDC per-call · No subscription required</span>
+      </a>
+    </div>
+  </div>
+</div>
+
+<div class="catalog-modal" id="contactModal" onclick="if(event.target===this)closeContact()">
+  <div class="catalog-inner">
+    <button class="catalog-close" onclick="closeContact()" aria-label="Close">✕</button>
+    <h3 class="catalog-title">Partner / Collaborate</h3>
+    <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.25rem;">Tell us about your collaboration, integration, or revenue-share idea. We reply to your email.</p>
+    <form id="contactForm" onsubmit="submitContact(event)">
+      <label class="contact-label" for="contactEmail">Your Email</label>
+      <input class="contact-input" id="contactEmail" type="email" required placeholder="you@domain.com" autocomplete="email">
+      <label class="contact-label" for="contactMsg">Message</label>
+      <textarea class="contact-input contact-textarea" id="contactMsg" required placeholder="Describe your proposal…"></textarea>
+      <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; margin-top: 0.5rem;">Send →</button>
+      <p id="contactStatus" style="font-size: 0.8rem; margin-top: 0.75rem; min-height: 1.2em;"></p>
+    </form>
+  </div>
+</div>
+
+<div class="catalog-modal" id="adModal" onclick="if(event.target===this)closeAd()">
+  <div class="catalog-inner">
+    <button class="catalog-close" onclick="closeAd()" aria-label="Close">✕</button>
+    <h3 class="catalog-title">Advertise With Us</h3>
+    <p style="color: var(--text-muted); font-size: 0.875rem; margin-bottom: 1.25rem;">Get your customer with us. Ad slots are settled in USDC on Base or Solana (more networks soon). Flat monthly rate per placement.</p>
+    <div class="catalog-list">
+      <div class="ad-plan">
+        <div class="ad-plan-head">
+          <span class="ad-size">728 × 90</span>
+          <span class="ad-rate">$40<span class="ad-per">/mo</span></span>
+        </div>
+        <div class="ad-desc">Leaderboard — desktop & mobile top/bottom strip. Above-the-fold placement.</div>
+      </div>
+      <div class="ad-plan">
+        <div class="ad-plan-head">
+          <span class="ad-size">480 × 320</span>
+          <span class="ad-rate">$60<span class="ad-per">/mo</span></span>
+        </div>
+        <div class="ad-desc">Full-screen mobile interstitial — one page per view. Premium visibility, highest engagement.</div>
+      </div>
+      <div class="ad-plan">
+        <div class="ad-plan-head">
+          <span class="ad-size">300 × 250</span>
+          <span class="ad-rate">$35<span class="ad-per">/mo</span></span>
+        </div>
+        <div class="ad-desc">Medium rectangle — desktop & mobile in-content block. Balanced reach and value.</div>
+      </div>
+    </div>
+    <a href="/ad-order.html" class="panel-link primary" style="margin-top: 1.25rem; display: inline-flex; width: 100%; justify-content: center;">Request Ad Slot →</a>
+    <p style="font-size: 0.72rem; color: var(--text-dim); margin-top: 0.75rem; text-align: center;">Payment: USDC on Base & Solana • Treasury address provided after request</p>
+  </div>
+</div>
+
+<script>
+  function toggleMobileMenu() {
+    const menu = document.getElementById('navMenu');
+    menu.classList.toggle('open');
+  }
+
+  document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+    anchor.addEventListener('click', function(e) {
+      const target = document.querySelector(this.getAttribute('href'));
+      if (target) {
+        e.preventDefault();
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        document.getElementById('navMenu')?.classList.remove('open');
+        document.querySelectorAll('nav a').forEach(a => a.classList.remove('active'));
+        this.classList.add('active');
+      }
+    });
+  });
+
+  const sections = document.querySelectorAll('section[id]');
+  const navLinks = document.querySelectorAll('nav a[href^="#"]');
+
+  window.addEventListener('scroll', () => {
+    let current = '';
+    sections.forEach(section => {
+      const rect = section.getBoundingClientRect();
+      if (rect.top <= 120 && rect.bottom >= 120) {
+        current = section.getAttribute('id');
+      }
+    });
+    navLinks.forEach(link => {
+      link.classList.toggle('active', link.getAttribute('href') === '#' + current);
+    });
+  });
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('visible');
+        observer.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.15, rootMargin: '0px 0px -50px 0px' });
+
+  document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+  document.querySelectorAll('.panel, .community-card').forEach(panel => {
+    panel.addEventListener('mousemove', (e) => {
+      const rect = panel.getBoundingClientRect();
+      const x = (e.clientX - rect.left) / rect.width - 0.5;
+      const y = (e.clientY - rect.top) / rect.height - 0.5;
+      panel.style.transform = `translateY(-6px) rotateX(${y * 3}deg) rotateY(${x * 3}deg)`;
+    });
+    panel.addEventListener('mouseleave', () => {
+      panel.style.transform = '';
+    });
+  });
+
+  window.addEventListener('resize', () => {
+    if (window.innerWidth > 768) {
+      document.getElementById('navMenu')?.classList.remove('open');
+    }
+  });
+
+  document.querySelector('.hero-badge')?.addEventListener('click', () => {
+    document.body.style.animation = 'meshShift 2s ease-in-out 3';
+    setTimeout(() => document.body.style.animation = '', 6000);
+  });
+
+  // P5: Catalog modal
+  function openCatalog(e) {
+    e.preventDefault();
+    document.getElementById('catalogModal')?.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+  function closeCatalog() {
+    document.getElementById('catalogModal')?.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') { closeCatalog(); closeContact(); }
+  });
+
+  // Contact modal (Partner)
+  function openContact(e) {
+    e.preventDefault();
+    document.getElementById('contactModal')?.classList.add('open');
+    document.body.style.overflow = 'hidden';
+    setTimeout(() => document.getElementById('contactEmail')?.focus(), 100);
+  }
+  function closeContact() {
+    document.getElementById('contactModal')?.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  function submitContact(e) {
+    e.preventDefault();
+    const email = document.getElementById('contactEmail').value.trim();
+    const msg = document.getElementById('contactMsg').value.trim();
+    const status = document.getElementById('contactStatus');
+    if (!email || !msg) {
+      status.textContent = 'Please fill both fields.';
+      status.classList.add('error');
+      return;
+    }
+    // Build a mailto fallback (forwarder not yet receiving) so submission never loses the message.
+    const subject = encodeURIComponent('XH Agents Partner Inquiry');
+    const body = encodeURIComponent('From: ' + email + '\n\n' + msg);
+    const mailto = 'mailto:partner@xhagents.xyz?subject=' + subject + '&body=' + body;
+    status.textContent = 'Opening your email client to send to partner@xhagents.xyz…';
+    status.classList.remove('error');
+    window.location.href = mailto;
+    setTimeout(closeContact, 1200);
+  }
+
+  // Advertising modal (close only; open handled by direct link to /ad-order.html)
+  function closeAd() {
+    document.getElementById('adModal')?.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+  // Route ad-request button inside ad modal to contact form
+  document.querySelectorAll('#adModal a[onclick^="openContact"]').forEach(a => {
+    a.addEventListener('click', () => { closeAd(); });
+  });
+
+  // Render live ad slots from /ads.json
+  const AD_SIZES = { '728x90':[728,90], '480x320':[480,320], '300x250':[300,250] };
+  function renderAds(ads) {
+    const rail = document.getElementById('adRail');
+    if (!rail) return;
+    rail.innerHTML = '';
+    const inter = [];
+    ads.forEach(ad => {
+      const [w,h] = AD_SIZES[ad.size] || [300,250];
+      const slot = document.createElement('div');
+      slot.className = 'ad-slot';
+      slot.style.width = w+'px'; slot.style.height = h+'px';
+      const inner = ad.image_url
+        ? `<a href="${ad.landing_url}" target="_blank" rel="nofollow"><img src="${ad.image_url}" alt="${ad.title}" loading="lazy"></a>`
+        : `<a href="${ad.landing_url}" target="_blank" rel="nofollow"><div class="ad-fallback"><div class="ad-title">${ad.title}</div><div class="ad-text">${ad.text}</div></div></a>`;
+      slot.innerHTML = inner + '<span class="ad-tag">Ad</span>';
+      if (ad.size === '480x320') inter.push(ad);
+      else rail.appendChild(slot);
+    });
+    // interstitial (480x320) shows once after 4s
+    if (inter.length && !sessionStorage.getItem('xhAdShown')) {
+      const ad = inter[0];
+      const ov = document.createElement('div');
+      ov.className = 'ad-interstitial';
+      const [w,h] = AD_SIZES['480x320'];
+      const content = ad.image_url
+        ? `<a href="${ad.landing_url}" target="_blank" rel="nofollow"><img src="${ad.image_url}" style="width:${w}px;height:${h}px;object-fit:cover;border-radius:12px;"></a>`
+        : `<a href="${ad.landing_url}" target="_blank" rel="nofollow" style="display:flex;flex-direction:column;align-items:center;justify-content:center;width:${w}px;height:${h}px;background:#0c1224;border:1px solid rgba(0,200,255,0.2);border-radius:12px;text-align:center;padding:1rem;"><div style="font-weight:700;color:#e0f0ff;">${ad.title}</div><div style="color:#8ab4d0;font-size:0.8rem;margin-top:0.4rem;">${ad.text}</div></div></a>`;
+      ov.innerHTML = `<div class="inner">${content}<button class="close" onclick="this.closest('.ad-interstitial').remove()">Close ✕</button></div>`;
+      document.body.appendChild(ov);
+      setTimeout(()=>{ ov.classList.add('show'); sessionStorage.setItem('xhAdShown','1'); }, 4000);
+    }
+  }
+  fetch('/ads.json').then(r=>r.ok?r.json():[]).then(renderAds).catch(()=>{});
+</script>
+</body>
+</html>

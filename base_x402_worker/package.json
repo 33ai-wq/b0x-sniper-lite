@@ -1,0 +1,18 @@
+{
+  "type": "module",
+  "name": "base-x402-worker",
+  "version": "1.0.0",
+  "description": "x402 paid API on Base (migrated from CF Worker)",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "cors": "^2.8.5",
+    "helmet": "^8.0.0",
+    "web3": "^4.16.0",
+    "dotenv": "^17.4.2"
+  }
+}

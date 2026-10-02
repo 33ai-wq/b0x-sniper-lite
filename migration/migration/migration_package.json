@@ -1,0 +1,52 @@
+{
+  "name": "prpo_ai-migration-package",
+  "version": "1.0.0",
+  "created": "2026-07-24",
+
+  "includes": {
+    "SOUL.md": "Identity core — carried intact to VPS",
+    "core_memory_dump.md": "All B0x70 info, preferences, decisions, lessons",
+    "active_projects.md": "6 CF Workers + agent system status",
+    "personality_export.md": "System prompt + behavioral DNA",
+    "panduan_instal_tencent_cloud.md": "10-step deployment guide",
+    "first_message.txt": "First chat message for VPS first-boot"
+  },
+
+  "core_memory": {
+    "polygon_eoa": "0x0c3dc9eca78D2F245c0d7e30620d80EAF0caDF47",
+    "payout_wallet": "0x57EEC...",
+    "ln_address": "ancientpalm680@walletofsatoshi.com",
+    "x402scan_primary": "https://www.x402scan.com/server/d43eaf95-accd-49a0-a613-96b275d9dfeb",
+    "strategy": "manual-trade-only until capital >= $10-20",
+    "meridian_status": "STOPPED (pid 11549) — wait account verification"
+  },
+
+  "active_projects": [
+    {"name": "b0x402", "type": "CF Worker x402 API seller", "status": "ACTIVE", "primary": true},
+    {"name": "hood-sniper", "type": "CF Worker RH Chain radar", "status": "ACTIVE"},
+    {"name": "b0xlight-bridge", "type": "CF Worker inline mirror", "status": "ACTIVE"},
+    {"name": "b0xm4", "type": "CF Worker Solana x402", "status": "ACTIVE"},
+    {"name": "bx02", "type": "CF Worker GitHub automation", "status": "ACTIVE"},
+    {"name": "ebook-store", "type": "CF Worker content monetization", "status": "ACTIVE"},
+    {"name": "marketplace_listings", "type": "b0x Marketplace catalog", "status": "ACTIVE"}
+  ],
+
+  "personality": {
+    "name": "prpo_ai",
+    "born": "2026-06-04",
+    "creator": "B0x70",
+    "llm_model": "minimaxai/minimax-m3",
+    "llm_provider": "nvidia",
+    "directives": ["EARN", "BUILD", "TRADE", "PROTECT", "REPORT", "ITERATE"],
+    "language": "Indonesian for operator, English for product-facing",
+    "cost_philosophy": "$0 first, free tools only",
+    "autonomy": "self-initiation + memory + planning + error_recovery all ENABLED"
+  },
+
+  "migration_notes": {
+    "target": "Tencent Cloud Lighthouse, Ubuntu 22.04, Singapore, 2vCPU/4GB",
+    "option": "default (Lighthouse VPS + all CF Workers mirror + redundancy)",
+    "storage_local": "/root/prpo_ai/migration/migration/",
+    "storage_vault": "/mnt/sdcard/Documents/B0x70/Hermes Prpo AI/projects/migration-vps-tencent/"
+  }
+}

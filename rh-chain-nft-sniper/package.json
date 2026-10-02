@@ -1,0 +1,35 @@
+{
+  "name": "rh-chain-nft-sniper",
+  "version": "1.0.0",
+  "description": "CLI sniper for public SeaDrop NFT mints on Robinhood Chain (chain ID 4663) — builds calldata on-chain, no OpenSea token required",
+  "main": "dist/index.js",
+  "bin": {
+    "rh-nft-sniper": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts",
+    "dry-run": "node dist/index.js --dry-run"
+  },
+  "keywords": [
+    "nft",
+    "mint",
+    "seadrop",
+    "opensea",
+    "robinhood-chain",
+    "cli"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "dotenv": "^16.3.1",
+    "ethers": "^6.9.0",
+    "ora": "^5.4.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.2"
+  }
+}

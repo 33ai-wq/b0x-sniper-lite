@@ -1,0 +1,10 @@
+name = "ebook-store"
+main = "src/index.js"
+compatibility_date = "2026-07-04"
+
+[vars]
+# EPUB is stored in KV namespace — no env var needed
+
+[[kv_namespaces]]
+binding = "EBOOK_KV"
+id = "0f17748f8bb547419d3104ee8325c04d"

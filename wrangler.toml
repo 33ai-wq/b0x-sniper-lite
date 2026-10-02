@@ -1,0 +1,8 @@
+name = "bx02-cf-worker"
+main = "dist/index.js"
+compatibility_date = "2024-01-01"
+account_id = "b9f2219c5fc157dbab0250ea33e19e52"
+
+[vars]
+TREASURY = "0x57EEC52d76A4A78D4562fc2564101A4bD2e3F357"
+PRICE_USDC = "150000"

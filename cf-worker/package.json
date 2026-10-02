@@ -1,0 +1,14 @@
+{
+  "name": "b0x402-data",
+  "version": "1.0.0",
+  "description": "Real on-chain data x402 V2 API. Token safety (Honeypot.is v2) + multi-chain gas tracker.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "tail": "wrangler tail"
+  },
+  "dependencies": {
+    "wrangler": "^4.118.0"
+  }
+}
