@@ -23,6 +23,7 @@ def build(files: list[str]) -> dict:
     """Count what is really published, then describe it."""
     resources = 0
     prices = []
+    arkham = 0
     for base in files:
         wk = os.path.join(base, ".well-known", "x402")
         oa = os.path.join(base, "openapi.json")
@@ -31,6 +32,8 @@ def build(files: list[str]) -> dict:
             resources = max(resources, len(man.get("resources") or []))
         if os.path.exists(oa):
             doc = json.load(open(oa))
+            arkham = max(arkham, sum(1 for p in (doc.get("paths") or {}) if p.startswith("/api/arkham-intel/")
+                                     and not p.endswith("/use-cases/") ))
             for path, ops in (doc.get("paths") or {}).items():
                 for op in ops.values():
                     info = (op or {}).get("x-payment-info") or {}
@@ -46,18 +49,21 @@ def build(files: list[str]) -> dict:
         "paths": None,  # filled per file below
         "price_lo": lo,
         "price_hi": hi,
+        "arkham": arkham,
     }
 
 
-stats = build([DOCROOT, SRC])
+STATS = build([DOCROOT, SRC])
+_WORDS = {1: "one", 2: "two", 3: "three", 4: "four", 5: "five", 6: "six", 7: "seven", 8: "eight"}
 description_head = (
     f"XH Agents — x402 Endpoint Catalogue & Autonomous AI on Base. "
-    f"{stats['resources']} live paid x402 resources on Base, "
-    f"{stats['price_lo']:.2f}-{stats['price_hi']:.2f} USDC per call. "
+    f"{STATS['resources']} live paid x402 resources on Base, "
+    f"{STATS['price_lo']:.2f}-{STATS['price_hi']:.2f} USDC per call. "
 )
 description_body = (
-    "Includes five Arkham-style intelligence endpoints at 0.10 (use-case router, pool inflow/outflow, wallet "
-    "portfolio, counterparty due diligence, fund trace) computed from public Base chain data, plus wallet and "
+    f"Includes {_WORDS.get(STATS['arkham'], str(STATS['arkham']))} Arkham-style intelligence endpoints at 0.10 "
+    "(use-case router, pool inflow/outflow, wallet portfolio, counterparty due diligence, fund trace, venue users) "
+    "computed from public Base chain data, plus wallet and "
     "token checks, gas, whale watch, DeFi sentiment, x402 conformance, a video licence with a signed stream URL, "
     "a dated daily demand brief, a 13-playbook knowledge bundle and how-to SOPs. "
     "Every response states its sources and what was NOT checked. Registered on x402scan, indexed by Coinbase "
@@ -71,7 +77,7 @@ for base in (DOCROOT, SRC):
         print("skip:", oa)
         continue
     doc = json.load(open(oa))
-    head = description_head.replace(f"{stats['resources']} live", f"{stats['resources']} live")
+    head = description_head.replace(f"{STATS['resources']} live", f"{STATS['resources']} live")
     new_desc = head + description_body
     info = doc.setdefault("info", {})
     before = json.dumps({"d": info.get("description"), "c": info.get("contact")}, sort_keys=True)
@@ -82,8 +88,8 @@ for base in (DOCROOT, SRC):
         shutil.copy(oa, f"{oa}.bak.{STAMP}")
         json.dump(doc, open(oa, "w"), indent=2)
         changed.append(oa)
-        print(f"updated {oa}: {len(doc.get('paths') or {})} paths, resources={stats['resources']}, "
-              f"price range ${stats['price_lo']:.2f}-${stats['price_hi']:.2f}")
+        print(f"updated {oa}: {len(doc.get('paths') or {})} paths, resources={STATS['resources']}, "
+              f"price range ${STATS['price_lo']:.2f}-${STATS['price_hi']:.2f}")
     else:
         print(f"already current: {oa}")
 

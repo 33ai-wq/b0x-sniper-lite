@@ -416,6 +416,21 @@ _ARKHAM = [
                                        "hours": {"type": "integer"}}, "required": ["address"]},
      {"origin": "0x6cb5…3ed0", "hops": [{"hop": 1, "transfers": [{"to": "0x…", "class": "dex_router", "usd": 40.0}]}],
       "flags": [], "not_checked": ["tokens other than USDC", "off-chain identity"]}),
+    ("venue-users", "arkhamIntelVenueUsers", "Arkham-style intel — venue users, VIPs and flagged funders",
+     "The broker view of a venue (a contract or wallet users pay into): every wallet that transacted with it in the "
+     "window, the value segments of the book, VIP candidates by volume, which wallets went quiet (last transfer "
+     "before the final third of the window), and which funding wallets carry a curated flag. Built for the "
+     "'user & VIP intelligence', 'transaction monitoring / KYC-KYB' and 'who is behind each wallet' use cases.",
+     {"address": "0x6cb53f00a586f7704e1f7121c2e397b579eb3ed0", "hours": 24, "limit": 20},
+     {"type": "object", "properties": {"address": {"type": "string"},
+                                       "tokens": {"type": "array", "items": {"type": "string"}},
+                                       "hours": {"type": "integer"}, "limit": {"type": "integer"}},
+      "required": ["address"]},
+     {"venue": "0x6cb5…3ed0", "users_total": 12,
+      "value_segments": {"under_100_usd": 7, "100_to_1k_usd": 3, "1k_to_10k_usd": 2, "over_10k_usd": 0},
+      "vip_candidates": [{"address": "0x…", "usd_volume": 2400.0, "transfers": 6}],
+      "went_quiet": [{"address": "0x…", "last_seen": "2026-10-02T08:00:00Z"}],
+      "flagged_funders": []}),
 ]
 for _slug, _op, _name, _desc, _ex_in, _schema, _ex_out in _ARKHAM:
     _route = f"POST /arkham-intel/{_slug}"

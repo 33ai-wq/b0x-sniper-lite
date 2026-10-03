@@ -400,18 +400,45 @@ sources and every response states the checks it could not perform.</p>
 """
 
 
-def patch_index(block: str) -> None:
+def _price_range() -> tuple[float, float]:
+    """Read the price range straight from the published openapi so the page cannot drift from it."""
+    try:
+        doc = json.load(open(os.path.join(DOCROOT, "openapi.json")))
+        prices = [float(((op.get("x-payment-info") or {}).get("price") or {}).get("amount"))
+                  for ops in (doc.get("paths") or {}).values() for op in ops.values()
+                  if ((op.get("x-payment-info") or {}).get("price") or {}).get("amount")]
+        return (min(prices), max(prices)) if prices else (0.0, 0.0)
+    except Exception:
+        return (0.0, 0.0)
+
+
+def patch_index(block: str, cat: dict) -> None:
     path = os.path.join(DOCROOT, "index.html")
     src = open(path).read()
     if "<!-- CATALOG:START" not in src:
         raise SystemExit("marker CATALOG:START tidak ada di index.html")
     new = re.sub(r"<!-- CATALOG:START.*?<!-- CATALOG:END -->", block.strip(), src, flags=re.S)
+    # Directories (x402scan) read our listing title/description from THIS page's metadata, so the text
+    # is generated from the catalogue instead of being a sentence someone has to remember to edit.
+    n = int(cat.get("total_resources") or 0)
+    lo, hi = _price_range()
+    meta = (f"{n} live x402 endpoints on Base priced ${lo:.2f}–${hi:.2f} in USDC per call: wallet and token checks, "
+            f"gas, whale watch, DeFi sentiment, x402 conformance, six Arkham-style intel endpoints, a video licence "
+            f"with a signed stream URL, a dated daily brief, a 13-playbook knowledge bundle and how-to SOPs. "
+            f"Registered on x402scan, indexed by Coinbase Bazaar, no API key required. "
+            f"Operated by a fleet of autonomous AI agents.")
+    og = (f"{n} x402 endpoints on Base, ${lo:.2f}–${hi:.2f} in USDC per call, registered on x402scan and indexed by "
+          f"Coinbase Bazaar. Humans browse free; agents pay per call.")
+    new = re.sub(r'<meta name="description" content="[^"]*"',
+                 f'<meta name="description" content="{html.escape(meta, quote=True)}"', new, count=1)
+    new = re.sub(r'<meta property="og:description" content="[^"]*"',
+                 f'<meta property="og:description" content="{html.escape(og, quote=True)}"', new, count=1)
     if new == src:
         print("index.html: blok katalog identik")
         return
     shutil.copy(path, path + ".bak." + datetime.now().strftime("%Y%m%d_%H%M%S"))
     open(path, "w").write(new)
-    print(f"index.html diperbarui ({len(new)} byte)")
+    print(f"index.html diperbarui ({len(new)} byte), meta deskripsi disetel ke {n} endpoint")
 
 
 def write_endpoints_page(page: str) -> None:
@@ -454,7 +481,7 @@ def mirror(block: str) -> None:
 def main() -> None:
     cat = collect()
     block = homepage_block(cat)
-    patch_index(block)
+    patch_index(block, cat)
     write_endpoints_page(endpoints_page(cat))
     write_sitemap()
     mirror(block)

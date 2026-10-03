@@ -6,6 +6,7 @@ X402_STANDARD=0 so nothing is charged and the live service is untouched.
 
   /home/ubuntu/prpo_ai/venv/bin/python /home/ubuntu/prpo_ai/xh_api/test_arkham_intel.py
 """
+import json
 import os
 import sys
 
@@ -44,7 +45,7 @@ print("free index")
 s, d = client.get("/arkham-intel"), None
 d = s.json()
 check("GET /arkham-intel -> 200", s.status_code == 200, f"status={s.status_code}")
-check("lists five paid endpoints", len(d.get("endpoints") or []) == 5, str(len(d.get("endpoints") or [])))
+check("lists six paid endpoints", len(d.get("endpoints") or []) == 6, str(len(d.get("endpoints") or [])))
 check("states it is not Arkham", "not Arkham" in str(d.get("not_arkham")), str(d.get("not_arkham"))[:60])
 check("price stated as 0.10", d.get("price_usdc_per_call") == 0.1, str(d.get("price_usdc_per_call")))
 
@@ -103,9 +104,20 @@ check("says an empty flags list is not 'no risk'",
       "no risk" in str(d.get("methodology", {}).get("flags", "")) or d.get("labels_configured") == 3,
       str(d.get("methodology", {}).get("flags"))[:90])
 
+print("\nvenue-users (6th endpoint, broker view)")
+s, d = post("/arkham-intel/venue-users", {"address": TREASURY, "hours": 24, "limit": 10})
+check("200 for the treasury", s == 200, f"status={s} {str(d)[:120]}")
+check("reports users + value segments", "users_total" in d and isinstance(d.get("value_segments"), dict),
+      json.dumps(d.get("value_segments")))
+check("vip / quiet / flagged sections present",
+      all(k in d for k in ("vip_candidates", "went_quiet", "flagged_funders")), str(list(d.keys())))
+check("identity limits stated", any("identity" in x for x in (d.get("not_checked") or [])), str(d.get("not_checked"))[:120])
+s, _ = post("/arkham-intel/venue-users", {"address": "0xzz"})
+check("bad address -> 400", s == 400, f"status={s}")
+
 print("\nrouting table")
 routes = [r for r in server.PAID_ROUTES if "/arkham-intel/" in r[0]]
-check("10 entries on the gate (5 POST + 5 GET)", len(routes) == 10, str(len(routes)))
+check("12 entries on the gate (6 POST + 6 GET)", len(routes) == 12, str(len(routes)))
 check("all priced 0.10", all(server.PRICE_OVERRIDES.get(r[0]) == 0.1 for r in routes), "")
 check("public resource path overridden",
       all(server.RESOURCE_OVERRIDES.get(r[0], "").startswith("/api/arkham-intel/") for r in routes), "")

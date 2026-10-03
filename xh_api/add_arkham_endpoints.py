@@ -78,6 +78,15 @@ FIVE = {
                   "hours": {"type": "integer"}},
         "required": ["address"],
     },
+    "venue-users": {
+        "summary": "Arkham-style intel — venue users, VIPs and flagged funders",
+        "description": "The broker view of a venue (a contract or wallet users pay into): every wallet that transacted "
+                       "with it in the window, the value segments of the book, VIP candidates by volume, which wallets "
+                       "went quiet, and which funding wallets carry a curated flag. " + SCOPE,
+        "props": {"address": {"type": "string"}, "tokens": {"type": "array", "items": {"type": "string"}},
+                  "hours": {"type": "integer"}, "limit": {"type": "integer"}},
+        "required": ["address"],
+    },
 }
 
 NEW_PATHS = {"/api/arkham-intel": {"get": {

@@ -395,9 +395,21 @@ PLAYBOOKS = [
                "be used as one."},
     {"role": "brokers", "goal": "Who are my users, and who went quiet?",
      "arkham_use_case": "User & VIP Intelligence",
-     "plan": ["POST /api/arkham-intel/counterparties", "POST /api/arkham-intel/portfolio"],
-     "look_for": "last_seen per counterparty: quiet wallets have an old timestamp while the book is still there.",
-     "limits": "Segmenting by value is address-level, not account-level."},
+     "plan": ["POST /api/arkham-intel/venue-users"],
+     "look_for": "value_segments for the shape of your book, vip_candidates for the wallets worth knowing, and "
+                 "went_quiet for the ones whose last transfer falls before the final third of the window.",
+     "limits": "Segmenting is address-level, never account-level, and 'quiet' describes this window only."},
+    {"role": "brokers", "goal": "Which wallets funding my venue are flagged?",
+     "arkham_use_case": "Transaction Monitoring & KYC/KYB",
+     "plan": ["POST /api/arkham-intel/venue-users"],
+     "look_for": "flagged_funders — every entry carries the label, its type and the source of the label.",
+     "limits": "Flags come only from the operator's curated label file. This is not a sanctions or KYC screen and "
+               "must not be used as one."},
+    {"role": "brokers", "goal": "Who is behind each wallet?",
+     "arkham_use_case": "Hyperliquid Trader Sourcing",
+     "plan": ["POST /api/arkham-intel/venue-users", "POST /api/arkham-intel/counterparties"],
+     "look_for": "the verified class, label and first/last seen we do hold for each wallet.",
+     "limits": "There is no public wallet-to-Hyperliquid-account mapping: we cannot tell you who a wallet belongs to."},
     {"role": "investigators", "goal": "Where did the money go?",
      "arkham_use_case": "Money Laundering & Illicit Finance (AML)",
      "plan": ["POST /api/arkham-intel/trace"],
@@ -444,6 +456,13 @@ class TraceReq(BaseModel):
     hours: int = Field(24, description="Lookback window in hours (1-24).")
 
 
+class VenueReq(BaseModel):
+    address: str = Field(..., description="Your venue: a contract or wallet that users pay into")
+    tokens: list[str] | None = Field(None, description="Extra ERC-20 addresses to include (USDC is always scanned)")
+    hours: int = Field(24, description="Lookback window in hours (1-24).")
+    limit: int = Field(20, description="How many wallets to return (1-50).")
+
+
 def register(app: FastAPI, ctx: Ctx) -> None:
     """Wire the five intel routes plus the free index onto the app."""
 
@@ -467,6 +486,8 @@ def register(app: FastAPI, ctx: Ctx) -> None:
                  "answers": "who an address transacts with, class + first/last seen + curated flags"},
                 {"route": "POST /api/arkham-intel/trace", "price_usd": 0.1,
                  "answers": "hop-by-hop flow with flags, for AML-style 'where did the money go' questions"},
+                {"route": "POST /api/arkham-intel/venue-users", "price_usd": 0.1,
+                 "answers": "the broker view of a venue: users, value segments, VIP candidates, who went quiet, flagged funders"},
             ],
             "labels_configured": sorted(_labels().keys())[:10],
             "methodology": {"chain": "Base (eip155:8453)", "transfers": "ERC-20 Transfer logs via public RPC, chunked 2000 blocks",
@@ -729,4 +750,103 @@ def register(app: FastAPI, ctx: Ctx) -> None:
                                       "no label file configured: an empty flags list means 'nothing curated', not 'no risk'")},
             "not_checked": ["tokens other than USDC", "paths longer than the requested hops", "mixers/bridges we have no label for",
                             "off-chain identity or intent", "legal conclusions of any kind"],
+        }
+
+    @app.get("/arkham-intel/venue-users")
+    def venue_users_get(address: str, hours: int = 24, limit: int = 20):
+        return venue_users(VenueReq(address=address, hours=hours, limit=limit))
+
+    @app.post("/arkham-intel/venue-users")
+    def venue_users(req: VenueReq):
+        """Broker/venue view: who uses your product, who went quiet, which funding wallets are flagged."""
+        addr = req.address.strip().lower()
+        if not ctx.is_address(addr):
+            return JSONResponse({"error": "invalid_address"}, status_code=400)
+        hours = max(1, min(req.hours, 24))
+        limit = max(1, min(req.limit, 50))
+        tokens = {"USDC": "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913"}
+        for i, t in enumerate([x for x in (req.tokens or []) if ctx.is_address(x)][:4]):
+            tokens[f"token{i+2}"] = t.lower()
+        from_blk, to_blk, _ = _window_blocks(ctx, hours)
+        mid_block = from_blk + (to_blk - from_blk) * 2 // 3   # last third = "recent activity"
+        wallets: dict[str, dict] = {}
+        scanned, rpc_errors = [], []
+        for sym, tok in tokens.items():
+            dec = _decimals(ctx, tok)
+            px = (_price_usd(tok) or {}).get("price_usd")
+            pad = ["0x" + "0" * 24 + addr[2:]]
+            logs, trunc, errs = _transfers(ctx, tok, from_blk, to_blk, pad=pad)
+            rpc_errors += [f"{sym} {e}" for e in errs]
+            scanned.append({"token": sym, "address": tok, "transfers_seen": len(logs), "truncated": trunc})
+            for lg in logs:
+                other = lg["to"].lower() if lg["frm"] == addr else lg["frm"].lower()
+                if other == addr:
+                    continue                       # self transfer
+                w = wallets.setdefault(other, {"address": other, "tokens": set(), "in": 0.0, "out": 0.0,
+                                               "usd": 0.0, "transfers": 0, "first": lg["block"], "last": lg["block"]})
+                amount = lg["value"] / (10 ** dec)
+                if lg["frm"] == addr:
+                    w["out"] += amount
+                else:
+                    w["in"] += amount
+                w["usd"] += amount * (px or 0)
+                w["transfers"] += 1
+                w["tokens"].add(sym)
+                w["first"] = min(w["first"], lg["block"])
+                w["last"] = max(w["last"], lg["block"])
+        buckets = {"under_100_usd": 0, "100_to_1k_usd": 0, "1k_to_10k_usd": 0, "over_10k_usd": 0, "unpriced": 0}
+        rows, flagged = [], []
+        for w in wallets.values():
+            cls = classify(ctx, w["address"])
+            lab = _label_of(w["address"])
+            usd = round(w["usd"], 4)
+            if usd == 0:
+                buckets["unpriced"] += 1
+            elif usd < 100:
+                buckets["under_100_usd"] += 1
+            elif usd < 1000:
+                buckets["100_to_1k_usd"] += 1
+            elif usd < 10000:
+                buckets["1k_to_10k_usd"] += 1
+            else:
+                buckets["over_10k_usd"] += 1
+            row = {
+                "address": w["address"], "class": cls["class"], "evidence": cls["evidence"],
+                "label": cls["label"], "label_type": cls["label_type"],
+                "flag": bool(lab and lab.get("type") in ("mixer", "sanctioned", "marketplace", "exploit")),
+                "paid_in": round(w["in"], 6), "paid_out": round(w["out"], 6), "usd_volume": usd,
+                "transfers": w["transfers"], "tokens": sorted(w["tokens"]),
+                "first_seen": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(_block_ts(ctx, w["first"]))),
+                "last_seen": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(_block_ts(ctx, w["last"]))),
+                "quiet": w["last"] < mid_block,      # no activity in the last third of the window
+            }
+            rows.append(row)
+            if row["flag"]:
+                flagged.append({"address": w["address"], "label": (lab or {}).get("label"),
+                                "type": (lab or {}).get("type"), "source": (lab or {}).get("source")})
+        rows.sort(key=lambda r: (r["usd_volume"], r["transfers"]), reverse=True)
+        top = [r for r in rows if r["usd_volume"] >= 1000]
+        return {
+            "venue": addr, "window": {"hours": hours, "from_block": from_blk, "to_block": to_blk},
+            "tokens_scanned": scanned, "rpc_errors": rpc_errors,
+            "users": rows[:limit],
+            "users_total": len(rows),
+            "value_segments": buckets,
+            "vip_candidates": [{"address": r["address"], "usd_volume": r["usd_volume"], "transfers": r["transfers"],
+                                "last_seen": r["last_seen"]} for r in top[:10]],
+            "went_quiet": [{"address": r["address"], "usd_volume": r["usd_volume"], "last_seen": r["last_seen"]}
+                           for r in rows if r["quiet"]][:10],
+            "flagged_funders": flagged,
+            "labels_configured": len(_labels()),
+            "methodology": {
+                "source": "ERC-20 Transfer logs for USDC (+ any tokens you name) on Base, filtered on your venue address",
+                "segments": "value buckets from the USD value of what each wallet sent to the venue in the window",
+                "quiet": "wallets whose last transfer with the venue falls before the final third of the window "
+                         "— that is an observation about this window, not a statement about the wallet",
+                "labels": ("curated label file applied" if _labels() else
+                           "no curated label file: every flag is false, which means 'nothing curated', not 'clean'"),
+            },
+            "not_checked": ["who the wallet belongs to (no KYC/KYB: this is not an identity product)",
+                            "off-chain venues such as Hyperliquid — there is no public wallet-to-account mapping here",
+                            "tokens beyond the ones scanned above", "sanctions screening"],
         }
