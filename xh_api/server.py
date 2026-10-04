@@ -225,6 +225,9 @@ hundred_x.register(app, hundred_x.Ctx(
 # calls happen further down, once PAID_ROUTES and the SSRF/challenge helpers exist.
 import x402_trust  # noqa: E402
 import token_safety  # noqa: E402
+import document_intel  # noqa: E402
+import domain_audit  # noqa: E402
+import trust_leaderboard  # noqa: E402
 
 _TRUST_PRICE = float(os.environ.get("XH_TRUST_PRICE_USDC", "0.05"))
 _SAFETY_PRICE = float(os.environ.get("XH_SAFETY_PRICE_USDC", "0.05"))
@@ -265,6 +268,31 @@ _SAFETY_EXAMPLE = {
 
 # The routes for these two are appended further down (once PAID_ROUTES exists), and the handlers are
 # wired next to the SSRF/challenge helpers.
+
+_DOC_PRICE = float(os.environ.get("XH_DOC_PRICE_USDC", "0.05"))
+_DOC_DESC = ("Document to text (PDF, scans, images, DOCX, HTML) — per-page method, digest of the bytes read")
+
+_DOMAIN_PRICE = float(os.environ.get("XH_DOMAIN_PRICE_USDC", "0.05"))
+_DOMAIN_DESC = ("Domain & email audit — SPF, DMARC, DKIM, MX, TLS certificate, HSTS and security headers, "
+                "scored 0-100")
+
+
+def _route_pair(prefix: str, price: float, desc: str, post_op: str, get_op: str,
+                example_in: dict, schema_in: dict, example_out: dict) -> None:
+    """Register the POST and GET forms of one product with the same price (7-tuples: the gate unpacks
+    PAID_ROUTES entries as route, op_id, name, desc, example_in, schema_in, example_out)."""
+    for _m, _op in (("POST", post_op), ("GET", get_op)):
+        _r = f"{_m} {prefix}"
+        PRICE_OVERRIDES[_r] = price
+        RESOURCE_OVERRIDES[_r] = f"/api{prefix}"
+        PAID_ROUTES.append((_r, _op, desc, desc, example_in, schema_in, example_out))
+
+
+# Called further down, once PAID_ROUTES / PRICE_OVERRIDES exist.
+
+_LB_PRICE = float(os.environ.get("XH_LB_PRICE_USDC", "0.05"))
+_LB_DESC = ("x402 seller trust leaderboard — every catalogue origin probed outside-in and scored 0-100, "
+            "with the verdict spread and the most common reasons points were lost")
 
 _HX_PRICE = float(os.environ.get("XH_HUNDRED_X_PRICE_USDC", "0.15"))
 _HX_DESC = (
@@ -550,6 +578,36 @@ for _sm, _sop in (("POST", "tokenSafety"), ("GET", "tokenSafetyGet")):
     PAID_ROUTES.append((_r, _sop, "Token safety score (Base) — safe / caution / danger", _SAFETY_DESC,
                         {"token": "0x4ed4E862860beD51a9570b96d89aF5E1B0Efefed"}, _SAFETY_SCHEMA, _SAFETY_EXAMPLE))
 
+_DOC_IN = {"url": "https://arxiv.org/pdf/1706.03762"}
+_DOC_SCHEMA = {"type": "object", "properties": {"url": {"type": "string"}, "base64": {"type": "string"},
+                                                "filename": {"type": "string"}, "ocr": {"type": "boolean"},
+                                                "max_chars": {"type": "integer"}}, "required": []}
+_DOC_OUT = {"kind": "pdf", "page_count": 15, "text_chars": 39525, "words": 6095, "ocr_pages": 0,
+            "sha256": "bdfaa68d8984…", "text": "Provided proper attribution is provided, Google hereby…"}
+
+_DOM_IN = {"domain": "example.com"}
+_DOM_SCHEMA = {"type": "object", "properties": {"domain": {"type": "string"}}, "required": ["domain"]}
+_DOM_OUT = {"domain": "example.com", "score": 72, "verdict": "acceptable",
+            "points": {"mail_auth": 40.0, "mail_delivery": 10.0, "tls": 20.0, "web_hygiene": 0.0},
+            "findings": ["DMARC policy reject — failing mail is acted on",
+                         "null MX (RFC 7505): this domain states it does not receive mail at all"]}
+
+_route_pair("/document-extract", _DOC_PRICE, _DOC_DESC, "documentExtract", "documentExtractGet",
+            _DOC_IN, _DOC_SCHEMA, _DOC_OUT)
+_route_pair("/domain-audit", _DOMAIN_PRICE, _DOMAIN_DESC, "domainAudit", "domainAuditGet",
+            _DOM_IN, _DOM_SCHEMA, _DOM_OUT)
+
+_LB_IN = {"limit": 100, "order": "worst"}
+_LB_SCHEMA = {"type": "object", "properties": {"limit": {"type": "integer"}, "verdict": {"type": "string"},
+                                               "min_score": {"type": "number"}, "max_score": {"type": "number"},
+                                               "origin": {"type": "string"}, "order": {"type": "string"},
+                                               "include_findings": {"type": "boolean"}}, "required": []}
+_LB_OUT = {"generated_at": "2026-10-04T18:20:00Z", "returned": 2,
+           "ranking": [{"origin": "https://eltociear-tokenguard.hf.space", "score": 79,
+                        "verdict": "pay_with_caution", "count": 3}]}
+_route_pair("/trust-leaderboard", _LB_PRICE, _LB_DESC, "trustLeaderboard", "trustLeaderboardGet",
+            _LB_IN, _LB_SCHEMA, _LB_OUT)
+
 STANDARD_X402 = os.environ.get("X402_STANDARD", "1") != "0"
 
 # ── how-to SOPs: one file per SOP becomes its own paid route on both GET and POST ─────────────
@@ -614,6 +672,10 @@ if STANDARD_X402:
                     output=OutputConfig(example=example_out)),
             }
 
+        if len(X402_ROUTES) != len(PAID_ROUTES):
+            raise RuntimeError(f"only {len(X402_ROUTES)} of {len(PAID_ROUTES)} paid routes were configured — "
+                               "the gate would serve some paid endpoints for free")
+
         @app.middleware("http")
         async def x402_payment_gate(request: Request, call_next):
             return await payment_middleware(X402_ROUTES, _srv)(request, call_next)
@@ -623,7 +685,9 @@ if STANDARD_X402:
     except Exception as e:  # a payment-gate problem must never take the API down
         X402_ROUTES = {}
         STANDARD_X402 = False
-        print(f"[xh-api] WARNING: standard x402 setup failed ({e}); serving without the gate", flush=True)
+        print(f"[xh-api] !!! PAYMENT GATE IS OFF (setup failed: {type(e).__name__}: {e}) — every paid route "
+              f"is being served for free until this is fixed. PAID_ROUTES entries must be 7-tuples: "
+              f"(route, op_id, name, desc, example_in, schema_in, example_out).", flush=True)
 
 
 # ── request log middleware (2026-10-02) ──────────────────────────────────────
@@ -1210,6 +1274,11 @@ x402_trust.register(app, x402_trust.Ctx(
     is_address=_is_address, alchemy_url=_DEDICATED_RPC))
 token_safety.register(app, token_safety.Ctx(
     rpc=_rpc, erc20=erc20_call, is_address=_is_address, alchemy_url=_DEDICATED_RPC))
+# document intelligence and the domain/email audit only need the SSRF guard (they fetch the document
+# themselves and probe DNS/TLS directly).
+document_intel.register(app, document_intel.Ctx(check_ssrf=_check_ssrf))
+domain_audit.register(app, domain_audit.Ctx())
+trust_leaderboard.register(app, trust_leaderboard.Ctx())
 
 
 @app.post("/x402-check")
