@@ -104,11 +104,13 @@ def assess_one(ctx, row: dict, timeout: float) -> dict:
     import x402_trust
     url = row["sample"]["url"]
     try:
-        rep = x402_trust.assess(ctx, url, method="POST", body={})
+        # probe_method="auto": try the verbs an agent would try and score the one that answers with a challenge
+        rep = x402_trust.assess(ctx, url, method="AUTO", body={})
     except Exception as e:
         rep = {"url": url, "reachable": False, "error": f"{type(e).__name__}: {str(e)[:120]}"}
     return {
         "origin": row["origin"], "url": url, "count": row["count"],
+        "probe_method": (rep.get("checks") or {}).get("probe_method"),
         "score": rep.get("score"), "verdict": rep.get("verdict"), "reachable": bool(rep.get("reachable")),
         "status": rep.get("status"), "latency_ms": rep.get("latency_ms"),
         "points": rep.get("points"), "penalty": rep.get("penalty"),

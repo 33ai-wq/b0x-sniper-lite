@@ -255,7 +255,28 @@ def assess(ctx: Ctx, url: str, method: str = "POST", body: dict | None = None,
                 "score": 0, "verdict": "avoid",
                 "reason": "the target resolves to a private address or is not http(s)"}
     method = (method or "POST").upper()
-    probe = _http(url, method, body if body is not None else {})
+    # "AUTO" exists because a seller that answers GET with a 402 will often answer POST with 400/404 — a probe
+    # with the wrong verb then reports "no payTo" about a challenge that was never seen. Try the verbs an agent
+    # would try and keep the one that actually produced a challenge.
+    attempted: list[str] = []
+    if method == "AUTO":
+        best = None
+        for m in ("POST", "GET"):
+            p = _http(url, m, {} if m == "POST" else None)
+            attempted.append(m)
+            if p.get("ok") and p.get("status") == 402:
+                best = (m, p)
+                break
+            if best is None and p.get("ok"):
+                best = (m, p)
+        if best:
+            method, probe = best
+        else:
+            probe = p if attempted else _http(url, "POST", {})
+            method = attempted[-1] if attempted else "POST"
+    else:
+        probe = _http(url, method, body if body is not None else {})
+        attempted.append(method)
     if not probe.get("ok"):
         return {"url": url, "method": method, "reachable": False, "error": probe.get("error"),
                 "score": 0, "verdict": "avoid",
@@ -266,9 +287,12 @@ def assess(ctx: Ctx, url: str, method: str = "POST", body: dict | None = None,
     challenge, transport = ctx.decode_challenge(headers.get("payment-required"), probe["text"])
     accs = (challenge or {}).get("accepts") or []
     a0 = accs[0] if isinstance(accs, list) and accs else (accs if isinstance(accs, dict) else {})
-    checks: dict[str, Any] = {}
+    checks: dict[str, Any] = {"probe_method": method, "methods_attempted": attempted}
     points: dict[str, Any] = {}
     notes: list[str] = []
+    if len(attempted) > 1 and method != attempted[0]:
+        notes.append(f"the {attempted[0]} probe answered without a challenge while {method} returned the 402: "
+                     "an agent has to pick the right verb")
 
     # 1. gate behaviour (25)
     gate = 0.0
@@ -353,14 +377,21 @@ def assess(ctx: Ctx, url: str, method: str = "POST", body: dict | None = None,
     # 4. payTo reputation (25) — the deep check, and the only one that costs chain calls
     payto = a0.get("payTo") or a0.get("recipient") or ""
     rep: dict[str, Any] = {"address": payto}
-    if deep and payto and payto != ZERO:
+    if not payto:
+        # No payTo in the challenge: there is nothing to inspect, and saying the account "does not exist"
+        # would be a claim about an address that was never given.
+        rep = {"address": "", "chain": "unknown", "checked": False,
+               "reason": "the accepts entry declares no payTo, so there is nothing to verify on-chain"}
+    elif deep and payto != ZERO:
         if ctx.is_address(payto):
             rep = payto_base(ctx, payto)
         elif re.fullmatch(r"[1-9A-HJ-NP-Za-km-z]{32,44}", payto):
             rep = payto_solana(payto)
         else:
-            rep = {"address": payto, "error": "unrecognised address format"}
+            rep = {"address": payto, "checked": False, "reason": "unrecognised address format"}
     pay_pts, pay_notes = _payto_points(rep) if deep else (0.0, [])
+    if not payto:
+        pay_notes.append("the challenge declares no payTo: a buyer has no address to pay")
     notes.extend(pay_notes)
     if payto and payto.lower() == ZERO:
         notes.append("PAYTO IS THE ZERO ADDRESS: paying here burns the money")
@@ -482,6 +513,9 @@ def register(app, ctx: Ctx) -> None:
             "price_usdc_per_call": 0.05,
             "endpoints": [{"route": "POST /api/x402-trust", "price_usd": 0.05},
                           {"route": "GET /api/x402-trust?url=…", "price_usd": 0.05}],
+            "probe_method": ("pass method=auto to try POST and GET and score the verb that actually returns a "
+                             "challenge — a seller that answers GET with 402 often answers POST with 400, and "
+                             "probing the wrong verb would score a challenge that was never seen"),
             "verdicts": {"pay": ">= 80", "pay_with_caution": "60-79", "avoid": "< 60"},
             "weights": {"gate_behaviour": 25, "challenge_conformance": 20, "discovery_hygiene": 15,
                         "payto_reputation_onchain": 25, "price_sanity": 10, "replay_hygiene": 5},
@@ -496,5 +530,5 @@ def register(app, ctx: Ctx) -> None:
         return _run(req.url, req.method, req.body, req.deep)
 
     @app.get("/x402-trust")
-    def trust_get(url: str, method: str = "POST", deep: bool = True):
+    def trust_get(url: str, method: str = "auto", deep: bool = True):
         return _run(url, method, None, deep)

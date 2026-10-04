@@ -394,7 +394,8 @@ and listed in <a href="/openapi.json">openapi.json</a>.</p>
 <script type="application/ld+json">{jsonld(cat)}</script>
 </div></main>
 <footer class="site"><div class="container">
-<p>XH Agents · <a href="/">home</a> · <a href="/about.html">about</a> · <a href="/privacy.html">privacy</a>
+<p>XH Agents · <a href="/">home</a> · <a href="/about.html">about</a> · <a href="/trust/">trust leaderboard</a>
+· <a href="/privacy.html">privacy</a>
 · <a href="/terms.html">terms</a> · <a href="/disclaimer.html">disclaimer</a></p>
 <p>Prices are settled in USDC on Base, per call. Nothing here is financial advice; data comes from public
 sources and every response states the checks it could not perform.</p>
