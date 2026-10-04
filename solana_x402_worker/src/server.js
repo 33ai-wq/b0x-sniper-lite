@@ -19,6 +19,7 @@ import {
   honeypotCheck,
 } from "./endpoints.js";
 import { hundredXHunter, hundredXMethod } from "./hundredx.js";
+import { tokenSafety, tokenSafetyMethod } from "./tokensafety.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -111,16 +112,18 @@ app.get("/openapi.json", (_, res) => {
     }
     paths[path] = { [isPost ? "post" : "get"]: methodSpec };
     // the cycle-wallet hunt answers GET and POST alike: body or query string, same product, same price
-    if (path === "/v1/hundred-x-hunter") {
+    if (path === "/v1/hundred-x-hunter" || path === "/v1/token-safety") {
       paths[path].post = { ...methodSpec, parameters: undefined,
         requestBody: { required: false, content: { "application/json": { schema: {
           type: "object",
-          properties: {
-            mint: { type: "string", description: "SPL mint of a coin from a previous cycle" },
-            window_days: { type: "integer", default: 30 },
-            min_wallets: { type: "integer", default: 3 },
-            limit: { type: "integer", default: 10 },
-          },
+          properties: path === "/v1/token-safety"
+            ? { mint: { type: "string", description: "SPL mint address to score" } }
+            : {
+              mint: { type: "string", description: "SPL mint of a coin from a previous cycle" },
+              window_days: { type: "integer", default: 30 },
+              min_wallets: { type: "integer", default: 3 },
+              limit: { type: "integer", default: 10 },
+            },
           required: ["mint"],
         } } } } };
     }
@@ -130,6 +133,12 @@ app.get("/openapi.json", (_, res) => {
     description: "The seven-step method, the scoring rubric and the threshold — free.",
     security: [],
     responses: { 200: { description: "Method, rubric, threshold and limits." } },
+  } };
+  paths["/v1/token-safety/method"] = { get: {
+    operationId: "tokenSafetyMethod",
+    description: "The token safety rubric, weights and verdict bands — free.",
+    security: [],
+    responses: { 200: { description: "Rubric, weights and verdict bands." } },
   } };
   
   // Free endpoints
@@ -142,7 +151,7 @@ app.get("/openapi.json", (_, res) => {
     info: {
       title: "pronomad Solana x402 Worker",
       version: "1.1.0",
-      description: "x402 v2 paid API on Solana. 7 endpoints: meme-hunter, defi-sentiment, dinalibrium, wallet-profile, b0x402-data, honeypot-check, hundred-x-hunter (the seven-step cycle-wallet method).",
+      description: "x402 v2 paid API on Solana. 8 endpoints: meme-hunter, defi-sentiment, dinalibrium, wallet-profile, b0x402-data, honeypot-check, hundred-x-hunter (seven-step cycle-wallet method), token-safety (0-100 safety score).",
       contact: { name: "XH Agents", email: "basefortyblock@gmail.com" },
     },
     servers: [{ url: config.baseUrl, description: "Production" }],
@@ -171,12 +180,21 @@ const paidEndpoints = {
   // the seven-step cycle-wallet hunt: same method as the Base endpoint on xhagents.xyz, Solana data,
   // settled in USDC on Solana. Served on both GET (query string) and POST (JSON body).
   "/v1/hundred-x-hunter": { methods: ["GET", "POST"], handler: hundredXHunter },
+  // 0-100 safety score for an SPL token: ownership powers, real holders, Token-2022 risks, liquidity.
+  "/v1/token-safety": { methods: ["GET", "POST"], handler: tokenSafety },
 };
 
 // Free: the method itself, the rubric and the threshold.
 app.get("/v1/hundred-x-hunter/method", async (req, res) => {
   try {
     res.json(await hundredXMethod());
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+app.get("/v1/token-safety/method", async (req, res) => {
+  try {
+    res.json(await tokenSafetyMethod());
   } catch (e) {
     res.status(500).json({ error: e.message });
   }

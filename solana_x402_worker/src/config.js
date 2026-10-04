@@ -39,6 +39,7 @@ const PRICES = {
   "/v1/b0x402-data":     50_000,    // $0.05 (multichain gas + honeypot combo)
   "/v1/honeypot-check":  20_000,    // $0.02 (single honeypot check)
   "/v1/hundred-x-hunter": 150_000,  // $0.15 (seven-step cycle-wallet hunt, the "next 100x" method)
+  "/v1/token-safety":      50_000,  // $0.05 (0-100 SPL token safety score with evidence)
 };
 
 const config = {
@@ -77,6 +78,9 @@ export const OPENAPI_PARAMS = {
     { name: "window_days", in: "query", required: false, schema: { type: "integer", default: 30, minimum: 1, maximum: 180, description: "Activity window in days" } },
     { name: "min_wallets", in: "query", required: false, schema: { type: "integer", default: 3, minimum: 2, maximum: 10, description: "How many surviving wallets must hold a mint for it to be a signal" } },
     { name: "limit", in: "query", required: false, schema: { type: "integer", default: 10, minimum: 1, maximum: 25, description: "Wallets examined in step 5" } },
+  ],
+  "/v1/token-safety": [
+    { name: "mint", in: "query", required: true, schema: { type: "string", pattern: "^[1-9A-HJ-NP-Za-km-z]{32,44}$", description: "SPL mint address to score" } },
   ],
 };
 

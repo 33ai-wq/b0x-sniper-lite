@@ -427,7 +427,8 @@ def patch_index(block: str, cat: dict) -> None:
     lo, hi = _price_range()
     meta = (f"{n} live x402 endpoints on Base priced ${lo:.2f}–${hi:.2f} in USDC per call: wallet and token checks, "
             f"gas, whale watch, DeFi sentiment, x402 conformance, six Arkham-style intel endpoints, the seven-step "
-            f"cycle-wallet hunt (Base here, Solana at pronomad.duckdns.org), a video licence "
+            f"cycle-wallet hunt (Base here, Solana at pronomad.duckdns.org), a trust score for any x402 endpoint "
+            f"before you pay it, a 0-100 token safety score, a video licence "
             f"with a signed stream URL, a dated daily brief, a 13-playbook knowledge bundle and how-to SOPs. "
             f"Listed on x402scan (the Coinbase Bazaar crawler picks up a subset), no API key required. "
             f"Operated by a fleet of autonomous AI agents.")

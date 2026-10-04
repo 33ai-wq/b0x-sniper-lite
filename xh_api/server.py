@@ -219,6 +219,53 @@ import hundred_x  # noqa: E402
 hundred_x.register(app, hundred_x.Ctx(
     rpc=_rpc, erc20=erc20_call, is_address=_is_address, alchemy_url=_DEDICATED_RPC))
 
+# ── trust + safety (2026-10-04): the "check before you pay" pair ──────────────────────────────
+# x402-trust: score any x402 endpoint before an agent pays it. token-safety: a 0-100 score for a Base
+# token with the evidence behind it. The modules are imported here; their routes and the register()
+# calls happen further down, once PAID_ROUTES and the SSRF/challenge helpers exist.
+import x402_trust  # noqa: E402
+import token_safety  # noqa: E402
+
+_TRUST_PRICE = float(os.environ.get("XH_TRUST_PRICE_USDC", "0.05"))
+_SAFETY_PRICE = float(os.environ.get("XH_SAFETY_PRICE_USDC", "0.05"))
+
+_TRUST_DESC = (
+    "Check an x402 endpoint before paying it. Give it any x402 URL: it makes the unpaid request, decodes the "
+    "402 challenge, reads the origin's .well-known/x402 and openapi.json, inspects the payTo address on-chain "
+    "(USDC inflows, distinct senders, EOA vs contract vs smart-wallet delegation), and returns a 0-100 trust "
+    "score with buy/watch/avoid plus the evidence and the penalties behind every point. Built so an autonomous "
+    "agent can refuse a seller it cannot verify — the check a machine buyer currently has no way to run.")
+_TRUST_SCHEMA = {"type": "object", "properties": {
+    "url": {"type": "string", "description": "The x402 endpoint an agent is about to pay"},
+    "method": {"type": "string", "description": "HTTP method the agent will use (default POST)"},
+    "body": {"type": "object", "description": "JSON body the agent would send"},
+    "deep": {"type": "boolean", "description": "Also inspect payTo on-chain (default true)"}},
+    "required": ["url"]}
+_TRUST_EXAMPLE = {
+    "url": "https://xhagents.xyz/api/kb/ask", "score": 93, "verdict": "pay",
+    "points": {"gate": 25, "challenge": 20, "discovery": 15, "payto": 21, "price": 10, "replay": 5},
+    "payto_inspection": {"kind": "eoa", "usdc_transfers_seen": 14, "distinct_senders": 5},
+    "findings": ["402 returned without payment", "14 USDC inflows from 5 senders on record"],
+    "not_checked": ["does the seller deliver after payment", "uptime over time", "operator identity"]}
+
+_SAFETY_DESC = (
+    "One 0-100 safety score for a Base token, decided before the agent buys: liquidity on the deepest pair, "
+    "top-10 holder concentration, owner powers found in the bytecode (mint/blacklist/pause/fee setters), "
+    "upgradeability from the EIP-1967 slot, explorer/Sourcify verification, the creator's history, and the "
+    "price impact of a small trade. Returns safe/caution/danger with every component printed. Checks it cannot "
+    "do honestly (buy/sell tax, honeypot simulation) are listed as not_checked instead of guessed.")
+_SAFETY_SCHEMA = {"type": "object", "properties": {
+    "token": {"type": "string", "description": "Base token contract address"}}, "required": ["token"]}
+_SAFETY_EXAMPLE = {
+    "token": "0x4ed4E862860beD51a9570b96d89aF5E1B0Efefed", "symbol": "DEGEN", "score": 78,
+    "verdict": "safe", "points": {"liquidity": 25, "concentration": 12, "contract_powers": 16,
+                                  "upgradeability_verification": 15, "creator_history": 5, "tradability": 5},
+    "top10_share_pct": 61.8, "findings": ["deep liquidity ($864,945)", "not upgradeable"],
+    "not_checked": ["buy/sell tax", "honeypot simulation"]}
+
+# The routes for these two are appended further down (once PAID_ROUTES exists), and the handlers are
+# wired next to the SSRF/challenge helpers.
+
 _HX_PRICE = float(os.environ.get("XH_HUNDRED_X_PRICE_USDC", "0.15"))
 _HX_DESC = (
     "The seven-step cycle-wallet hunt on Base. Give it a coin from a previous cycle and it does the work "
@@ -489,6 +536,19 @@ for _hx_method, _hx_op in (("POST", "hundredXHunter"), ("GET", "hundredXHunterGe
                         _HX_DESC, {"token": "0xb2000000000000000000004c27f6523082f41D01",
                                    "window_days": 30, "min_wallets": 3, "limit": 25},
                         _HX_SCHEMA, _HX_EXAMPLE_OUT))
+
+for _tm, _top in (("POST", "x402Trust"), ("GET", "x402TrustGet")):
+    _r = f"{_tm} /x402-trust"
+    PRICE_OVERRIDES[_r] = _TRUST_PRICE
+    RESOURCE_OVERRIDES[_r] = "/api/x402-trust"
+    PAID_ROUTES.append((_r, _top, "x402 trust layer — check before you pay", _TRUST_DESC,
+                        {"url": "https://xhagents.xyz/api/kb/ask", "method": "POST"}, _TRUST_SCHEMA, _TRUST_EXAMPLE))
+for _sm, _sop in (("POST", "tokenSafety"), ("GET", "tokenSafetyGet")):
+    _r = f"{_sm} /token-safety"
+    PRICE_OVERRIDES[_r] = _SAFETY_PRICE
+    RESOURCE_OVERRIDES[_r] = "/api/token-safety"
+    PAID_ROUTES.append((_r, _sop, "Token safety score (Base) — safe / caution / danger", _SAFETY_DESC,
+                        {"token": "0x4ed4E862860beD51a9570b96d89aF5E1B0Efefed"}, _SAFETY_SCHEMA, _SAFETY_EXAMPLE))
 
 STANDARD_X402 = os.environ.get("X402_STANDARD", "1") != "0"
 
@@ -1142,6 +1202,14 @@ def _decode_challenge(header_value: str | None, body_text: str) -> tuple[dict | 
     except Exception:
         pass
     return None, None
+
+
+# Trust + safety handlers: wired here because register() needs _check_ssrf and _decode_challenge above.
+x402_trust.register(app, x402_trust.Ctx(
+    check_ssrf=_check_ssrf, decode_challenge=_decode_challenge, rpc=_rpc, erc20=erc20_call,
+    is_address=_is_address, alchemy_url=_DEDICATED_RPC))
+token_safety.register(app, token_safety.Ctx(
+    rpc=_rpc, erc20=erc20_call, is_address=_is_address, alchemy_url=_DEDICATED_RPC))
 
 
 @app.post("/x402-check")

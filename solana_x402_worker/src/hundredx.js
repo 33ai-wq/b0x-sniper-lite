@@ -122,18 +122,23 @@ async function dexInfo(mint) {
   try {
     const r = await fetch(`${DEX}/tokens/${mint}`);
     const j = await r.json();
-    const pairs = (j.pairs || []).filter((p) => p.chainId === "solana");
-    if (!pairs.length) {
+    const all = (j.pairs || []).filter((p) => p.chainId === "solana");
+    if (!all.length) {
       cachePut(key, null);
       return null;
     }
-    const best = pairs.reduce((a, b) =>
+    // prefer the pair where the requested mint is the base token: for a quote token the deepest market
+    // belongs to somebody else's coin, and reading its symbol/price would describe the wrong asset.
+    const own = all.filter((p) => (p.baseToken?.address || "") === mint);
+    const best = (own.length ? own : all).reduce((a, b) =>
       parseFloat(b?.liquidity?.usd || 0) > parseFloat(a?.liquidity?.usd || 0) ? b : a);
+    const side = (best.baseToken?.address || "") === mint ? best.baseToken : best.quoteToken;
     const out = {
       pair: best.pairAddress,
       dex: best.dexId,
-      symbol: best.baseToken?.symbol,
-      name: best.baseToken?.name,
+      symbol: side?.symbol,
+      name: side?.name,
+      mint_is: (best.baseToken?.address || "") === mint ? "base" : "quote",
       liquidity_usd: parseFloat(best.liquidity?.usd || 0),
       price_usd: parseFloat(best.priceUsd || 0),
       price_change_24h_pct: best.priceChange?.h24 ?? null,
