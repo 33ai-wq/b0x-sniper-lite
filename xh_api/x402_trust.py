@@ -118,7 +118,12 @@ def payto_base(ctx: Ctx, addr: str) -> dict:
         out["nonce"] = int(ctx.rpc("eth_getTransactionCount", [addr, "latest"]), 16)
     except Exception:
         out["nonce"] = None
-    if ctx.alchemy_url:
+    out["indexer"] = "alchemy_getAssetTransfers" if ctx.alchemy_url else None
+    if not ctx.alchemy_url:
+        # No indexer: say so. Silence here used to read as "no USDC inflow", which is a claim we did not check.
+        out["checked"] = False
+        out["reason"] = "no transfer indexer configured on this server: USDC inflow history was NOT inspected"
+    else:
         try:
             req = urllib.request.Request(ctx.alchemy_url, data=json.dumps({
                 "jsonrpc": "2.0", "id": 1, "method": "alchemy_getAssetTransfers",
@@ -128,21 +133,26 @@ def payto_base(ctx: Ctx, addr: str) -> dict:
                 headers={"Content-Type": "application/json"})
             with urllib.request.urlopen(req, timeout=45) as r:
                 j = json.loads(r.read().decode())
-            rows = ((j.get("result") or {}).get("transfers")) or []
-            senders = {(t.get("from") or "").lower() for t in rows}
-            stamps = [((t.get("metadata") or {}).get("blockTimestamp") or "")[:19] for t in rows]
-            total = 0.0
-            for t in rows:
-                try:
-                    total += float(t.get("value") or 0)
-                except Exception:
-                    pass
-            out.update({"usdc_transfers_seen": len(rows), "distinct_senders": len(senders),
-                        "usdc_received": round(total, 4),
-                        "last_received": max(stamps) if stamps else None,
-                        "source": "alchemy_getAssetTransfers (last 25 USDC inflows)"})
+            if j.get("error"):
+                out["checked"] = False
+                out["reason"] = f"indexer refused the query: {str(j['error'])[:120]}"
+            else:
+                rows = ((j.get("result") or {}).get("transfers")) or []
+                senders = {(t.get("from") or "").lower() for t in rows}
+                stamps = [((t.get("metadata") or {}).get("blockTimestamp") or "")[:19] for t in rows]
+                total = 0.0
+                for t in rows:
+                    try:
+                        total += float(t.get("value") or 0)
+                    except Exception:
+                        pass
+                out.update({"checked": True, "usdc_transfers_seen": len(rows), "distinct_senders": len(senders),
+                            "usdc_received": round(total, 4),
+                            "last_received": max(stamps) if stamps else None,
+                            "source": "alchemy_getAssetTransfers (last 25 USDC inflows)"})
         except Exception as e:
-            out["error"] = f"{type(e).__name__}: {str(e)[:100]}"
+            out["checked"] = False
+            out["reason"] = f"indexer call failed: {type(e).__name__}: {str(e)[:100]}"
     return out
 
 
@@ -168,17 +178,23 @@ def payto_solana(addr: str) -> dict:
     try:
         sigs = _solana_rpc("getSignaturesForAddress", [addr, {"limit": 25}])
         out["recent_signatures"] = len(sigs or [])
+        out["checked"] = True
         if sigs:
             bt = sigs[0].get("blockTime")
             out["last_seen"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(bt)) if bt else None
     except Exception as e:
         out["recent_signatures"] = None
-        out["sig_error"] = str(e)[:80]
+        out["checked"] = False
+        out["reason"] = f"the public RPC refused the history query ({type(e).__name__}) — activity was NOT inspected"
     return out
 
 
 def _payto_points(p: dict) -> tuple[float, list[str]]:
     pts, notes = 0.0, []
+    # An unmeasured check must never look like a bad result: award the neutral middle and say why.
+    if p.get("checked") is False:
+        notes.append("payTo reputation NOT measured: " + str(p.get("reason") or "the check could not run")[:150])
+        return 12.0, notes
     if p.get("chain") == "base":
         if p.get("kind") == "eoa":
             pts += 4

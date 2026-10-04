@@ -24,6 +24,16 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+# The sweep is usually run from cron, where the unit's EnvironmentFile is not loaded: pull the same
+# secrets file the xh-api service uses so the on-chain payTo check has its indexer.
+_ENV_FILE = "/home/ubuntu/prpo_ai/keys/alchemy_env"
+if not os.environ.get("ALCHEMY_API_KEY") and os.path.exists(_ENV_FILE):
+    for _line in open(_ENV_FILE):
+        _line = _line.strip()
+        if _line and not _line.startswith("#") and "=" in _line:
+            _k, _, _v = _line.partition("=")
+            os.environ.setdefault(_k.strip(), _v.strip())
+
 BAZAAR = "https://api.cdp.coinbase.com/platform/v2/x402/discovery/resources?limit=1000"
 UA = {"User-Agent": "xh-agents-trust-sweep/1.0 (+https://xhagents.xyz/trust)"}
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -187,7 +197,8 @@ def main() -> None:
     payload = {
         "generated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "method": ("one representative endpoint per origin, scored with XH Agents' x402 trust layer: unpaid 402 "
-                   "probe, challenge conformance, discovery documents, on-chain payTo reputation, price sanity"),
+                   "probe, challenge conformance, discovery documents, on-chain payTo reputation (USDC inflows "
+                   "seen by a transfer indexer; Solana via public RPC), price sanity"),
         "source": "Coinbase Bazaar discovery catalogue + live probes",
         "counts": {"origins_in_catalogue": None, "origins_scored": len(scored), "origins_total": len(results),
                    "verdicts": verdict_counts},
@@ -199,7 +210,15 @@ def main() -> None:
         },
         "common_penalties": dict(sorted(penalties.items(), key=lambda kv: -kv[1])[:15]),
         "origins": sorted(results, key=lambda r: -(r.get("score") or -1)),
-        "not_checked": ["behaviour after payment", "uptime over time", "operator identity", "content accuracy"],
+        "not_checked": [
+            "behaviour after payment (whether a seller delivers)",
+            "uptime over time — each row is a point-in-time probe",
+            "operator identity",
+            "content accuracy",
+            ("payTo reputation is a bounded look at the last 25 incoming USDC transfers; a row that says "
+             "'NOT measured' means the indexer or RPC refused the query, not that the address is empty"),
+            "origins that sell on other chains than Base and Solana: their payTo cannot be inspected this way",
+        ],
     }
     json.dump(payload, open(args.out, "w"), indent=2)
     print(f"\nditulis: {args.out}")

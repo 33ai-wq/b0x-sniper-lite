@@ -12,7 +12,8 @@ import shutil
 import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-DATA = os.environ.get("XH_TRUST_SWEEP_JSON", os.path.join(HERE, "xh_api", "data", "trust_sweep.json"))
+ROOT = os.path.dirname(HERE)  # /home/ubuntu/prpo_ai
+DATA = os.environ.get("XH_TRUST_SWEEP_JSON", os.path.join(ROOT, "xh_api", "data", "trust_sweep.json"))
 TARGETS = ["/var/www/xhagents-www/trust/index.html",
            "/home/ubuntu/xhagents-web/public/trust/index.html"]
 

@@ -95,7 +95,9 @@ CDP_ENV_FILE = "/home/ubuntu/prpo_ai/cdp/.env.cdp"
 # (measured 2026-09-27), while whale-watch scans 200 blocks and a settlement scan 800. So wide
 # log queries go to the public endpoints first and the dedicated RPC is the last resort.
 _PUBLIC_RPC = ["https://base-rpc.publicnode.com", "https://mainnet.base.org"]
-_DEDICATED_RPC = os.environ.get("XH_BASE_RPC", "").strip()
+_ALCHEMY_KEY = os.environ.get("ALCHEMY_API_KEY", "").strip()
+_DEDICATED_RPC = (os.environ.get("XH_BASE_RPC", "").strip()
+                  or (f"https://base-mainnet.g.alchemy.com/v2/{_ALCHEMY_KEY}" if _ALCHEMY_KEY else ""))
 RPC_LIST = ([_DEDICATED_RPC] if _DEDICATED_RPC else []) + _PUBLIC_RPC
 LOG_RPC_LIST = _PUBLIC_RPC + ([_DEDICATED_RPC] if _DEDICATED_RPC else [])
 ERC20_MIN_ABI = [
