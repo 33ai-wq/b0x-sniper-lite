@@ -211,6 +211,43 @@ import arkham_intel  # noqa: E402
 arkham_intel.register(app, arkham_intel.Ctx(
     rpc=_rpc, erc20=erc20_call, is_address=_is_address, hex_to_int=_hex_to_int))
 
+# ── hundred-x hunter (2026-10-04): Boss's seven-step "next 100x" cycle-wallet method, Base side ──
+# Same method as the Solana sibling on pronomad.duckdns.org; this one is computed from Base data and
+# settled in USDC on Base into the existing treasury.
+import hundred_x  # noqa: E402
+
+hundred_x.register(app, hundred_x.Ctx(
+    rpc=_rpc, erc20=erc20_call, is_address=_is_address, alchemy_url=_DEDICATED_RPC))
+
+_HX_PRICE = float(os.environ.get("XH_HUNDRED_X_PRICE_USDC", "0.15"))
+_HX_DESC = (
+    "The seven-step cycle-wallet hunt on Base. Give it a coin from a previous cycle and it does the work "
+    "the method describes: reads that token's earliest transfers and lists its first buyers, keeps only the "
+    "wallets that traded in the last N days, drops the machines (any wallet whose own transfers of the token "
+    "are under a minute apart), reads what the survivors bought since and whether they still hold it, finds "
+    "the tokens that appear in several of those wallets, then scores every candidate on a published rubric "
+    "and returns buy/watch/reject. Below the threshold the answer is no, however profitable the wallets were. "
+    "Every number is computed from Base chain data (Alchemy indexer + public RPC + DexScreener); steps that "
+    "could not be completed are listed in not_checked instead of being invented.")
+_HX_SCHEMA = {"type": "object", "properties": {
+    "token": {"type": "string", "description": "Base contract address of a coin from a previous cycle"},
+    "window_days": {"type": "integer", "minimum": 1, "maximum": 180},
+    "min_wallets": {"type": "integer", "minimum": 2, "maximum": 10},
+    "limit": {"type": "integer", "minimum": 1, "maximum": 60}},
+    "required": ["token"]}
+_HX_EXAMPLE_OUT = {
+    "method": "seven-step cycle-wallet method (Boss's 'next 100x' logic)",
+    "input_token": {"token": "0xb200…1d01", "symbol": "Basecat", "decimals": 18},
+    "step_2_first_buyers": {"count": 21, "source": "alchemy_getAssetTransfers (asc)"},
+    "step_3_active_in_window": {"kept": 19, "dropped": 2},
+    "step_4_bots_excluded": {"kept": 3, "excluded": 16, "rule_seconds": 60},
+    "step_6_recurring_tokens": [{"token": "0xacfe…21bf", "wallets": 2, "strong": False}],
+    "step_7_scored": [{"token": "0xacfe…21bf", "score": 5.5, "verdict": "reject", "wallets": 2}],
+    "decision": {"threshold": 9.0, "buy": [], "watch": [], "reject": 1},
+    "not_checked": ["smart-money identity beyond 'bought early once'", "future price"]}
+# (the route registration itself happens further down, after PAID_ROUTES exists — same order the
+# arkham routes use)
+
 PAID_ROUTES = [
     ("POST /wallet-profile", "walletProfile", "EVM address profile on Base",
      "Balances, contract status, nonce, recent USDC activity and known-address labels for any Base address.",
@@ -442,6 +479,16 @@ for _slug, _op, _name, _desc, _ex_in, _schema, _ex_out in _ARKHAM:
     PRICE_OVERRIDES[_groute] = _ARKHAM_PRICE
     RESOURCE_OVERRIDES[_groute] = f"/api/arkham-intel/{_slug}"
     PAID_ROUTES.append((_groute, _op + "Get", _name + " (GET)", _desc, _ex_in, _schema, _ex_out))
+
+# ── hundred-x hunter routes (Base): POST + GET twin, same price, one resource URL ──
+for _hx_method, _hx_op in (("POST", "hundredXHunter"), ("GET", "hundredXHunterGet")):
+    _hx_route = f"{_hx_method} /hundred-x-hunter"
+    PRICE_OVERRIDES[_hx_route] = _HX_PRICE
+    RESOURCE_OVERRIDES[_hx_route] = "/api/hundred-x-hunter"
+    PAID_ROUTES.append((_hx_route, _hx_op, "XH cycle-wallet hunt (seven-step 'next 100x' method)",
+                        _HX_DESC, {"token": "0xb2000000000000000000004c27f6523082f41D01",
+                                   "window_days": 30, "min_wallets": 3, "limit": 25},
+                        _HX_SCHEMA, _HX_EXAMPLE_OUT))
 
 STANDARD_X402 = os.environ.get("X402_STANDARD", "1") != "0"
 

@@ -38,6 +38,7 @@ const PRICES = {
   "/v1/wallet-profile": 100_000,    // $0.10
   "/v1/b0x402-data":     50_000,    // $0.05 (multichain gas + honeypot combo)
   "/v1/honeypot-check":  20_000,    // $0.02 (single honeypot check)
+  "/v1/hundred-x-hunter": 150_000,  // $0.15 (seven-step cycle-wallet hunt, the "next 100x" method)
 };
 
 const config = {
@@ -68,7 +69,14 @@ export const OPENAPI_PARAMS = {
     { name: "chain", in: "query", required: false, schema: { type: "string", default: "base", description: "Chain to query (base|solana|etc)" } },
   ],
   "/v1/honeypot-check": [
+    { name: "mint", in: "query", required: true, schema: { type: "string", pattern: "^[1-9A-HJ-NP-Za-km-z]{32,44}$", description: "SPL mint address (base58)" } },
     { name: "address", in: "query", required: true, schema: { type: "string", pattern: "^[A-Za-z0-9]{32,44}$", description: "Token contract address (base58)" } },
+  ],
+  "/v1/hundred-x-hunter": [
+    { name: "mint", in: "query", required: true, schema: { type: "string", pattern: "^[1-9A-HJ-NP-Za-km-z]{32,44}$", description: "SPL mint of a coin from a previous cycle" } },
+    { name: "window_days", in: "query", required: false, schema: { type: "integer", default: 30, minimum: 1, maximum: 180, description: "Activity window in days" } },
+    { name: "min_wallets", in: "query", required: false, schema: { type: "integer", default: 3, minimum: 2, maximum: 10, description: "How many surviving wallets must hold a mint for it to be a signal" } },
+    { name: "limit", in: "query", required: false, schema: { type: "integer", default: 10, minimum: 1, maximum: 25, description: "Wallets examined in step 5" } },
   ],
 };
 

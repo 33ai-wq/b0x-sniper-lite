@@ -18,6 +18,7 @@ import {
   b0x402Data,
   honeypotCheck,
 } from "./endpoints.js";
+import { hundredXHunter, hundredXMethod } from "./hundredx.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -63,7 +64,7 @@ function sendDiscoveryManifest(res) {
     entries,
     info: {
       title: "pronomad Solana x402 Worker",
-      description: "AI-powered crypto intelligence on Solana. 6 paid endpoints in USDC via x402 V2 protocol.",
+      description: "AI-powered crypto intelligence on Solana. 7 paid endpoints in USDC via x402 V2 protocol, including the seven-step cycle-wallet hunt ($0.15).",
       tags: ["crypto", "defi", "ai-agent", "x402-v2", "solana", "usdc"],
       homepage: config.baseUrl,
     },
@@ -109,7 +110,27 @@ app.get("/openapi.json", (_, res) => {
       };
     }
     paths[path] = { [isPost ? "post" : "get"]: methodSpec };
+    // the cycle-wallet hunt answers GET and POST alike: body or query string, same product, same price
+    if (path === "/v1/hundred-x-hunter") {
+      paths[path].post = { ...methodSpec, parameters: undefined,
+        requestBody: { required: false, content: { "application/json": { schema: {
+          type: "object",
+          properties: {
+            mint: { type: "string", description: "SPL mint of a coin from a previous cycle" },
+            window_days: { type: "integer", default: 30 },
+            min_wallets: { type: "integer", default: 3 },
+            limit: { type: "integer", default: 10 },
+          },
+          required: ["mint"],
+        } } } } };
+    }
   }
+  paths["/v1/hundred-x-hunter/method"] = { get: {
+    operationId: "hundredXHunterMethod",
+    description: "The seven-step method, the scoring rubric and the threshold — free.",
+    security: [],
+    responses: { 200: { description: "Method, rubric, threshold and limits." } },
+  } };
   
   // Free endpoints
   paths["/health"] = { get: { operationId: "health", description: "Health probe — free", security: [], responses: { 200: { description: "OK" } } } };
@@ -120,9 +141,9 @@ app.get("/openapi.json", (_, res) => {
     openapi: "3.0.0",
     info: {
       title: "pronomad Solana x402 Worker",
-      version: "1.0.0",
-      description: "x402 v2 paid API on Solana. 6 endpoints: meme-hunter, defi-sentiment, dinalibrium, wallet-profile, b0x402-data, honeypot-check.",
-      contact: { name: "Dina (Boss)", email: "yusliarifn78@gmail.com" },
+      version: "1.1.0",
+      description: "x402 v2 paid API on Solana. 7 endpoints: meme-hunter, defi-sentiment, dinalibrium, wallet-profile, b0x402-data, honeypot-check, hundred-x-hunter (the seven-step cycle-wallet method).",
+      contact: { name: "XH Agents", email: "basefortyblock@gmail.com" },
     },
     servers: [{ url: config.baseUrl, description: "Production" }],
     components: {
@@ -147,7 +168,19 @@ const paidEndpoints = {
   "/v1/wallet-profile": { method: "GET", handler: walletProfile },
   "/v1/b0x402-data": { method: "GET", handler: b0x402Data },
   "/v1/honeypot-check": { method: "GET", handler: honeypotCheck },
+  // the seven-step cycle-wallet hunt: same method as the Base endpoint on xhagents.xyz, Solana data,
+  // settled in USDC on Solana. Served on both GET (query string) and POST (JSON body).
+  "/v1/hundred-x-hunter": { methods: ["GET", "POST"], handler: hundredXHunter },
 };
+
+// Free: the method itself, the rubric and the threshold.
+app.get("/v1/hundred-x-hunter/method", async (req, res) => {
+  try {
+    res.json(await hundredXMethod());
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
 
 // Middleware: gate paid endpoints with x402 payment
 async function x402Gate(req, res, next) {
@@ -176,17 +209,20 @@ async function x402Gate(req, res, next) {
   next();
 }
 
-// Apply gate to all paid endpoints
+// Apply gate to all paid endpoints (a path may accept more than one method)
 for (const [path, info] of Object.entries(paidEndpoints)) {
-  app[info.method.toLowerCase()](path, x402Gate, async (req, res) => {
-    try {
-      const input = info.method === "GET" ? req.query : req.body;
-      const data = await info.handler(input);
-      res.json(data);
-    } catch (e) {
-      res.status(500).json({ error: e.message });
-    }
-  });
+  const methods = info.methods || [info.method];
+  for (const m of methods) {
+    app[m.toLowerCase()](path, x402Gate, async (req, res) => {
+      try {
+        const input = m === "GET" ? req.query : req.body;
+        const data = await info.handler(input);
+        res.json(data);
+      } catch (e) {
+        res.status(e.status || 500).json({ error: e.message });
+      }
+    });
+  }
 }
 
 // ── Landing page ────────────────────────────────────────────────
@@ -198,7 +234,7 @@ app.get("/", (req, res) => {
       <h1 style="background:linear-gradient(135deg,#3b82f6,#8b5cf6,#ec4899);-webkit-background-clip:text;color:transparent">
         Pay-per-call crypto intelligence on Solana
       </h1>
-      <p>6 paid x402 endpoints, USDC pricing, no subscriptions.</p>
+      <p>7 paid x402 endpoints, USDC pricing, no subscriptions.</p>
       <ul>
         ${Object.entries(config.prices).map(([path, amount]) =>
           `<li><code>${path}</code> — $${(amount / 100000).toFixed(2)} USDC/call</li>`

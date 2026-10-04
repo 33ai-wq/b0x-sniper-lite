@@ -174,7 +174,9 @@ def jsonld(cat: dict) -> str:
         "@type": "ItemList",
         "name": "XH Agents x402 endpoint catalogue",
         "description": f"{cat['total_resources']} x402 endpoints on Base, paid per call in USDC via the "
-                       f"x402 protocol, registered on x402scan and indexed by Coinbase Bazaar.",
+                       f"x402 protocol, listed on x402scan (a growing subset is also picked up by the "
+                       f"Coinbase Bazaar crawler — that indexing is selective and lags, so we claim only "
+                       f"what is verifiable there).",
         "numberOfItems": cat["total_resources"],
         "itemListElement": [
             {"@type": "ListItem", "position": i + 1, "item": {
@@ -281,7 +283,7 @@ def homepage_block(cat: dict) -> str:
     below (free, no sign-up) or open the <a href="/endpoints.html">full catalogue page</a>.
   </p>
   <div class="ep-stats" id="metrics-grid">
-    <div class="ep-stat" data-label="Registered endpoints"><span class="v mono" id="m-endpoints">{n}</span><span class="l">Registered endpoints</span><span class="d">x402scan verified · Coinbase Bazaar indexed</span></div>
+    <div class="ep-stat" data-label="Registered endpoints"><span class="v mono" id="m-endpoints">{n}</span><span class="l">Registered endpoints</span><span class="d">x402scan verified · Bazaar crawler picks up a subset</span></div>
     <div class="ep-stat" data-label="Payment rail"><span class="v mono" id="m-rail">x402 · USDC</span><span class="l">Payment rail</span><span class="d">per call on Base · quoted in the 402 challenge</span></div>
     <div class="ep-stat" data-label="Base mainnet block"><span class="v mono" id="m-block">—</span><span class="l">Base mainnet block</span><span class="d" id="m-block-note">read live, nothing cached</span></div>
     <div class="ep-stat" data-label="Secondary hosts"><span class="v mono" id="m-backup">{len(BACKUP)}</span><span class="l">Secondary hosts</span><span class="d">Cloudflare edge + Solana mainnet</span></div>
@@ -346,10 +348,10 @@ def endpoints_page(cat: dict) -> str:
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
 <title>x402 Endpoint Catalogue — {n} pay-per-call APIs on Base | XH Agents</title>
-<meta name="description" content="Catalogue of {n} live x402 endpoints on Base: wallet and token checks, gas, whale watch, DeFi sentiment, x402 conformance, a 13-playbook knowledge bundle and how-to SOPs. Paid per call in USDC, no API key. Registered on x402scan, indexed by Coinbase Bazaar.">
+<meta name="description" content="Catalogue of {n} live x402 endpoints on Base: wallet and token checks, gas, whale watch, DeFi sentiment, x402 conformance, Arkham-style intel, the seven-step cycle-wallet hunt, a 13-playbook knowledge bundle and how-to SOPs. Paid per call in USDC, no API key. Listed on x402scan.">
 <link rel="canonical" href="https://xhagents.xyz/endpoints.html">
 <meta property="og:type" content="website"><meta property="og:title" content="x402 Endpoint Catalogue — XH Agents">
-<meta property="og:description" content="{n} x402 endpoints on Base, paid per call in USDC, registered on x402scan and indexed by Coinbase Bazaar.">
+<meta property="og:description" content="{n} x402 endpoints on Base, paid per call in USDC, listed on x402scan.">
 <meta property="og:url" content="https://xhagents.xyz/endpoints.html">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -373,7 +375,8 @@ footer.site a{{color:var(--text-muted);text-decoration:none}}
 <h1>{n} x402 endpoints any agent can discover and pay for</h1>
 <p class="ep-lede">Every endpoint below is live in production and answers <code>402 Payment Required</code>
 with its own payment challenge, settling in USDC on Base per call — no API key, no account. Each one is
-registered on x402scan and indexed by Coinbase Bazaar. The exact price is quoted in the challenge itself
+registered on x402scan (the Coinbase Bazaar crawler picks up a subset of them — indexing there is selective,
+so we claim only what is verifiable). The exact price is quoted in the challenge itself
 and listed in <a href="/openapi.json">openapi.json</a>.</p>
 {sections}{backup_section}
 <h2 class="ep-group-title">How an agent pays</h2>
@@ -423,12 +426,13 @@ def patch_index(block: str, cat: dict) -> None:
     n = int(cat.get("total_resources") or 0)
     lo, hi = _price_range()
     meta = (f"{n} live x402 endpoints on Base priced ${lo:.2f}–${hi:.2f} in USDC per call: wallet and token checks, "
-            f"gas, whale watch, DeFi sentiment, x402 conformance, six Arkham-style intel endpoints, a video licence "
+            f"gas, whale watch, DeFi sentiment, x402 conformance, six Arkham-style intel endpoints, the seven-step "
+            f"cycle-wallet hunt (Base here, Solana at pronomad.duckdns.org), a video licence "
             f"with a signed stream URL, a dated daily brief, a 13-playbook knowledge bundle and how-to SOPs. "
-            f"Registered on x402scan, indexed by Coinbase Bazaar, no API key required. "
+            f"Listed on x402scan (the Coinbase Bazaar crawler picks up a subset), no API key required. "
             f"Operated by a fleet of autonomous AI agents.")
-    og = (f"{n} x402 endpoints on Base, ${lo:.2f}–${hi:.2f} in USDC per call, registered on x402scan and indexed by "
-          f"Coinbase Bazaar. Humans browse free; agents pay per call.")
+    og = (f"{n} x402 endpoints on Base, ${lo:.2f}–${hi:.2f} in USDC per call, listed on x402scan. "
+          f"Humans browse free; agents pay per call.")
     new = re.sub(r'<meta name="description" content="[^"]*"',
                  f'<meta name="description" content="{html.escape(meta, quote=True)}"', new, count=1)
     new = re.sub(r'<meta property="og:description" content="[^"]*"',

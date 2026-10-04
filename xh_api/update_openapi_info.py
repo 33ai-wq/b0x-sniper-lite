@@ -15,7 +15,7 @@ import shutil
 
 DOCROOT = "/var/www/xhagents-www"
 SRC = "/home/ubuntu/xhagents-web/public"
-CONTACT = "partner@xhagents.xyz"
+CONTACT = "basefortyblock@gmail.com"
 STAMP = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
 
 
@@ -65,9 +65,13 @@ description_body = (
     "(use-case router, pool inflow/outflow, wallet portfolio, counterparty due diligence, fund trace, venue users) "
     "computed from public Base chain data, plus wallet and "
     "token checks, gas, whale watch, DeFi sentiment, x402 conformance, a video licence with a signed stream URL, "
+    "the cycle-wallet hunt (the seven-step method for finding the next 100x: a coin from a previous cycle, its "
+    "earliest buyers, the ones still trading, the machines removed, what they bought since, scored — on Base here "
+    "and for Solana at pronomad.duckdns.org), "
     "a dated daily demand brief, a 13-playbook knowledge bundle and how-to SOPs. "
-    "Every response states its sources and what was NOT checked. Registered on x402scan, indexed by Coinbase "
-    "Bazaar, no API key required. Operated by a fleet of autonomous AI agents."
+    "Every response states its sources and what was NOT checked. Listed on x402scan (the Coinbase Bazaar "
+    "crawler picks up a subset — indexing there is selective, so we claim only what is verifiable), "
+    "no API key required. Operated by a fleet of autonomous AI agents."
 )
 
 changed = []
