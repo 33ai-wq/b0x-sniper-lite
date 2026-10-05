@@ -17,6 +17,7 @@ import hashlib
 import hmac
 import json
 import os
+import re
 import sys
 import time
 import urllib.error
@@ -29,6 +30,38 @@ VERSION = "2021-03-23"
 ENV_FILE = "/home/ubuntu/keys/tokenhub_cam.env"
 DOMAIN = "xhagents.xyz"
 DMARC_VALUE = "v=DMARC1; p=none; rua=mailto:basefortyblock@gmail.com; fo=1"
+
+# ── jalur kedua: API klasik DNSPod (dnsapi.cn) dengan login_token ───────────────────────────────
+# Dipakai kalau kunci Tencent Cloud tidak punya izin tulis dnspod:CreateRecord. Token DNSPod dibuat di
+# panel dnspod.cn (用户中心 → 密钥管理) dan disimpan di berkas mode 600, tidak pernah lewat chat.
+CLASSIC_ENV = "/home/ubuntu/keys/dnspod_token.env"
+
+
+def classic_token() -> tuple[str, str]:
+    """Ambil (id, token) DNSPod dari berkas kunci. Format berkas: DNSPOD_LOGIN_TOKEN=12345,abcdef…"""
+    if not os.path.exists(CLASSIC_ENV):
+        raise SystemExit(f"belum ada {CLASSIC_ENV} — jalankan /home/ubuntu/keys/set_dnspod_token.sh dulu")
+    raw = open(CLASSIC_ENV).read()
+    m = re.search(r"DNSPOD_LOGIN_TOKEN\s*=\s*[\"']?([0-9]+)\s*,\s*([A-Za-z0-9]+)", raw)
+    if not m:
+        raise SystemExit("format DNSPOD_LOGIN_TOKEN tidak dikenali (harus: <id>,<token>)")
+    return m.group(1), m.group(2)
+
+
+def classic(action: str, params: dict) -> dict:
+    import urllib.parse
+    tid, tok = classic_token()
+    data = {"login_token": f"{tid},{tok}", "format": "json", "lang": "en", **params}
+    body = urllib.parse.urlencode(data).encode()
+    req = urllib.request.Request(f"https://dnsapi.cn/{action}", data=body,
+                                 headers={"User-Agent": "xh-agents-dns/1.0 (+https://xhagents.xyz)"})
+    try:
+        with urllib.request.urlopen(req, timeout=45) as r:
+            return json.loads(r.read().decode())
+    except urllib.error.HTTPError as e:
+        return {"status": {"code": str(e.code), "message": e.read().decode()[:200]}}
+    except Exception as e:
+        return {"status": {"code": "network", "message": f"{type(e).__name__}: {str(e)[:160]}"}}
 
 
 def creds() -> tuple[str, str]:
@@ -86,9 +119,48 @@ def show(records: list[dict]) -> None:
 
 def main() -> None:
     ap = argparse.ArgumentParser()
-    ap.add_argument("action", choices=["list", "check", "create-dmarc"])
+    ap.add_argument("action", choices=["list", "check", "create-dmarc",
+                                       "classic-check", "classic-create-dmarc"])
     ap.add_argument("--domain", default=DOMAIN)
     args = ap.parse_args()
+
+    if args.action.startswith("classic-"):
+        # jalur API klasik DNSPod (login_token di keys/dnspod_token.env)
+        info = classic("Info.Version", {})
+        st = info.get("status") or {}
+        print("token DNSPod:", "sah" if st.get("code") in ("1", "2") else f"masalah: {st.get('code')} {st.get('message')}")
+        rl = classic("Record.List", {"domain": args.domain})
+        if (rl.get("status") or {}).get("code") != "1":
+            print("Record.List gagal:", json.dumps(rl.get("status"))[:200])
+            sys.exit(1)
+        records = rl.get("records") or []
+        print(f"record {args.domain}: {len(records)} terbaca")
+        dmarc = [r for r in records if r.get("name") == "_dmarc"]
+        if dmarc:
+            print("_dmarc sudah ada:", [(r.get("name"), r.get("type"), r.get("value")) for r in dmarc])
+            return
+        print("_dmarc belum ada")
+        if args.action == "classic-check":
+            return
+        out = classic("Record.Create", {"domain": args.domain, "sub_domain": "_dmarc",
+                                        "record_type": "TXT", "record_line": "默认",
+                                        "value": DMARC_VALUE, "ttl": 600})
+        st = out.get("status") or {}
+        if st.get("code") == "1":
+            rec = out.get("record") or {}
+            print(f"dibuat: id={rec.get('id')} name={rec.get('name')} value={rec.get('value')}")
+        else:
+            out2 = classic("Record.Create", {"domain": args.domain, "sub_domain": "_dmarc",
+                                             "record_type": "TXT", "record_line": "default",
+                                             "value": DMARC_VALUE, "ttl": 600})
+            st2 = out2.get("status") or {}
+            if st2.get("code") == "1":
+                print("dibuat (record line 'default'):", json.dumps(out2.get("record"))[:160])
+            else:
+                print("GAGAL:", json.dumps(st)[:200], "|", json.dumps(st2)[:200])
+                sys.exit(1)
+        return
+
     sid, skey = creds()
     print(f"kredensial: SecretId {len(sid)} karakter, SecretKey {len(skey)} karakter (tidak ditampilkan)")
 
