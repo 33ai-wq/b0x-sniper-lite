@@ -1,38 +1,38 @@
 {
-  "generated_at": "2026-10-04T18:36:53Z",
+  "generated_at": "2026-10-04T20:41:52Z",
   "method": "one representative endpoint per origin, scored with XH Agents' x402 trust layer: unpaid 402 probe, challenge conformance, discovery documents, on-chain payTo reputation (USDC inflows seen by a transfer indexer; Solana via public RPC), price sanity",
   "source": "Coinbase Bazaar discovery catalogue + live probes",
   "counts": {
     "origins_in_catalogue": null,
-    "origins_scored": 300,
-    "origins_total": 300,
+    "origins_scored": 301,
+    "origins_total": 301,
     "verdicts": {
+      "pay": 270,
       "pay_with_caution": 22,
-      "pay": 269,
       "avoid": 9
     }
   },
   "score_stats": {
-    "median": 89.0,
+    "median": 89,
     "mean": 86.2,
     "p90": 93,
     "unreachable": 0
   },
   "common_penalties": {
     "payTo is a plain EOA (no contract can freeze the funds)": 213,
-    "the POST probe answered without a challenge while GET returned the 402": 131,
+    "the POST probe answered without a challenge while GET returned the 402": 132,
     "the resource is not listed in its own .well-known/x402 document": 101,
     "openapi.json is not valid JSON": 88,
     "no reachable .well-known/x402 discovery document": 85,
     "openapi.json documents this path without an input schema": 62,
     "25 USDC inflows from 5 sender(s) on record": 35,
     "5 distinct senders = more than one buyer's word for it": 35,
-    "no reachable openapi.json": 34,
+    "4 distinct senders = more than one buyer's word for it": 34,
     "3 distinct senders = more than one buyer's word for it": 34,
     ".well-known/x402 is not valid JSON": 34,
-    "4 distinct senders = more than one buyer's word for it": 34,
-    "25 USDC inflows from 1 sender(s) on record": 33,
+    "no reachable openapi.json": 34,
     "25 USDC inflows from 3 sender(s) on record": 33,
+    "25 USDC inflows from 1 sender(s) on record": 33,
     "25 USDC inflows from 2 sender(s) on record": 31
   },
   "origins": [
@@ -693,6 +693,35 @@
         "8 distinct senders = more than one buyer's word for it"
       ],
       "checked_at": "2026-10-04T18:36:42Z"
+    },
+    {
+      "origin": "https://x402-seller.onrender.com",
+      "url": "https://x402-seller.onrender.com/air/quality",
+      "count": 11,
+      "probe_method": "GET",
+      "score": 97,
+      "verdict": "pay",
+      "reachable": true,
+      "status": 402,
+      "latency_ms": 767,
+      "points": {
+        "gate": 25.0,
+        "challenge": 20.0,
+        "discovery": 15.0,
+        "payto": 22.0,
+        "price": 10.0,
+        "replay": 5.0
+      },
+      "penalty": 0.0,
+      "payto": "0xbd61dfb01f81c91f02b0ccd51b0220e0c8918639",
+      "network": "eip155:8453",
+      "findings": [
+        "the POST probe answered without a challenge while GET returned the 402: an agent has to pick the right verb",
+        "payTo is an EOA running a smart-wallet delegation (0x7702cb55\u2026) \u2014 the key holder still controls the funds",
+        "25 USDC inflows from 13 sender(s) on record",
+        "13 distinct senders = more than one buyer's word for it"
+      ],
+      "checked_at": "2026-10-04T20:41:52Z"
     },
     {
       "origin": "https://xhagents.xyz",

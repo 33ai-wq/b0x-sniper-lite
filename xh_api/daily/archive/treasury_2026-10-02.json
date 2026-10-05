@@ -4,24 +4,6 @@
   "treasury": {
     "hdrs": [
       {
-        "tx": "0xb05bd66853a616eca70f45f951ed8b00f53162e64170c9b33181e0a8e15e947d",
-        "block": 52021049,
-        "from": "0x85fc53d6a89bf64e563588efc37b12ee89c4e421",
-        "amount_usdc": 0.25
-      },
-      {
-        "tx": "0xb5e10f18e5839a79182ef9c6721aa1cb7496203738ac62e20ac2ab84779cda06",
-        "block": 52021051,
-        "from": "0x85fc53d6a89bf64e563588efc37b12ee89c4e421",
-        "amount_usdc": 0.05
-      },
-      {
-        "tx": "0xf5240656e8328b82d14f64c918b50ca5a5604e61854a02ae3c312f258ae094b7",
-        "block": 52021052,
-        "from": "0x85fc53d6a89bf64e563588efc37b12ee89c4e421",
-        "amount_usdc": 0.05
-      },
-      {
         "tx": "0x8846c42ebdd914b8bb57f18c6e2ab0f54557f6ff1dc30af94d5d9b45860fbec9",
         "block": 52043305,
         "from": "0x7e6b6556322c4e26c567a867964ac793f5ee2b1c",
@@ -35,39 +17,69 @@
       }
     ],
     "scanned_hours": 24,
-    "revenue_usd": 0.41,
-    "transfers": 5,
+    "revenue_usd": 0.06,
+    "transfers": 2,
     "senders": {
-      "0x85fc53d6a89bf64e563588efc37b12ee89c4e421": {
-        "usd": 0.38,
-        "label": "our buyer test wallet"
-      },
       "0x7e6b6556322c4e26c567a867964ac793f5ee2b1c": {
         "usd": 0.03,
         "label": "payapi.market canary wallet"
+      },
+      "0x85fc53d6a89bf64e563588efc37b12ee89c4e421": {
+        "usd": 0.03,
+        "label": "our buyer test wallet"
       }
     },
     "error": null,
     "blocks": {
-      "from": 52019571,
-      "to": 52062771
+      "from": 52040401,
+      "to": 52083601
     }
   },
   "our_stats": {
     "db": "/home/ubuntu/prpo_ai/xh_api/logs/xh_api.db",
     "available": true,
-    "requests_24h": 15,
-    "paid_calls_24h": 1,
-    "revenue_usd_24h_proxy": 0.03,
+    "requests_24h": 1720,
+    "paid_calls_24h": 24,
+    "revenue_usd_24h_proxy": 15.29,
     "by_route_status": {
-      "POST /company-enrich 402": 2,
+      "GET /howto/create-x402-endpoint 402": 89,
+      "GET /howto/create-x402-endpoint 405": 1,
+      "GET /howto/vps-gdrive-connect 402": 81,
+      "GET /howto/vps-gdrive-connect 405": 2,
+      "GET /howto/x402-register 402": 87,
+      "GET /howto/x402-register 405": 1,
+      "GET /howto/youtube-auto-ai 402": 83,
+      "GET /howto/youtube-auto-ai 405": 3,
+      "POST /company-enrich 402": 147,
+      "POST /company-enrich 405": 13,
       "POST /daily-drop 200": 1,
-      "POST /daily-drop 402": 3,
-      "POST /defi-sentiment 402": 2,
-      "POST /social-data 402": 1,
-      "POST /whale-watch 402": 1,
-      "POST /x402-directory 402": 1,
-      "POST /xh-bundle 402": 2
+      "POST /daily-drop 402": 80,
+      "POST /daily-drop 405": 7,
+      "POST /defi-sentiment 402": 84,
+      "POST /defi-sentiment 405": 11,
+      "POST /gas-tracker 402": 79,
+      "POST /gas-tracker 405": 13,
+      "POST /payment-verify 402": 83,
+      "POST /payment-verify 405": 12,
+      "POST /social-data 402": 85,
+      "POST /social-data 405": 13,
+      "POST /token-check 402": 83,
+      "POST /token-check 405": 11,
+      "POST /video-license 200": 7,
+      "POST /video-license 402": 4,
+      "POST /video-license 503": 1,
+      "POST /wallet-profile 402": 81,
+      "POST /wallet-profile 405": 11,
+      "POST /web-search 402": 86,
+      "POST /web-search 405": 13,
+      "POST /whale-watch 402": 81,
+      "POST /whale-watch 405": 12,
+      "POST /x402-check 402": 82,
+      "POST /x402-check 405": 14,
+      "POST /x402-directory 402": 84,
+      "POST /x402-directory 405": 12,
+      "POST /xh-bundle 200": 16,
+      "POST /xh-bundle 402": 131
     },
     "revenue_note": "proxy = sum of the quoted price on calls that returned 200; the on-chain treasury scan in `treasury` is the source of truth"
   },

@@ -1,48 +1,30 @@
 {
-  "date": "2026-10-02",
-  "generated_at": "2026-10-02T04:18:56+00:00",
+  "date": "2026-10-05",
+  "generated_at": "2026-10-04T22:00:30+00:00",
   "window_days": 30,
-  "headline": "38 signals from 4 live sources; our paid calls 24h: 1; payapi market: 235 APIs listed",
+  "headline": "37 signals from 3 live sources; our paid calls 24h: 76; payapi market: 254 APIs listed",
   "counts": {
-    "signals": 38,
-    "sources_ok": 4,
+    "signals": 37,
+    "sources_ok": 3,
     "sources_failed": 0,
-    "our_paid_calls_24h": 1
+    "our_paid_calls_24h": 76
   },
   "sources_ok": [
     "github",
     "hackernews",
-    "payapi-market",
-    "polymarket"
+    "payapi-market"
   ],
   "sources_failed": [],
   "signals": [
     {
-      "kind": "polymarket",
-      "source": "polymarket",
-      "query": "keyword",
-      "title": "Will Anthropic have the best AI model at the end of October 2026?",
-      "score": 82078.86788399999,
-      "url": "https://polymarket.com/market/will-anthropic-have-the-best-ai-model-at-the-end-of-october-2026-20260811194841118",
-      "created_at": "2026-08-13T00:01:26.680281Z"
-    },
-    {
-      "kind": "polymarket",
-      "source": "polymarket",
-      "query": "keyword",
-      "title": "Will Google have the best AI model at the end of October 2026?",
-      "score": 81963.137837,
-      "url": "https://polymarket.com/market/will-google-have-the-best-ai-model-at-the-end-of-october-2026-20260811194841120",
-      "created_at": "2026-08-13T00:01:27.413567Z"
-    },
-    {
-      "kind": "polymarket",
-      "source": "polymarket",
-      "query": "keyword",
-      "title": "Will OpenAI announce another Millennium Prize solution by December 31, 2027?",
-      "score": 73683.60017700001,
-      "url": "https://polymarket.com/market/will-openai-announce-another-millennium-prize-solution-by-december-31-2027",
-      "created_at": "2026-09-09T15:59:54.51592Z"
+      "kind": "hackernews",
+      "source": "hackernews",
+      "query": "paid API agents",
+      "title": "Show HN: HN.watch \u2013 Videos of all Hacker News posts",
+      "score": 224,
+      "comments": 97,
+      "url": "https://hn.watch/",
+      "created_at": "2026-09-28T15:16:13Z"
     },
     {
       "kind": "hackernews",
@@ -77,9 +59,9 @@
     {
       "kind": "github",
       "source": "github",
-      "query": "agent payments in:title,body created:>2026-09-02",
+      "query": "agent payments in:title,body created:>2026-09-04",
       "title": "openapi-typescript in maintenance mode",
-      "score": 38,
+      "score": 42,
       "comments": 4,
       "url": "https://github.com/openapi-ts/openapi-typescript/issues/2874",
       "created_at": "2026-09-19T15:40:58Z",
@@ -88,13 +70,23 @@
     {
       "kind": "github",
       "source": "github",
-      "query": "agent payments in:title,body created:>2026-09-02",
+      "query": "agent payments in:title,body created:>2026-09-04",
       "title": "Bathhouse Update",
       "score": 14,
       "comments": 9,
       "url": "https://github.com/Rotwood-Vale/Ratwood-2.0/pull/2823",
       "created_at": "2026-09-21T09:37:32Z",
       "repo": "Rotwood-Vale/Ratwood-2.0"
+    },
+    {
+      "kind": "hackernews",
+      "source": "hackernews",
+      "query": "x402",
+      "title": "Iceland summons US ambassador over Trump's Stars and Stripes map",
+      "score": 5,
+      "comments": 0,
+      "url": "https://www.ft.com/content/792e9e30-7a96-402c-a472-d7304f5bc1ef",
+      "created_at": "2026-09-08T16:38:46Z"
     },
     {
       "kind": "hackernews",
@@ -119,7 +111,18 @@
     {
       "kind": "github",
       "source": "github",
-      "query": "agent payments in:title,body created:>2026-09-02",
+      "query": "x402 in:title,body created:>2026-09-04",
+      "title": "feat(x402): support trusted server-signed batch",
+      "score": 4,
+      "comments": 1,
+      "url": "https://github.com/solana-foundation/pay-kit/pull/349",
+      "created_at": "2026-10-02T16:52:46Z",
+      "repo": "solana-foundation/pay-kit"
+    },
+    {
+      "kind": "github",
+      "source": "github",
+      "query": "agent payments in:title,body created:>2026-09-04",
       "title": "[Feature] Native Browser Use / Browser Automation tool for Unsloth Studio agents",
       "score": 4,
       "comments": 0,
@@ -130,7 +133,7 @@
     {
       "kind": "github",
       "source": "github",
-      "query": "agent payments in:title,body created:>2026-09-02",
+      "query": "agent payments in:title,body created:>2026-09-04",
       "title": "[RFC] A Durable component: durable execution on top of Messenger, with Doctrine and Temporal bridges",
       "score": 4,
       "comments": 0,
@@ -141,7 +144,7 @@
     {
       "kind": "github",
       "source": "github",
-      "query": "agent payments in:title,body created:>2026-09-02",
+      "query": "agent payments in:title,body created:>2026-09-04",
       "title": "Update dependency boto3 to v1.43.104",
       "score": 4,
       "comments": 3,
@@ -152,7 +155,7 @@
     {
       "kind": "github",
       "source": "github",
-      "query": "x402 in:title,body created:>2026-09-02",
+      "query": "x402 in:title,body created:>2026-09-04",
       "title": "feat: x402 pay-per-call helper \u2014 envelope parser + after_execute modifier",
       "score": 3,
       "comments": 8,
@@ -163,7 +166,7 @@
     {
       "kind": "github",
       "source": "github",
-      "query": "x402 in:title,body created:>2026-09-02",
+      "query": "x402 in:title,body created:>2026-09-04",
       "title": "PG Award Intake: Stellar GO CLI",
       "score": 3,
       "comments": 12,
@@ -174,7 +177,7 @@
     {
       "kind": "github",
       "source": "github",
-      "query": "agent payments in:title,body created:>2026-09-02",
+      "query": "agent payments in:title,body created:>2026-09-04",
       "title": "Suggestions from itch.io: real User-Agent, API v2, data.json and QR login",
       "score": 3,
       "comments": 13,
@@ -185,7 +188,7 @@
     {
       "kind": "github",
       "source": "github",
-      "query": "agent payments in:title,body created:>2026-09-02",
+      "query": "agent payments in:title,body created:>2026-09-04",
       "title": "[spec] gate: let a runtime delegate \u00a77.4 approval to an external policy decision point",
       "score": 3,
       "comments": 2,
@@ -196,7 +199,7 @@
     {
       "kind": "github",
       "source": "github",
-      "query": "agent payments in:title,body created:>2026-09-02",
+      "query": "agent payments in:title,body created:>2026-09-04",
       "title": "Finish school AI allowance activation and metered teacher generation",
       "score": 3,
       "comments": 19,
@@ -207,7 +210,18 @@
     {
       "kind": "github",
       "source": "github",
-      "query": "agent payments in:title,body created:>2026-09-02",
+      "query": "agent payments in:title,body created:>2026-09-04",
+      "title": "Disable the workspace bank account row offline unless the reimburser is unlocking a locked account",
+      "score": 3,
+      "comments": 15,
+      "url": "https://github.com/Expensify/App/pull/102839",
+      "created_at": "2026-10-02T07:33:44Z",
+      "repo": "Expensify/App"
+    },
+    {
+      "kind": "github",
+      "source": "github",
+      "query": "agent payments in:title,body created:>2026-09-04",
       "title": "SAN-1274 PR 1 \u2014 Add the verified MDE AI skills foundation",
       "score": 3,
       "comments": 5,
@@ -218,7 +232,18 @@
     {
       "kind": "github",
       "source": "github",
-      "query": "agent payments in:title,body created:>2026-09-02",
+      "query": "agent payments in:title,body created:>2026-09-04",
+      "title": "Real-money gate: close the external audit's code findings",
+      "score": 3,
+      "comments": 3,
+      "url": "https://github.com/DansiDanutz/PreFlop/pull/5",
+      "created_at": "2026-10-03T00:01:54Z",
+      "repo": "DansiDanutz/PreFlop"
+    },
+    {
+      "kind": "github",
+      "source": "github",
+      "query": "agent payments in:title,body created:>2026-09-04",
       "title": "feat: Phase 2 tracked loan ledger + Loans category KPI exclusion (plan 011)",
       "score": 3,
       "comments": 22,
@@ -229,7 +254,7 @@
     {
       "kind": "github",
       "source": "github",
-      "query": "x402 in:title,body created:>2026-09-02",
+      "query": "x402 in:title,body created:>2026-09-04",
       "title": "feat(catalog): add Market Intelligence API provider",
       "score": 2,
       "comments": 2,
@@ -240,7 +265,7 @@
     {
       "kind": "github",
       "source": "github",
-      "query": "x402 in:title,body created:>2026-09-02",
+      "query": "x402 in:title,body created:>2026-09-04",
       "title": "feat(x402-router): make the statement page the landing page and relicense to Apache-2.0",
       "score": 2,
       "comments": 1,
@@ -251,7 +276,7 @@
     {
       "kind": "github",
       "source": "github",
-      "query": "x402 in:title,body created:>2026-09-02",
+      "query": "x402 in:title,body created:>2026-09-04",
       "title": "fix(x402): harden settlement recovery and request identity",
       "score": 2,
       "comments": 5,
@@ -262,7 +287,7 @@
     {
       "kind": "github",
       "source": "github",
-      "query": "x402 in:title,body created:>2026-09-02",
+      "query": "x402 in:title,body created:>2026-09-04",
       "title": "fix: keep x402 session tokens inside the paid URL scope",
       "score": 2,
       "comments": 1,
@@ -273,7 +298,7 @@
     {
       "kind": "github",
       "source": "github",
-      "query": "x402 in:title,body created:>2026-09-02",
+      "query": "x402 in:title,body created:>2026-09-04",
       "title": "fix: refuse x402 upto schemes instead of transferring the cap",
       "score": 2,
       "comments": 3,
@@ -284,18 +309,7 @@
     {
       "kind": "github",
       "source": "github",
-      "query": "x402 in:title,body created:>2026-09-02",
-      "title": "feat(x402/batch): harden replay and settlement lifecycle",
-      "score": 2,
-      "comments": 1,
-      "url": "https://github.com/solana-foundation/pay-kit/pull/308",
-      "created_at": "2026-09-04T11:32:46Z",
-      "repo": "solana-foundation/pay-kit"
-    },
-    {
-      "kind": "github",
-      "source": "github",
-      "query": "x402 in:title,body created:>2026-09-02",
+      "query": "x402 in:title,body created:>2026-09-04",
       "title": "fix: query get_balances against the AgentAccount, not the EOA signer",
       "score": 2,
       "comments": 1,
@@ -306,7 +320,7 @@
     {
       "kind": "github",
       "source": "github",
-      "query": "x402 in:title,body created:>2026-09-02",
+      "query": "x402 in:title,body created:>2026-09-04",
       "title": "fix(client): preserve canonical payment network identity",
       "score": 2,
       "comments": 1,
@@ -317,7 +331,7 @@
     {
       "kind": "github",
       "source": "github",
-      "query": "x402 in:title,body created:>2026-09-02",
+      "query": "x402 in:title,body created:>2026-09-04",
       "title": "fix: refuse add_custom_token overwrites that poison transfer decimals",
       "score": 2,
       "comments": 1,
@@ -328,7 +342,7 @@
     {
       "kind": "github",
       "source": "github",
-      "query": "x402 in:title,body created:>2026-09-02",
+      "query": "x402 in:title,body created:>2026-09-04",
       "title": "feat(tx): adopt pay-kit's transaction path, Transaction V1 aware",
       "score": 2,
       "comments": 2,
@@ -339,7 +353,7 @@
     {
       "kind": "github",
       "source": "github",
-      "query": "x402 in:title,body created:>2026-09-02",
+      "query": "x402 in:title,body created:>2026-09-04",
       "title": "Receiver auth binding",
       "score": 2,
       "comments": 1,
@@ -350,7 +364,7 @@
     {
       "kind": "github",
       "source": "github",
-      "query": "x402 in:title,body created:>2026-09-02",
+      "query": "x402 in:title,body created:>2026-09-04",
       "title": "feat(sdk): add permissioned payment clients",
       "score": 2,
       "comments": 2,
@@ -361,7 +375,7 @@
     {
       "kind": "github",
       "source": "github",
-      "query": "x402 in:title,body created:>2026-09-02",
+      "query": "x402 in:title,body created:>2026-09-04",
       "title": "docs: 2026-09-14 X \u4ea7\u54c1\u53d1\u5e03\u89c6\u9891\u4e2d\u6587\u53d1\u73b0\u6c47\u603b",
       "score": 2,
       "comments": 1,
@@ -372,7 +386,18 @@
     {
       "kind": "github",
       "source": "github",
-      "query": "agent payments in:title,body created:>2026-09-02",
+      "query": "agent payments in:title,body created:>2026-09-04",
+      "title": "Agent/swift fresh yrpw",
+      "score": 2,
+      "comments": 6,
+      "url": "https://github.com/NassarAlshabi1/marina-hotel-wit-app/pull/599",
+      "created_at": "2026-10-03T19:41:39Z",
+      "repo": "NassarAlshabi1/marina-hotel-wit-app"
+    },
+    {
+      "kind": "github",
+      "source": "github",
+      "query": "agent payments in:title,body created:>2026-09-04",
       "title": "fix(security): remove unauthenticated agent endpoints",
       "score": 2,
       "comments": 10,
@@ -383,83 +408,96 @@
     {
       "kind": "github",
       "source": "github",
-      "query": "agent payments in:title,body created:>2026-09-02",
+      "query": "agent payments in:title,body created:>2026-09-04",
       "title": "system-one : typed decision readout for models that answer instead of writing",
       "score": 2,
       "comments": 2,
       "url": "https://github.com/ggml-org/llama.cpp/pull/29321",
       "created_at": "2026-09-23T16:16:24Z",
       "repo": "ggml-org/llama.cpp"
-    },
-    {
-      "kind": "github",
-      "source": "github",
-      "query": "agent payments in:title,body created:>2026-09-02",
-      "title": "docs: brief agents on RFC-0004 step A \u2014 customer filters and manual payments",
-      "score": 2,
-      "comments": 0,
-      "url": "https://github.com/vaam-apps/vpay-skills/pull/23",
-      "created_at": "2026-09-23T18:42:09Z",
-      "repo": "vaam-apps/vpay-skills"
-    },
-    {
-      "kind": "github",
-      "source": "github",
-      "query": "agent payments in:title,body created:>2026-09-02",
-      "title": "feat(agent): tier-1 permissions, dashboard panel, avatar, booking-link fix",
-      "score": 2,
-      "comments": 3,
-      "url": "https://github.com/camelranchentertainment/Booking-Platform/pull/47",
-      "created_at": "2026-09-21T03:54:36Z",
-      "repo": "camelranchentertainment/Booking-Platform"
-    },
-    {
-      "kind": "github",
-      "source": "github",
-      "query": "agent payments in:title,body created:>2026-09-02",
-      "title": "payments: widen order intent rail types to encrypted-card and spt",
-      "score": 2,
-      "comments": 4,
-      "url": "https://github.com/Crossmint/crossmint-sdk/pull/2060",
-      "created_at": "2026-09-14T12:03:19Z",
-      "repo": "Crossmint/crossmint-sdk"
     }
   ],
   "market": {
     "payapi": {
       "x402": {
-        "matches": 97,
-        "searched": 235
+        "matches": 105,
+        "searched": 254
       },
       "agent": {
-        "matches": 106,
-        "searched": 235
+        "matches": 118,
+        "searched": 254
       },
       "knowledge": {
         "matches": 1,
-        "searched": 235
+        "searched": 254
       },
       "trading": {
-        "matches": 8,
-        "searched": 235
+        "matches": 9,
+        "searched": 254
       }
     }
   },
   "our_endpoints": {
     "db": "/home/ubuntu/prpo_ai/xh_api/logs/xh_api.db",
     "available": true,
-    "requests_24h": 12,
-    "paid_calls_24h": 1,
-    "revenue_usd_24h_proxy": 0.03,
+    "requests_24h": 3267,
+    "paid_calls_24h": 76,
+    "revenue_usd_24h_proxy": 59.44,
     "by_route_status": {
-      "POST /company-enrich 402": 1,
-      "POST /daily-drop 200": 1,
-      "POST /daily-drop 402": 3,
-      "POST /defi-sentiment 402": 1,
-      "POST /social-data 402": 1,
-      "POST /whale-watch 402": 1,
-      "POST /x402-directory 402": 1,
-      "POST /xh-bundle 402": 1
+      "GET /howto/create-x402-endpoint 402": 154,
+      "GET /howto/create-x402-endpoint 405": 3,
+      "GET /howto/vps-gdrive-connect 402": 143,
+      "GET /howto/vps-gdrive-connect 405": 3,
+      "GET /howto/x402-register 402": 151,
+      "GET /howto/x402-register 405": 3,
+      "GET /howto/youtube-auto-ai 402": 144,
+      "GET /howto/youtube-auto-ai 405": 5,
+      "POST /arkham-intel/counterparties 402": 20,
+      "POST /arkham-intel/exchange-flow 402": 20,
+      "POST /arkham-intel/portfolio 402": 20,
+      "POST /arkham-intel/trace 402": 19,
+      "POST /arkham-intel/use-cases 402": 21,
+      "POST /arkham-intel/venue-users 402": 18,
+      "POST /company-enrich 402": 250,
+      "POST /company-enrich 405": 27,
+      "POST /daily-drop 402": 153,
+      "POST /daily-drop 405": 3,
+      "POST /defi-sentiment 402": 144,
+      "POST /defi-sentiment 405": 33,
+      "POST /document-extract 402": 14,
+      "POST /document-extract 405": 15,
+      "POST /domain-audit 402": 14,
+      "POST /domain-audit 405": 5,
+      "POST /gas-tracker 402": 119,
+      "POST /gas-tracker 405": 31,
+      "POST /hundred-x-hunter 402": 25,
+      "POST /hundred-x-hunter 405": 15,
+      "POST /payment-verify 402": 123,
+      "POST /payment-verify 405": 30,
+      "POST /social-data 402": 146,
+      "POST /social-data 405": 27,
+      "POST /token-check 402": 128,
+      "POST /token-check 405": 29,
+      "POST /token-safety 402": 10,
+      "POST /token-safety 405": 5,
+      "POST /trust-leaderboard 402": 7,
+      "POST /trust-leaderboard 405": 5,
+      "POST /video-license 200": 12,
+      "POST /video-license 402": 5,
+      "POST /wallet-profile 402": 148,
+      "POST /wallet-profile 405": 30,
+      "POST /web-search 402": 146,
+      "POST /web-search 405": 28,
+      "POST /whale-watch 402": 122,
+      "POST /whale-watch 405": 32,
+      "POST /x402-check 402": 128,
+      "POST /x402-check 405": 33,
+      "POST /x402-directory 402": 126,
+      "POST /x402-directory 405": 41,
+      "POST /x402-trust 402": 11,
+      "POST /x402-trust 405": 5,
+      "POST /xh-bundle 200": 64,
+      "POST /xh-bundle 402": 204
     },
     "revenue_note": "proxy = sum of the quoted price on calls that returned 200; the on-chain treasury scan in `treasury` is the source of truth"
   },

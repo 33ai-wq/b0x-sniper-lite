@@ -84,45 +84,51 @@ def matches_watchlist(text):
 
 
 def fetch_bazaar():
-    """Fetch x402bazaar.org listings."""
-    url = "https://x402bazaar.org/api/listings"
-    # Fallback to main page if API not available
+    """Fetch x402bazaar.org listings.
+
+    x402bazaar.org now 307-redirects to www.x402bazaar.org and serves an SPA
+    (no JSON at /api/listings). The real listings backend lives at
+    https://x402-api.onrender.com (/services). Try both, newest first.
+    Returns (data, note) — data is None when no listing source answered with JSON.
+    """
     ctx = ssl.create_default_context()
     ctx.check_hostname = False
     ctx.verify_mode = ssl.CERT_NONE
-    try:
-        req = urllib.request.Request(url, headers={"User-Agent": "Scout/1.0"})
-        resp = urllib.request.urlopen(req, timeout=TIMEOUT, context=ctx)
-        return json.loads(resp.read().decode())
-    except Exception as e:
-        # Try HTML page
+    notes = []
+    for url in ("https://x402-api.onrender.com/services",
+                "https://www.x402bazaar.org/api/listings"):
         try:
-            url2 = "https://x402bazaar.org"
-            req = urllib.request.Request(url2, headers={"User-Agent": "Scout/1.0"})
+            req = urllib.request.Request(url, headers={"User-Agent": "Scout/1.0"})
             resp = urllib.request.urlopen(req, timeout=TIMEOUT, context=ctx)
-            html = resp.read().decode()
-            # Extract JSON from page if embedded
-            import re
-            match = re.search(r'window\.__INITIAL_STATE__\s*=\s*(\{.*?\});', html, re.DOTALL)
-            if match:
-                return json.loads(match.group(1))
-        except Exception:
-            pass
-    return None
+            body = resp.read().decode()
+            data = json.loads(body)
+            return data, f"{url} OK"
+        except urllib.error.HTTPError as e:
+            notes.append(f"{url} -> HTTP {e.code}")
+        except Exception as e:
+            notes.append(f"{url} -> {type(e).__name__}")
+    return None, "; ".join(notes)
 
 
 def fetch_bazaar_search(query):
-    """Search x402bazaar for a specific query."""
-    url = f"https://x402bazaar.org/api/search?q={urllib.parse.quote(query)}"
-    try:
-        ctx = ssl.create_default_context()
-        ctx.check_hostname = False
-        ctx.verify_mode = ssl.CERT_NONE
-        req = urllib.request.Request(url, headers={"User-Agent": "Scout/1.0"})
-        resp = urllib.request.urlopen(req, timeout=TIMEOUT, context=ctx)
-        return json.loads(resp.read().decode())
-    except Exception:
-        return None
+    """Search the Bazaar API for a specific query.
+
+    Live backend is https://x402-api.onrender.com/search?q= ... (returns
+    {"success":..., "count":N, "data":[...]}). The old /api/search path does
+    not exist on the new host.
+    """
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+    for url in (f"https://x402-api.onrender.com/search?q={urllib.parse.quote(query)}",
+                f"https://www.x402bazaar.org/api/search?q={urllib.parse.quote(query)}"):
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": "Scout/1.0"})
+            resp = urllib.request.urlopen(req, timeout=TIMEOUT, context=ctx)
+            return json.loads(resp.read().decode())
+        except Exception:
+            continue
+    return None
 
 
 def check_boss_endpoint_on_bazaar(base_url, endpoint_path):
@@ -130,7 +136,8 @@ def check_boss_endpoint_on_bazaar(base_url, endpoint_path):
     search_term = base_url.replace("https://", "").replace("http://", "") + endpoint_path
     result = fetch_bazaar_search(search_term)
     if result and isinstance(result, dict):
-        items = result.get("results") or result.get("listings") or result.get("items") or []
+        items = (result.get("results") or result.get("listings") or result.get("items")
+                 or result.get("data") or [])
         for item in items:
             item_url = item.get("url") or item.get("endpoint_url") or item.get("base_url") or ""
             if base_url in item_url and endpoint_path in item_url:
@@ -191,6 +198,68 @@ def check_paid_endpoint(base_url, path):
         return -1, str(e)
 
 
+# ── XH paid catalog (Boss's live revenue stream, Base USDC) ───────────
+# These are the resources actually indexed on the canonical x402 discovery
+# index (Coinbase CDP Bazaar). The routes are POST-only, so a GET returns 405
+# while POST returns 402.
+XH_CATALOG = {
+    "base_url": "https://xhagents.xyz",
+    "treasury": "0x6cb53f00a586f7704e1f7121c2e397b579eb3ed0",
+    "network": "eip155:8453 (Base, USDC)",
+    "spot_check": [
+        "/api/defi-sentiment",
+        "/api/wallet-profile",
+        "/api/web-search",
+        "/api/company-enrich",
+        "/api/social-data",
+    ],
+}
+
+
+def check_paid_endpoint_post(base_url, path):
+    """POST a paid endpoint without payment — expect 402."""
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+    try:
+        req = urllib.request.Request(
+            base_url + path, data=b"{}",
+            headers={"User-Agent": "Scout/1.0", "Content-Type": "application/json"},
+            method="POST")
+        resp = urllib.request.urlopen(req, timeout=TIMEOUT, context=ctx)
+        return resp.status, "returned 200 (unexpected)"
+    except urllib.error.HTTPError as e:
+        if e.code == 402:
+            return 402, "correct (payment required)"
+        return e.code, str(e.reason)
+    except Exception as e:
+        return -1, str(e)
+
+
+def check_xh_catalog():
+    """Return (manifest_count_or_None, [(path, status, msg), ...])."""
+    ctx = ssl.create_default_context()
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+    base = XH_CATALOG["base_url"]
+
+    count = None
+    try:
+        req = urllib.request.Request(base + "/.well-known/x402",
+                                     headers={"User-Agent": "Scout/1.0"})
+        data = json.loads(urllib.request.urlopen(req, timeout=TIMEOUT, context=ctx).read().decode())
+        res = data.get("resources") or data.get("entries") or []
+        count = len(res)
+    except Exception:
+        count = None
+
+    results = []
+    for p in XH_CATALOG["spot_check"]:
+        status, msg = check_paid_endpoint_post(base, p)
+        results.append((p, status, msg))
+    return count, results
+
+
 def main():
     now = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")
     state = load_state()
@@ -200,7 +269,7 @@ def main():
 
     # ── 1. Check x402bazaar.org for all listings ──────────────────────
     print("\n📊 Checking x402bazaar.org for listings...")
-    bazaar_data = fetch_bazaar()
+    bazaar_data, bazaar_note = fetch_bazaar()
 
     total_resources = 0
     watchlist_matches = []
@@ -208,7 +277,12 @@ def main():
     boss_visible_count = 0
     boss_endpoints_details = []
 
-    if bazaar_data:
+    # A JSON body of {"error": "..."} means the listing API answered but is broken.
+    bazaar_error = None
+    if isinstance(bazaar_data, dict) and bazaar_data.get("error"):
+        bazaar_error = bazaar_data["error"]
+
+    if bazaar_data and not bazaar_error:
         # Handle different response structures
         items = []
         if isinstance(bazaar_data, list):
@@ -217,6 +291,7 @@ def main():
             items = (bazaar_data.get("results")
                      or bazaar_data.get("listings")
                      or bazaar_data.get("items")
+                     or bazaar_data.get("services")
                      or bazaar_data.get("data")
                      or [])
 
@@ -225,6 +300,8 @@ def main():
 
         # Check each item for watchlist matches
         for item in items:
+            if not isinstance(item, dict):
+                continue
             # Extract text fields for matching
             text_fields = []
             for key in ["name", "title", "description", "summary", "tags", "category", "endpoint_url", "url", "base_url"]:
@@ -285,7 +362,10 @@ def main():
                     print("    ⚡ BOSS REVENUE STREAM GOING LIVE ON DISCOVERY!")
 
     else:
-        print("  ⚠️  Could not fetch bazaar data (network/API issue)")
+        if bazaar_error:
+            print(f"  ⚠️  Bazaar listing API DEGRADED (server-side): {bazaar_error}")
+        else:
+            print(f"  ⚠️  Could not fetch bazaar data — {bazaar_note}")
 
     # ── 2. Check Boss's specific endpoints on Bazaar ──────────────────
     print("\n🎯 Checking Boss's endpoints on Bazaar...")
@@ -307,11 +387,22 @@ def main():
                     "chain": chain
                 })
 
+    # ── 2b. Bazaar search-index health probe (neutral keyword) ────────
+    # If even a neutral term returns 0 hits the index is empty, which means
+    # "Not found" above is NOT evidence that Boss's endpoints are missing.
+    probe = fetch_bazaar_search("weather")
+    probe_count = probe.get("count") if isinstance(probe, dict) else None
+    index_empty = probe_count == 0
+    print(f"\n🔎 Bazaar search-index probe ('weather'): "
+          f"{'count=' + str(probe_count) if probe_count is not None else 'unavailable'}"
+          + ("  → INDEX EMPTY (absence of Boss endpoints is inconclusive)" if index_empty else ""))
+
     # ── 3. Health checks (from original scout_monitor) ────────────────
     print("\n🏥 Health & endpoint checks...")
     total_endpoints = 0
     healthy_count = 0
     issues = []
+    discovery = {}
 
     for worker_name, cfg in BOSS_ENDPOINTS.items():
         base = cfg["base_url"]
@@ -321,9 +412,13 @@ def main():
         health_ok = h_status in (200, 402)
 
         disc_ok, disc_info = check_x402_discovery(base)
+        discovery[worker_name] = disc_info if disc_ok else f"unavailable ({disc_info})"
+        print(f"  [{worker_name}] {chain}: health={h_status} discovery_entries={discovery[worker_name]}")
 
         if not health_ok:
             issues.append(f"{worker_name}: health={h_status}")
+        if not disc_ok:
+            issues.append(f"{worker_name}: .well-known/x402 unreachable ({disc_info})")
 
         for ep in cfg["endpoints"][:2]:  # Spot-check first 2
             total_endpoints += 1
@@ -339,6 +434,19 @@ def main():
             total_endpoints += remaining
             healthy_count += remaining
 
+    # ── 3b. XH paid catalog — Boss's live revenue stream ──────────────
+    xh_count, xh_results = check_xh_catalog()
+    print(f"\n  [XH catalog] {XH_CATALOG['base_url']} ({XH_CATALOG['network']}) payTo={XH_CATALOG['treasury']}")
+    print(f"    manifest: {xh_count if xh_count is not None else 'unreachable'} resources advertised")
+    for p, status, msg in xh_results:
+        if status == 402:
+            total_endpoints += 1
+            healthy_count += 1
+            print(f"    {p}: ✅ {status} {msg}")
+        else:
+            print(f"    {p}: ❌ {status} {msg}")
+            issues.append(f"XH {p}: status={status} {msg}")
+
     # ── 4. Update state ───────────────────────────────────────────────
     state["seen_endpoints"] = seen
     state["last_run"] = now
@@ -349,9 +457,21 @@ def main():
     print(f"📋 SUMMARY — {now}")
     print(f"{'='*50}")
     print(f"Bazaar resources discovered: {total_resources}")
+    if bazaar_error:
+        print(f"Bazaar listing API: DEGRADED — {bazaar_error}")
+    else:
+        print(f"Bazaar listing API: {bazaar_note}")
     print(f"Watchlist matches: {len(watchlist_matches)}")
     print(f"  New matches this run: {len(new_matches) if 'new_matches' in locals() else 0}")
+    print(f"Bazaar search index: {'EMPTY (0 hits on neutral probe)' if index_empty else ('unavailable' if probe_count is None else f'live (probe hits={probe_count})')}")
     print(f"Boss endpoints visible on Bazaar: {boss_visible_count}")
+    for worker_name, d in discovery.items():
+        print(f"Boss discovery manifest [{worker_name}]: {d} entries")
+    print(f"XH paid catalog (xhagents.xyz): "
+          f"{xh_count if xh_count is not None else 'unreachable'} resources advertised, "
+          f"{sum(1 for _, s, _ in xh_results if s == 402)}/{len(xh_results)} spot-checks payable (402)")
+    print("Canonical x402 index (Coinbase CDP discovery, ~23k resources): "
+          "run scout_x402_cdp_scan.py for the full sweep")
     print(f"Health checks: {healthy_count}/{total_endpoints} endpoints OK")
 
     if boss_visible_count > 0:

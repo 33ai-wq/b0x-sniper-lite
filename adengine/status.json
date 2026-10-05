@@ -1,10 +1,10 @@
 {
-  "updatedNote": "Live figures updated 13:47 UTC \u2014 every number below is read from this host or from Base mainnet.",
-  "generatedAt": "2026-10-02T13:47:31.373791+00:00",
+  "updatedNote": "Live figures updated 02:07 UTC \u2014 every number below is read from this host or from Base mainnet.",
+  "generatedAt": "2026-10-05T02:07:16.702997+00:00",
   "groups": [
     {
       "label": "Registered endpoints",
-      "value": 20,
+      "value": 32,
       "detail": "x402scan verified \u00b7 Coinbase Bazaar indexed"
     },
     {
@@ -14,8 +14,8 @@
     },
     {
       "label": "Base mainnet block",
-      "value": "52,079,752",
-      "detail": "read live from Base mainnet at 13:47 UTC"
+      "value": "52,188,344",
+      "detail": "read live from Base mainnet at 02:07 UTC"
     },
     {
       "label": "Secondary hosts",
