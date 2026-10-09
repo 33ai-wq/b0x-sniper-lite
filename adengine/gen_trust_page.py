@@ -98,6 +98,29 @@ table filtered by method+path, the transfers are read from Base, the balance is 
 <code>balanceOf</code> call.</div>
 """
 
+    ext_block = """
+<h2>Independent checks on us</h2>
+<p class="lead">The section above scores other people's endpoints. The same question applies to us, and the
+answer should not come only from us, so here is a third party that probes us independently and documents
+its band table.</p>
+<div class="kpi">
+  <div><b>healthy</b><span>their live probe verdict</span></div>
+  <div><b>71 &middot; Trusted</b><span>their tracked score, band 70-84 (2026-10-10)</span></div>
+  <div><b>100%</b><span>their 30-day healthy-probe share for our resource</span></div>
+</div>
+<div class="note">PulseFeed (<a href="https://pulsefeed.dev/">pulsefeed.dev</a>) crawls the public x402
+catalogue, probes endpoints and publishes a 0-100 trust score with published bands: verified 85-100,
+trusted 70-84, caution 35-69, avoid 0-34, unknown = not indexed. Their live check on
+<code>https://xhagents.xyz/api/x402-trust</code> reported <code>valid: true</code>, verdict
+<code>healthy</code> and a tracked score of 71 (<em>Trusted</em>) on 2026-10-10, paid for by us with our own
+buyer wallet. Read it yourself, unfiltered:
+<a href="https://pulsefeed.dev/verify?endpoint=https://xhagents.xyz">their free verify for xhagents.xyz</a>
+&mdash; today it answers <em>unknown / not indexed yet</em>, because the origin itself is not in their index,
+so the number above comes from the paid live check on a resource, not from the origin. If any figure here has
+moved since the date shown, this section is out of date until we recompute it - which is why the date is in it.
+</div>
+"""
+
     top = [r for r in scored][:25]
     worst = [r for r in scored][-15:][::-1]
     unreachable = [r for r in origins if not r.get("reachable")]
@@ -151,6 +174,7 @@ on-chain <code>payTo</code> reputation and price sanity.</p>
 not a statement about whether a seller delivers. One endpoint per origin is probed; an origin may run others.
 Each row was checked at the time above; scores move as sellers change.</div>
 {prov_block}
+{ext_block}
 <h2>Most trusted (top 25)</h2>
 {table(top)}
 

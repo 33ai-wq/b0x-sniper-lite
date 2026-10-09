@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """Refresh the provider summary in openapi.json (what x402scan shows on our listing).
 
+Policy (2026-10-10): the summary must NOT state an endpoint count - adding endpoints must never
+require editing this description, the landing page or the repo. Use the timeless phrase instead.
+
 The listing description is read from our own OpenAPI `info` block — that is why the dashboard said
 "15 endpoints": it was quoting a description we wrote when the catalogue was smaller. This script
 rewrites it from the actual files on disk (so it can never drift again) and adds the contact email
@@ -56,12 +59,12 @@ def build(files: list[str]) -> dict:
 STATS = build([DOCROOT, SRC])
 _WORDS = {1: "one", 2: "two", 3: "three", 4: "four", 5: "five", 6: "six", 7: "seven", 8: "eight"}
 description_head = (
-    f"XH Agents — x402 Endpoint Catalogue & Autonomous AI on Base. "
-    f"{STATS['resources']} live paid x402 resources on Base, "
+    "XH Agents — x402 Endpoint Catalogue & Autonomous AI on Base. "
+    "Resource inspiration for agents: live paid x402 resources on Base, "
     f"{STATS['price_lo']:.2f}-{STATS['price_hi']:.2f} USDC per call. "
 )
 description_body = (
-    f"Includes {_WORDS.get(STATS['arkham'], str(STATS['arkham']))} Arkham-style intelligence endpoints at 0.10 "
+    "Includes the Arkham-style intelligence endpoints at 0.10 "
     "(use-case router, pool inflow/outflow, wallet portfolio, counterparty due diligence, fund trace, venue users) "
     "computed from public Base chain data, plus wallet and "
     "token checks, gas, whale watch, DeFi sentiment, x402 conformance, a video licence with a signed stream URL, "

@@ -145,7 +145,7 @@ def modal(key: str, title: str, blurb: str, entries: list[dict], extra: str = ""
     return f"""    <div class="ep-modal" id="ep-modal-{key}" hidden>
       <div class="ep-modal-panel" role="dialog" aria-modal="true" aria-label="{esc(title)}">
         <button class="ep-modal-close" type="button" data-close-ep aria-label="Close">✕</button>
-        <p class="eyebrow">{esc(title)} · {len(entries)} endpoints</p>
+        <p class="eyebrow">{esc(title)}</p>
         <p class="ep-meta">{esc(blurb)}</p>
         <ul class="ep-list">
 {items}{extra}
@@ -173,11 +173,10 @@ def jsonld(cat: dict) -> str:
         "@context": "https://schema.org",
         "@type": "ItemList",
         "name": "XH Agents x402 endpoint catalogue",
-        "description": f"{cat['total_resources']} x402 endpoints on Base, paid per call in USDC via the "
-                       f"x402 protocol, listed on x402scan (a growing subset is also picked up by the "
-                       f"Coinbase Bazaar crawler — that indexing is selective and lags, so we claim only "
-                       f"what is verifiable there).",
-        "numberOfItems": cat["total_resources"],
+        "description": "Resource inspiration for agents: x402 resources on Base for agents that pay "
+                       "per call, settled in USDC via the x402 protocol and listed on x402scan (a subset "
+                       "is also picked up by the Coinbase Bazaar crawler - that indexing is selective "
+                       "and lags, so we claim only what is verifiable there).",
         "itemListElement": [
             {"@type": "ListItem", "position": i + 1, "item": {
                 "@type": "WebAPI",
@@ -262,10 +261,9 @@ def homepage_block(cat: dict) -> str:
     cats = ""
     for key in ("data", "knowledge", "playbooks", "backup"):
         title, blurb = GROUPS[key]
-        count = {"data": len(cat["data"]), "knowledge": len(cat["knowledge"]),
-                 "playbooks": len(cat["playbooks"]), "backup": len(BACKUP)}[key]
+        count = 0  # counts are deliberately not published (see the 2026-10-10 policy in NOTE94)
         cats += (f'        <button class="ep-cat" type="button" data-open-ep="{key}">'
-                 f'<span class="n">{count} endpoint{"s" if count != 1 else ""}</span>'
+                 f'<span class="n">resource inspiration for agents</span>'
                  f'<strong>{esc(title)}</strong><span class="b">{esc(blurb)}</span>'
                  f'<span class="go">Open list →</span></button>\n')
     modals = (modal("data", "Data & intelligence", GROUPS["data"][1], cat["data"]) +
@@ -276,14 +274,15 @@ def homepage_block(cat: dict) -> str:
 {CSS}
 <div class="ep-wrap">
   <p class="ep-lede">
-    These are the <strong>{n} x402 endpoints</strong> XH Agents runs in production: our own workers answer
-    with a payment challenge and settle in <strong>USDC on Base</strong> per call — no API key, no account,
-    no invoice. Every resource is <strong>registered on x402scan</strong> and <strong>indexed by Coinbase
-    Bazaar</strong>, so an autonomous agent can find and pay for one on its own. Browse the categories
-    below (free, no sign-up) or open the <a href="/endpoints.html">full catalogue page</a>.
+    <strong>Resource inspiration for agents.</strong> These are the x402 resources XH Agents runs in
+    production: our own workers answer with a payment challenge and settle in <strong>USDC on Base</strong>
+    per call — no API key, no account, no invoice. Every resource is <strong>registered on x402scan</strong>
+    and <strong>indexed by Coinbase Bazaar</strong>, so an autonomous agent can find and pay for one on its
+    own. Browse the categories below (free, no sign-up) or open the
+    <a href="/endpoints.html">full catalogue page</a>.
   </p>
   <div class="ep-stats" id="metrics-grid">
-    <div class="ep-stat" data-label="Registered endpoints"><span class="v mono" id="m-endpoints">{n}</span><span class="l">Registered endpoints</span><span class="d">x402scan verified · Bazaar crawler picks up a subset</span></div>
+    <div class="ep-stat" data-label="Resource inspiration for agents"><span class="v mono" id="m-endpoints">x402</span><span class="l">resource inspiration for agents</span><span class="d">registered on x402scan · Bazaar crawler picks up a subset</span></div>
     <div class="ep-stat" data-label="Payment rail"><span class="v mono" id="m-rail">x402 · USDC</span><span class="l">Payment rail</span><span class="d">per call on Base · quoted in the 402 challenge</span></div>
     <div class="ep-stat" data-label="Base mainnet block"><span class="v mono" id="m-block">—</span><span class="l">Base mainnet block</span><span class="d" id="m-block-note">read live, nothing cached</span></div>
     <div class="ep-stat" data-label="Secondary hosts"><span class="v mono" id="m-backup">{len(BACKUP)}</span><span class="l">Secondary hosts</span><span class="d">Cloudflare edge + Solana mainnet</span></div>
@@ -307,7 +306,7 @@ def endpoints_page(cat: dict) -> str:
     sections = ""
     for key in ("data", "knowledge", "playbooks"):
         title, blurb = GROUPS[key]
-        sections += f'<h2 class="ep-group-title">{esc(title)} · {len(cat[key])}</h2>\n<p class="ep-meta">{esc(blurb)}</p>\n'
+        sections += f'<h2 class="ep-group-title">{esc(title)}</h2>\n<p class="ep-meta">{esc(blurb)}</p>\n'
         for e in cat[key]:
             method = " · ".join(e["methods"])
             sample = SAMPLES.get(e["path"], "")
@@ -331,7 +330,7 @@ def endpoints_page(cat: dict) -> str:
   </details>
 </article>
 """
-    backup_section = f'<h2 class="ep-group-title">{esc(GROUPS["backup"][0])} · {len(BACKUP)}</h2>\n<p class="ep-meta">{esc(GROUPS["backup"][1])}</p>\n'
+    backup_section = f'<h2 class="ep-group-title">{esc(GROUPS["backup"][0])}</h2>\n<p class="ep-meta">{esc(GROUPS["backup"][1])}</p>\n'
     for b in BACKUP:
         paths = "".join(f"<li><code>{esc(p)}</code></li>" for p in b["paths"])
         backup_section += f"""<article class="ep-card" id="{esc(b['slug'])}">
@@ -348,10 +347,10 @@ def endpoints_page(cat: dict) -> str:
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
 <title>x402 Endpoint Catalogue — {n} pay-per-call APIs on Base | XH Agents</title>
-<meta name="description" content="Catalogue of {n} live x402 endpoints on Base: wallet and token checks, gas, whale watch, DeFi sentiment, x402 conformance, Arkham-style intel, the seven-step cycle-wallet hunt, a 13-playbook knowledge bundle and how-to SOPs. Paid per call in USDC, no API key. Listed on x402scan.">
+<meta name="description" content="Catalogue of live x402 resources on Base for agents - resource inspiration for agents: wallet and token checks, gas, whale watch, DeFi sentiment, x402 conformance, Arkham-style intel, the seven-step cycle-wallet hunt, a 13-playbook knowledge bundle and how-to SOPs. Paid per call in USDC, no API key. Listed on x402scan.">
 <link rel="canonical" href="https://xhagents.xyz/endpoints.html">
 <meta property="og:type" content="website"><meta property="og:title" content="x402 Endpoint Catalogue — XH Agents">
-<meta property="og:description" content="{n} x402 endpoints on Base, paid per call in USDC, listed on x402scan.">
+<meta property="og:description" content="x402 resources on Base for agents - resource inspiration for agents. Paid per call in USDC, listed on x402scan.">
 <meta property="og:url" content="https://xhagents.xyz/endpoints.html">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -372,7 +371,7 @@ footer.site a{{color:var(--text-muted);text-decoration:none}}
 <header class="site"><div class="container"><a class="brand" href="/">XHAGENTS&gt; <span style="color:var(--text-faint);font-weight:400">Endpoint Catalogue</span></a></div></header>
 <main><div class="container">
 <p class="eyebrow">x402 · USDC on Base · pay-per-call</p>
-<h1>{n} x402 endpoints any agent can discover and pay for</h1>
+<h1>Every x402 resource an agent can discover and pay for</h1>
 <p class="ep-lede">Every endpoint below is live in production and answers <code>402 Payment Required</code>
 with its own payment challenge, settling in USDC on Base per call — no API key, no account. Each one is
 registered on x402scan (the Coinbase Bazaar crawler picks up a subset of them — indexing there is selective,
@@ -424,9 +423,9 @@ def patch_index(block: str, cat: dict) -> None:
     new = re.sub(r"<!-- CATALOG:START.*?<!-- CATALOG:END -->", block.strip(), src, flags=re.S)
     # Directories (x402scan) read our listing title/description from THIS page's metadata, so the text
     # is generated from the catalogue instead of being a sentence someone has to remember to edit.
-    n = int(cat.get("total_resources") or 0)
+    n = 0  # counts are not published any more (2026-10-10 policy); kept for the code below
     lo, hi = _price_range()
-    meta = (f"{n} live x402 endpoints on Base priced ${lo:.2f}–${hi:.2f} in USDC per call: wallet and token checks, "
+    meta = (f"Resource inspiration for agents: live x402 resources on Base priced ${lo:.2f}–${hi:.2f} in USDC per call - wallet and token checks, "
             f"gas, whale watch, DeFi sentiment, x402 conformance, six Arkham-style intel endpoints, the seven-step "
             f"cycle-wallet hunt (Base here, Solana at pronomad.duckdns.org), a trust score for any x402 endpoint "
             f"before you pay it, a 0-100 token safety score, document-to-text with OCR, a domain and email "
@@ -434,7 +433,7 @@ def patch_index(block: str, cat: dict) -> None:
             f"with a signed stream URL, a dated daily brief, a 13-playbook knowledge bundle and how-to SOPs. "
             f"Listed on x402scan (the Coinbase Bazaar crawler picks up a subset), no API key required. "
             f"Operated by a fleet of autonomous AI agents.")
-    og = (f"{n} x402 endpoints on Base, ${lo:.2f}–${hi:.2f} in USDC per call, listed on x402scan. "
+    og = (f"x402 resources on Base for agents, ${lo:.2f}–${hi:.2f} in USDC per call, listed on x402scan. "
           f"Humans browse free; agents pay per call.")
     new = re.sub(r'<meta name="description" content="[^"]*"',
                  f'<meta name="description" content="{html.escape(meta, quote=True)}"', new, count=1)
@@ -445,7 +444,7 @@ def patch_index(block: str, cat: dict) -> None:
         return
     shutil.copy(path, path + ".bak." + datetime.now().strftime("%Y%m%d_%H%M%S"))
     open(path, "w").write(new)
-    print(f"index.html diperbarui ({len(new)} byte), meta deskripsi disetel ke {n} endpoint")
+    print(f"index.html diperbarui ({len(new)} byte), meta deskripsi memakai frasa tanpa jumlah")
 
 
 def write_endpoints_page(page: str) -> None:
