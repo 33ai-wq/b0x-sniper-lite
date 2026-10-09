@@ -659,18 +659,41 @@ if STANDARD_X402:
         _srv = x402ResourceServer(_fac)
         register_exact_evm_server(_srv, [X402_NETWORK])
 
+        def _safe_desc(text: str, limit: int = 400) -> str:
+            """CDP's v2 schema rejects a `resource.description` longer than 500 characters.
+
+            Verified by bisection against the live facilitator: a 500-character prefix verifies
+            (isValid:true), 501 characters is refused with "paymentPayload is invalid". A longer
+            description therefore makes the whole payment unverifiable — the buyer signs, the
+            facilitator refuses, and the endpoint looks broken. Stay well under the cap and cut on a
+            word boundary so the human copy still reads.
+            """
+            text = " ".join((text or "").split())
+            if len(text) <= limit:
+                return text
+            cut = text[:limit]
+            cut = cut[: cut.rfind(" ")] if " " in cut else cut
+            return cut.rstrip(" ,;:.-") + " ..."
+
         for route, op_id, name, desc, example_in, schema_in, example_out in PAID_ROUTES:
             path = route.split(" ", 1)[1]
+            # CDP's discovery extension accepts a *body* input only for POST/PUT/PATCH: declaring
+            # body_type="json" on a GET route fails the official validator with
+            # "input.method must be one of POST, PUT, PATCH" (check=parse, severity=required) and
+            # keeps that resource out of Bazaar indexing. So the route's method decides the shape:
+            # body for POST/PUT/PATCH, query for GET/HEAD/DELETE.
+            _http_method = route.split(" ", 1)[0].upper()
+            _body_type = "json" if _http_method in ("POST", "PUT", "PATCH") else None
             X402_ROUTES[route] = {
                 "accepts": {"scheme": "exact", "payTo": TREASURY_BASE,
                             "price": f"${PRICE_OVERRIDES.get(route, PRICE_USDC)}", "network": X402_NETWORK},
                 "resource": f"{SITE}{RESOURCE_OVERRIDES.get(route, '/api' + path)}",
                 "service_name": f"XH Agents — {name}",
-                "description": desc,
+                "description": _safe_desc(desc),
                 "mime_type": "application/json",
                 "tags": ["x402", "base", "data", op_id],
                 "extensions": declare_discovery_extension(
-                    input=example_in, input_schema=schema_in, body_type="json",
+                    input=example_in, input_schema=schema_in, body_type=_body_type,
                     output=OutputConfig(example=example_out)),
             }
 
@@ -717,9 +740,14 @@ async def xh_request_log(request: Request, call_next):
         path = request.url.path
         route = None
         price = None
+        _req_method = request.method.upper()
         for r, cfg in X402_ROUTES.items():
             _m, _p = r.split(" ", 1)
-            if _p == path:
+            # Match on the METHOD as well as the path. The free GET previews (the bundle index and the
+            # video menu) share a path with their paid POST twin, so a path-only match recorded them as
+            # paid calls at the paid price and invented ~$325 of revenue in 30 days (357 rows that never
+            # settled a cent). Paid now means: the gated method answered 200.
+            if _p == path and _m == _req_method:
                 route = r
                 try:
                     price = float(str(cfg["accepts"]["price"]).lstrip("$"))

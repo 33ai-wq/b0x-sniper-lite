@@ -7,7 +7,6 @@ Returns a 0-100 score with the evidence, the reasons points were lost, and what 
 Everything is measured live from DNS and a real TLS handshake — no third-party reputation API, so there is
 no upstream cost and no opinion we cannot show the working for.
 """
-from __future__ import annotations
 
 import json
 import re

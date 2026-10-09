@@ -8,7 +8,6 @@ the payTo address on-chain, and returns a 0-100 trust score with the evidence be
 Nothing here is a guess. Each point comes from a request we actually made or a chain read we actually
 performed; anything we could not check is listed in `not_checked` and scored as zero rather than assumed.
 """
-from __future__ import annotations
 
 import base64
 import json

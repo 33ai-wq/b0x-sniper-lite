@@ -7,7 +7,6 @@ reasons points were lost. The free method page shows the top ten so a buyer can 
 Data comes from trust_sweep.py, refreshed on a schedule; every row carries the timestamp it was checked at,
 so a buyer can see how fresh the judgement is.
 """
-from __future__ import annotations
 
 import json
 import os

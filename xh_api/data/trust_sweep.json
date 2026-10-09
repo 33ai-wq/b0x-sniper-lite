@@ -1,39 +1,39 @@
 {
-  "generated_at": "2026-10-04T20:41:52Z",
+  "generated_at": "2026-10-08T20:42:24Z",
   "method": "one representative endpoint per origin, scored with XH Agents' x402 trust layer: unpaid 402 probe, challenge conformance, discovery documents, on-chain payTo reputation (USDC inflows seen by a transfer indexer; Solana via public RPC), price sanity",
   "source": "Coinbase Bazaar discovery catalogue + live probes",
   "counts": {
     "origins_in_catalogue": null,
-    "origins_scored": 301,
-    "origins_total": 301,
+    "origins_scored": 328,
+    "origins_total": 328,
     "verdicts": {
-      "pay": 270,
-      "pay_with_caution": 22,
-      "avoid": 9
+      "pay": 293,
+      "pay_with_caution": 24,
+      "avoid": 11
     }
   },
   "score_stats": {
-    "median": 89,
-    "mean": 86.2,
+    "median": 89.0,
+    "mean": 86.0,
     "p90": 93,
     "unreachable": 0
   },
   "common_penalties": {
-    "payTo is a plain EOA (no contract can freeze the funds)": 213,
-    "the POST probe answered without a challenge while GET returned the 402": 132,
-    "the resource is not listed in its own .well-known/x402 document": 101,
-    "openapi.json is not valid JSON": 88,
-    "no reachable .well-known/x402 discovery document": 85,
-    "openapi.json documents this path without an input schema": 62,
-    "25 USDC inflows from 5 sender(s) on record": 35,
-    "5 distinct senders = more than one buyer's word for it": 35,
-    "4 distinct senders = more than one buyer's word for it": 34,
-    "3 distinct senders = more than one buyer's word for it": 34,
-    ".well-known/x402 is not valid JSON": 34,
-    "no reachable openapi.json": 34,
-    "25 USDC inflows from 3 sender(s) on record": 33,
-    "25 USDC inflows from 1 sender(s) on record": 33,
-    "25 USDC inflows from 2 sender(s) on record": 31
+    "payTo is a plain EOA (no contract can freeze the funds)": 231,
+    "the POST probe answered without a challenge while GET returned the 402": 140,
+    "the resource is not listed in its own .well-known/x402 document": 109,
+    "openapi.json is not valid JSON": 94,
+    "no reachable .well-known/x402 discovery document": 92,
+    "openapi.json documents this path without an input schema": 67,
+    "25 USDC inflows from 1 sender(s) on record": 42,
+    "3 distinct senders = more than one buyer's word for it": 38,
+    "25 USDC inflows from 2 sender(s) on record": 38,
+    "no reachable openapi.json": 37,
+    "25 USDC inflows from 5 sender(s) on record": 36,
+    "5 distinct senders = more than one buyer's word for it": 36,
+    "4 distinct senders = more than one buyer's word for it": 36,
+    ".well-known/x402 is not valid JSON": 36,
+    "25 USDC inflows from 3 sender(s) on record": 35
   },
   "origins": [
     {
@@ -722,6 +722,63 @@
         "13 distinct senders = more than one buyer's word for it"
       ],
       "checked_at": "2026-10-04T20:41:52Z"
+    },
+    {
+      "origin": "https://factline.dev",
+      "url": "https://factline.dev/v1/address/lookup",
+      "count": 13,
+      "probe_method": "GET",
+      "score": 97,
+      "verdict": "pay",
+      "reachable": true,
+      "status": 402,
+      "latency_ms": 344,
+      "points": {
+        "gate": 25.0,
+        "challenge": 20.0,
+        "discovery": 15.0,
+        "payto": 22.0,
+        "price": 10.0,
+        "replay": 5.0
+      },
+      "penalty": 0.0,
+      "payto": "0xb58dd178abac67f6d4894437a7fc725cbddb2075",
+      "network": "eip155:8453",
+      "findings": [
+        "the POST probe answered without a challenge while GET returned the 402: an agent has to pick the right verb",
+        "payTo is an EOA running a smart-wallet delegation (0x7702cb55\u2026) \u2014 the key holder still controls the funds",
+        "18 USDC inflows from 3 sender(s) on record",
+        "3 distinct senders = more than one buyer's word for it"
+      ],
+      "checked_at": "2026-10-07T20:42:41Z"
+    },
+    {
+      "origin": "https://tools.halowerk.com",
+      "url": "https://tools.halowerk.com/v1/calendar/workdays",
+      "count": 37,
+      "probe_method": "POST",
+      "score": 97,
+      "verdict": "pay",
+      "reachable": true,
+      "status": 402,
+      "latency_ms": 1230,
+      "points": {
+        "gate": 25.0,
+        "challenge": 20.0,
+        "discovery": 15.0,
+        "payto": 22.0,
+        "price": 10.0,
+        "replay": 5.0
+      },
+      "penalty": 0.0,
+      "payto": "0x2880EdfFF13100677Bf97A3CBdF3Bc34771C4E5E",
+      "network": "eip155:8453",
+      "findings": [
+        "payTo is an EOA running a smart-wallet delegation (0x63c0c19a\u2026) \u2014 the key holder still controls the funds",
+        "25 USDC inflows from 4 sender(s) on record",
+        "4 distinct senders = more than one buyer's word for it"
+      ],
+      "checked_at": "2026-10-07T20:42:44Z"
     },
     {
       "origin": "https://xhagents.xyz",
@@ -2935,6 +2992,174 @@
         "8 distinct senders = more than one buyer's word for it"
       ],
       "checked_at": "2026-10-04T18:36:53Z"
+    },
+    {
+      "origin": "https://grokzilla.shop",
+      "url": "https://grokzilla.shop/api/skills/json-sort",
+      "count": 15,
+      "probe_method": "POST",
+      "score": 93,
+      "verdict": "pay",
+      "reachable": true,
+      "status": 402,
+      "latency_ms": 787,
+      "points": {
+        "gate": 25.0,
+        "challenge": 20.0,
+        "discovery": 11.0,
+        "payto": 22.0,
+        "price": 10.0,
+        "replay": 5.0
+      },
+      "penalty": 0.0,
+      "payto": "0xDa1Eab46918882f8656a41cF9fCa80e2415369d1",
+      "network": "eip155:8453",
+      "findings": [
+        "the resource is not listed in its own .well-known/x402 document",
+        "payTo is a plain EOA (no contract can freeze the funds)",
+        "22 USDC inflows from 4 sender(s) on record",
+        "4 distinct senders = more than one buyer's word for it"
+      ],
+      "checked_at": "2026-10-05T20:42:05Z"
+    },
+    {
+      "origin": "https://mini-tollbooth.onrender.com",
+      "url": "https://mini-tollbooth.onrender.com/approval-risk",
+      "count": 58,
+      "probe_method": "GET",
+      "score": 93,
+      "verdict": "pay",
+      "reachable": true,
+      "status": 402,
+      "latency_ms": 648,
+      "points": {
+        "gate": 25.0,
+        "challenge": 20.0,
+        "discovery": 15.0,
+        "payto": 18.0,
+        "price": 10.0,
+        "replay": 5.0
+      },
+      "penalty": 0.0,
+      "payto": "0x8BE8D056d5F0bEF850eC9ed5C4a8d647cBE896C0",
+      "network": "eip155:8453",
+      "findings": [
+        "the POST probe answered without a challenge while GET returned the 402: an agent has to pick the right verb",
+        "payTo is a plain EOA (no contract can freeze the funds)",
+        "25 USDC inflows from 1 sender(s) on record"
+      ],
+      "checked_at": "2026-10-05T20:42:06Z"
+    },
+    {
+      "origin": "https://velux.taild4d007.ts.net:8443",
+      "url": "https://velux.taild4d007.ts.net:8443/x402/base/gas",
+      "count": 14,
+      "probe_method": "POST",
+      "score": 93,
+      "verdict": "pay",
+      "reachable": true,
+      "status": 402,
+      "latency_ms": 656,
+      "points": {
+        "gate": 25.0,
+        "challenge": 20.0,
+        "discovery": 15.0,
+        "payto": 18.0,
+        "price": 10.0,
+        "replay": 5.0
+      },
+      "penalty": 0.0,
+      "payto": "0x60fd97850059dF9600C4E26f09aC58EF51561963",
+      "network": "eip155:8453",
+      "findings": [
+        "payTo is a plain EOA (no contract can freeze the funds)",
+        "25 USDC inflows from 1 sender(s) on record"
+      ],
+      "checked_at": "2026-10-06T20:42:11Z"
+    },
+    {
+      "origin": "https://tanod.dev",
+      "url": "https://tanod.dev/v1/chain/gas",
+      "count": 13,
+      "probe_method": "POST",
+      "score": 93,
+      "verdict": "pay",
+      "reachable": true,
+      "status": 402,
+      "latency_ms": 440,
+      "points": {
+        "gate": 25.0,
+        "challenge": 20.0,
+        "discovery": 11.0,
+        "payto": 22.0,
+        "price": 10.0,
+        "replay": 5.0
+      },
+      "penalty": 0.0,
+      "payto": "0x593857A4a4F619543ea12394137C3004ce841720",
+      "network": "eip155:8453",
+      "findings": [
+        "openapi.json is not valid JSON",
+        "payTo is a plain EOA (no contract can freeze the funds)",
+        "21 USDC inflows from 3 sender(s) on record",
+        "3 distinct senders = more than one buyer's word for it"
+      ],
+      "checked_at": "2026-10-07T20:42:40Z"
+    },
+    {
+      "origin": "https://x402-agent-api.onrender.com",
+      "url": "https://x402-agent-api.onrender.com/api/v1/email-verify",
+      "count": 18,
+      "probe_method": "POST",
+      "score": 93,
+      "verdict": "pay",
+      "reachable": true,
+      "status": 402,
+      "latency_ms": 482,
+      "points": {
+        "gate": 25.0,
+        "challenge": 20.0,
+        "discovery": 15.0,
+        "payto": 18.0,
+        "price": 10.0,
+        "replay": 5.0
+      },
+      "penalty": 0.0,
+      "payto": "0x6847231bD28E16A0A57c59793f6B8BD8CC0043aC",
+      "network": "eip155:8453",
+      "findings": [
+        "payTo is a plain EOA (no contract can freeze the funds)",
+        "25 USDC inflows from 2 sender(s) on record"
+      ],
+      "checked_at": "2026-10-07T20:42:41Z"
+    },
+    {
+      "origin": "https://api.sitecheck-api.workers.dev",
+      "url": "https://api.sitecheck-api.workers.dev/api/email-check",
+      "count": 24,
+      "probe_method": "GET",
+      "score": 93,
+      "verdict": "pay",
+      "reachable": true,
+      "status": 402,
+      "latency_ms": 939,
+      "points": {
+        "gate": 25.0,
+        "challenge": 20.0,
+        "discovery": 15.0,
+        "payto": 18.0,
+        "price": 10.0,
+        "replay": 5.0
+      },
+      "penalty": 0.0,
+      "payto": "0xb8491F953e6860D3b5840b73c60883Ff099ceAfA",
+      "network": "eip155:8453",
+      "findings": [
+        "the POST probe answered without a challenge while GET returned the 402: an agent has to pick the right verb",
+        "payTo is an EOA running a smart-wallet delegation (0x63c0c19a\u2026) \u2014 the key holder still controls the funds",
+        "25 USDC inflows from 2 sender(s) on record"
+      ],
+      "checked_at": "2026-10-08T20:42:23Z"
     },
     {
       "origin": "https://japan-business-day-api.matchan962.workers.dev",
@@ -5489,6 +5714,177 @@
       "checked_at": "2026-10-04T18:36:51Z"
     },
     {
+      "origin": "https://pyfile-agent.taile3ff35.ts.net",
+      "url": "https://pyfile-agent.taile3ff35.ts.net/v1/chat/completions",
+      "count": 12,
+      "probe_method": "POST",
+      "score": 89,
+      "verdict": "pay",
+      "reachable": true,
+      "status": 402,
+      "latency_ms": 1083,
+      "points": {
+        "gate": 25.0,
+        "challenge": 20.0,
+        "discovery": 11.0,
+        "payto": 18.0,
+        "price": 10.0,
+        "replay": 5.0
+      },
+      "penalty": 0.0,
+      "payto": "0xA43774fD2e867FC45b782456d78F135a215D5561",
+      "network": "eip155:8453",
+      "findings": [
+        "the resource is not listed in its own .well-known/x402 document",
+        "payTo is a plain EOA (no contract can freeze the funds)",
+        "25 USDC inflows from 2 sender(s) on record"
+      ],
+      "checked_at": "2026-10-06T20:42:12Z"
+    },
+    {
+      "origin": "https://manylives.me",
+      "url": "https://manylives.me/paid/chain/gas",
+      "count": 14,
+      "probe_method": "POST",
+      "score": 89,
+      "verdict": "pay",
+      "reachable": true,
+      "status": 402,
+      "latency_ms": 488,
+      "points": {
+        "gate": 25.0,
+        "challenge": 20.0,
+        "discovery": 11.0,
+        "payto": 18.0,
+        "price": 10.0,
+        "replay": 5.0
+      },
+      "penalty": 0.0,
+      "payto": "0xD161874249321F8AE3000C19DdD070e46682f1B3",
+      "network": "eip155:8453",
+      "findings": [
+        "openapi.json documents this path without an input schema",
+        "payTo is a plain EOA (no contract can freeze the funds)",
+        "25 USDC inflows from 1 sender(s) on record"
+      ],
+      "checked_at": "2026-10-07T20:42:40Z"
+    },
+    {
+      "origin": "https://www.thelatentlounge.com",
+      "url": "https://www.thelatentlounge.com/api/x402/echo",
+      "count": 17,
+      "probe_method": "POST",
+      "score": 89,
+      "verdict": "pay",
+      "reachable": true,
+      "status": 402,
+      "latency_ms": 475,
+      "points": {
+        "gate": 25.0,
+        "challenge": 20.0,
+        "discovery": 7.0,
+        "payto": 22.0,
+        "price": 10.0,
+        "replay": 5.0
+      },
+      "penalty": 0.0,
+      "payto": "0xE11D166355825215D33A7B2dc47C05d4DcF6975C",
+      "network": "eip155:8453",
+      "findings": [
+        "no reachable .well-known/x402 discovery document",
+        "payTo is a plain EOA (no contract can freeze the funds)",
+        "25 USDC inflows from 5 sender(s) on record",
+        "5 distinct senders = more than one buyer's word for it"
+      ],
+      "checked_at": "2026-10-08T20:42:21Z"
+    },
+    {
+      "origin": "https://draconic21-x402-api.onrender.com",
+      "url": "https://draconic21-x402-api.onrender.com/v1/crypto_news",
+      "count": 44,
+      "probe_method": "GET",
+      "score": 89,
+      "verdict": "pay",
+      "reachable": true,
+      "status": 402,
+      "latency_ms": 592,
+      "points": {
+        "gate": 25.0,
+        "challenge": 20.0,
+        "discovery": 11.0,
+        "payto": 18.0,
+        "price": 10.0,
+        "replay": 5.0
+      },
+      "penalty": 0.0,
+      "payto": "0x1520Ef5530AA71350049BE2903Cf078B38c40AE5",
+      "network": "eip155:8453",
+      "findings": [
+        "the POST probe answered without a challenge while GET returned the 402: an agent has to pick the right verb",
+        "the resource is not listed in its own .well-known/x402 document",
+        "payTo is a plain EOA (no contract can freeze the funds)",
+        "25 USDC inflows from 2 sender(s) on record"
+      ],
+      "checked_at": "2026-10-08T20:42:21Z"
+    },
+    {
+      "origin": "https://aether-x402.vercel.app",
+      "url": "https://aether-x402.vercel.app/v1/base/balance",
+      "count": 19,
+      "probe_method": "POST",
+      "score": 89,
+      "verdict": "pay",
+      "reachable": true,
+      "status": 402,
+      "latency_ms": 591,
+      "points": {
+        "gate": 25.0,
+        "challenge": 20.0,
+        "discovery": 11.0,
+        "payto": 18.0,
+        "price": 10.0,
+        "replay": 5.0
+      },
+      "penalty": 0.0,
+      "payto": "0x2B77a25a8308c30AE37781b8a0D2A21C6211e812",
+      "network": "eip155:8453",
+      "findings": [
+        "the resource is not listed in its own .well-known/x402 document",
+        "payTo is a plain EOA (no contract can freeze the funds)",
+        "25 USDC inflows from 1 sender(s) on record"
+      ],
+      "checked_at": "2026-10-08T20:42:21Z"
+    },
+    {
+      "origin": "https://api.zerion.io",
+      "url": "https://api.zerion.io/v1/dapps/",
+      "count": 16,
+      "probe_method": "GET",
+      "score": 89,
+      "verdict": "pay",
+      "reachable": true,
+      "status": 402,
+      "latency_ms": 791,
+      "points": {
+        "gate": 25.0,
+        "challenge": 20.0,
+        "discovery": 11.0,
+        "payto": 18.0,
+        "price": 10.0,
+        "replay": 5.0
+      },
+      "penalty": 0.0,
+      "payto": "0xD07C06a650a88bBCF4f0c4fbf2c6c08c9a60AcC6",
+      "network": "eip155:8453",
+      "findings": [
+        "the POST probe answered without a challenge while GET returned the 402: an agent has to pick the right verb",
+        "the resource is not listed in its own .well-known/x402 document",
+        "payTo is a plain EOA (no contract can freeze the funds)",
+        "25 USDC inflows from 1 sender(s) on record"
+      ],
+      "checked_at": "2026-10-08T20:42:23Z"
+    },
+    {
       "origin": "https://api.truthbear.co",
       "url": "https://api.truthbear.co/gauge/air",
       "count": 60,
@@ -5610,6 +6006,35 @@
         "4 distinct senders = more than one buyer's word for it"
       ],
       "checked_at": "2026-10-04T18:35:58Z"
+    },
+    {
+      "origin": "https://api.zkrobotics.fr",
+      "url": "https://api.zkrobotics.fr/x402/base/gas",
+      "count": 30,
+      "probe_method": "POST",
+      "score": 87,
+      "verdict": "pay",
+      "reachable": true,
+      "status": 402,
+      "latency_ms": 788,
+      "points": {
+        "gate": 25.0,
+        "challenge": 20.0,
+        "discovery": 11.0,
+        "payto": 18.0,
+        "price": 10.0,
+        "replay": 3.0
+      },
+      "penalty": 0.0,
+      "payto": "0x60fd97850059dF9600C4E26f09aC58EF51561963",
+      "network": "eip155:8453",
+      "findings": [
+        "openapi.json documents this path without an input schema",
+        "payTo is a plain EOA (no contract can freeze the funds)",
+        "25 USDC inflows from 2 sender(s) on record",
+        "the challenge carries no nonce/expiry we can see: replay behaviour is unproven"
+      ],
+      "checked_at": "2026-10-08T20:42:22Z"
     },
     {
       "origin": "https://api.xynaptic.io",
@@ -6649,6 +7074,152 @@
       "checked_at": "2026-10-04T18:36:31Z"
     },
     {
+      "origin": "https://x402.asterpay.io",
+      "url": "https://x402.asterpay.io/v1/ai/sentiment",
+      "count": 16,
+      "probe_method": "POST",
+      "score": 85,
+      "verdict": "pay",
+      "reachable": true,
+      "status": 402,
+      "latency_ms": 474,
+      "points": {
+        "gate": 25.0,
+        "challenge": 20.0,
+        "discovery": 7.0,
+        "payto": 18.0,
+        "price": 10.0,
+        "replay": 5.0
+      },
+      "penalty": 0.0,
+      "payto": "0xd5f8481D8F25d3966d2010DBf9B47fFbdf745A9E",
+      "network": "eip155:8453",
+      "findings": [
+        "the resource is not listed in its own .well-known/x402 document",
+        "openapi.json is not valid JSON",
+        "payTo is an EOA running a smart-wallet delegation (0x63c0c19a\u2026) \u2014 the key holder still controls the funds",
+        "25 USDC inflows from 2 sender(s) on record"
+      ],
+      "checked_at": "2026-10-05T20:42:05Z"
+    },
+    {
+      "origin": "https://api.teardrop.dev",
+      "url": "https://api.teardrop.dev/tools/mcp#convert_currency",
+      "count": 30,
+      "probe_method": "POST",
+      "score": 85,
+      "verdict": "pay",
+      "reachable": true,
+      "status": 402,
+      "latency_ms": 983,
+      "points": {
+        "gate": 25.0,
+        "challenge": 20.0,
+        "discovery": 7.0,
+        "payto": 18.0,
+        "price": 10.0,
+        "replay": 5.0
+      },
+      "penalty": 0.0,
+      "payto": "0xF2Eec9De86274913F85A8aA6427Ad65a9B0bC90a",
+      "network": "eip155:8453",
+      "findings": [
+        "the resource is not listed in its own .well-known/x402 document",
+        "openapi.json is not valid JSON",
+        "payTo is a plain EOA (no contract can freeze the funds)",
+        "25 USDC inflows from 1 sender(s) on record"
+      ],
+      "checked_at": "2026-10-05T20:42:05Z"
+    },
+    {
+      "origin": "https://agentreadiness.halowerk.com",
+      "url": "https://agentreadiness.halowerk.com/v1/about-link-audit",
+      "count": 100,
+      "probe_method": "POST",
+      "score": 85,
+      "verdict": "pay",
+      "reachable": true,
+      "status": 402,
+      "latency_ms": 756,
+      "points": {
+        "gate": 25.0,
+        "challenge": 20.0,
+        "discovery": 7.0,
+        "payto": 18.0,
+        "price": 10.0,
+        "replay": 5.0
+      },
+      "penalty": 0.0,
+      "payto": "0x2880EdfFF13100677Bf97A3CBdF3Bc34771C4E5E",
+      "network": "eip155:8453",
+      "findings": [
+        ".well-known/x402 is not valid JSON",
+        "openapi.json is not valid JSON",
+        "payTo is an EOA running a smart-wallet delegation (0x63c0c19a\u2026) \u2014 the key holder still controls the funds",
+        "25 USDC inflows from 1 sender(s) on record"
+      ],
+      "checked_at": "2026-10-06T20:42:11Z"
+    },
+    {
+      "origin": "https://agentsvc.io",
+      "url": "https://agentsvc.io/api/v1/proxy/airport-status",
+      "count": 69,
+      "probe_method": "POST",
+      "score": 85,
+      "verdict": "pay",
+      "reachable": true,
+      "status": 402,
+      "latency_ms": 1919,
+      "points": {
+        "gate": 25.0,
+        "challenge": 20.0,
+        "discovery": 7.0,
+        "payto": 18.0,
+        "price": 10.0,
+        "replay": 5.0
+      },
+      "penalty": 0.0,
+      "payto": "0x622efA6Ceb83a5b6EdBC931332f4db68B7f74F27",
+      "network": "eip155:8453",
+      "findings": [
+        ".well-known/x402 is not valid JSON",
+        "openapi.json is not valid JSON",
+        "payTo is a plain EOA (no contract can freeze the funds)",
+        "25 USDC inflows from 1 sender(s) on record"
+      ],
+      "checked_at": "2026-10-07T20:42:47Z"
+    },
+    {
+      "origin": "https://agentpaystore.com",
+      "url": "https://agentpaystore.com/a2a/chat/completions",
+      "count": 14,
+      "probe_method": "POST",
+      "score": 85,
+      "verdict": "pay",
+      "reachable": true,
+      "status": 402,
+      "latency_ms": 753,
+      "points": {
+        "gate": 25.0,
+        "challenge": 20.0,
+        "discovery": 3.0,
+        "payto": 22.0,
+        "price": 10.0,
+        "replay": 5.0
+      },
+      "penalty": 0.0,
+      "payto": "0x367F1b3D8Ca90D1e087481a9A40d585Bf3451a03",
+      "network": "eip155:8453",
+      "findings": [
+        "no reachable .well-known/x402 discovery document",
+        "openapi.json documents this path without an input schema",
+        "payTo is a plain EOA (no contract can freeze the funds)",
+        "25 USDC inflows from 3 sender(s) on record",
+        "3 distinct senders = more than one buyer's word for it"
+      ],
+      "checked_at": "2026-10-08T20:42:24Z"
+    },
+    {
       "origin": "https://fiatdock.com",
       "url": "https://fiatdock.com/s/svc_30b9206b-e544-4732-acf6-80e32f62a950",
       "count": 17,
@@ -7407,6 +7978,37 @@
       "checked_at": "2026-10-04T18:36:31Z"
     },
     {
+      "origin": "https://www.x402pulse.dev",
+      "url": "https://www.x402pulse.dev/v1/health/drug-label",
+      "count": 20,
+      "probe_method": "GET",
+      "score": 82,
+      "verdict": "pay",
+      "reachable": true,
+      "status": 402,
+      "latency_ms": 409,
+      "points": {
+        "gate": 25.0,
+        "challenge": 20.0,
+        "discovery": 0.0,
+        "payto": 22.0,
+        "price": 10.0,
+        "replay": 5.0
+      },
+      "penalty": 0.0,
+      "payto": "0x5e901f973C17E5542b4Da2A64C7fDc736B2A6e74",
+      "network": "eip155:8453",
+      "findings": [
+        "the POST probe answered without a challenge while GET returned the 402: an agent has to pick the right verb",
+        "no reachable .well-known/x402 discovery document",
+        "no reachable openapi.json",
+        "payTo is a plain EOA (no contract can freeze the funds)",
+        "25 USDC inflows from 3 sender(s) on record",
+        "3 distinct senders = more than one buyer's word for it"
+      ],
+      "checked_at": "2026-10-05T20:42:05Z"
+    },
+    {
       "origin": "https://intel.rallylive.ca",
       "url": "https://intel.rallylive.ca/bulk/contact-emails",
       "count": 892,
@@ -7932,6 +8534,35 @@
       "checked_at": "2026-10-04T18:36:44Z"
     },
     {
+      "origin": "https://robotshop.up.railway.app",
+      "url": "https://robotshop.up.railway.app/api/v1/products/prod-json-schema-repair-guard/buy",
+      "count": 16,
+      "probe_method": "POST",
+      "score": 81,
+      "verdict": "pay",
+      "reachable": true,
+      "status": 402,
+      "latency_ms": 455,
+      "points": {
+        "gate": 25.0,
+        "challenge": 20.0,
+        "discovery": 3.0,
+        "payto": 18.0,
+        "price": 10.0,
+        "replay": 5.0
+      },
+      "penalty": 0.0,
+      "payto": "0x0151DB12E758E12825CbD71Ac4F82B6E08E8cc49",
+      "network": "eip155:8453",
+      "findings": [
+        "no reachable .well-known/x402 discovery document",
+        "openapi.json documents this path without an input schema",
+        "payTo is an EOA running a smart-wallet delegation (0x63c0c19a\u2026) \u2014 the key holder still controls the funds",
+        "25 USDC inflows from 2 sender(s) on record"
+      ],
+      "checked_at": "2026-10-05T20:42:05Z"
+    },
+    {
       "origin": "https://api.zfinia.com",
       "url": "https://api.zfinia.com/x402/v1/x402-challenge-decode",
       "count": 159,
@@ -8020,6 +8651,35 @@
         "no recent activity on the Solana payTo"
       ],
       "checked_at": "2026-10-04T18:36:26Z"
+    },
+    {
+      "origin": "https://astro-agent.dev",
+      "url": "https://astro-agent.dev/v1/time/resolve",
+      "count": 14,
+      "probe_method": "POST",
+      "score": 80,
+      "verdict": "pay",
+      "reachable": true,
+      "status": 402,
+      "latency_ms": 542,
+      "points": {
+        "gate": 25.0,
+        "challenge": 20.0,
+        "discovery": 11.0,
+        "payto": 9.0,
+        "price": 10.0,
+        "replay": 5.0
+      },
+      "penalty": 0.0,
+      "payto": "8tosK4UvkrkhBq1fFquS4ecZKvHpeYtjCoMRMgMvcsQz",
+      "network": "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
+      "findings": [
+        "openapi.json is not valid JSON",
+        "Solana payTo account exists",
+        "holds 1.021733 USDC already",
+        "no recent activity on the Solana payTo"
+      ],
+      "checked_at": "2026-10-05T20:42:04Z"
     },
     {
       "origin": "https://preview-chat-c6089071-758a-449d-b4a7-6fa19ebc955c.space-z.ai",
@@ -8197,6 +8857,36 @@
         "25 USDC inflows from 2 sender(s) on record"
       ],
       "checked_at": "2026-10-04T18:34:10Z"
+    },
+    {
+      "origin": "https://business-frameworks.matryoshka-paradigms.workers.dev",
+      "url": "https://business-frameworks.matryoshka-paradigms.workers.dev/node/cash-flow/why",
+      "count": 36,
+      "probe_method": "GET",
+      "score": 78,
+      "verdict": "pay_with_caution",
+      "reachable": true,
+      "status": 402,
+      "latency_ms": 876,
+      "points": {
+        "gate": 25.0,
+        "challenge": 20.0,
+        "discovery": 0.0,
+        "payto": 18.0,
+        "price": 10.0,
+        "replay": 5.0
+      },
+      "penalty": 0.0,
+      "payto": "0xbBaCd5111E0Ca3a52DdAA39D4723Cf75C1A75D91",
+      "network": "eip155:8453",
+      "findings": [
+        "the POST probe answered without a challenge while GET returned the 402: an agent has to pick the right verb",
+        "no reachable .well-known/x402 discovery document",
+        "no reachable openapi.json",
+        "payTo is a plain EOA (no contract can freeze the funds)",
+        "25 USDC inflows from 1 sender(s) on record"
+      ],
+      "checked_at": "2026-10-07T20:42:41Z"
     },
     {
       "origin": "https://47620.xyz",
@@ -8466,6 +9156,35 @@
         "the challenge names a different resource URL than the one requested"
       ],
       "checked_at": "2026-10-04T18:36:19Z"
+    },
+    {
+      "origin": "https://workspace-x402-paywall.onrender.com",
+      "url": "https://workspace-x402-paywall.onrender.com/utils/base64",
+      "count": 49,
+      "probe_method": "GET",
+      "score": 71,
+      "verdict": "pay_with_caution",
+      "reachable": true,
+      "status": 402,
+      "latency_ms": 254,
+      "points": {
+        "gate": 25.0,
+        "challenge": 20.0,
+        "discovery": 7.0,
+        "payto": 4.0,
+        "price": 10.0,
+        "replay": 5.0
+      },
+      "penalty": 0.0,
+      "payto": "0xD7CDd563e8F6A249B076A702b7e2C233CCF3481d",
+      "network": "eip155:8453",
+      "findings": [
+        "the POST probe answered without a challenge while GET returned the 402: an agent has to pick the right verb",
+        "no reachable .well-known/x402 discovery document",
+        "payTo is a plain EOA (no contract can freeze the funds)",
+        "no USDC inflow found for this payTo on Base: unproven address"
+      ],
+      "checked_at": "2026-10-08T20:42:21Z"
     },
     {
       "origin": "https://x402.sniperx.fun",
@@ -8828,6 +9547,36 @@
       "checked_at": "2026-10-04T18:34:36Z"
     },
     {
+      "origin": "https://fmcsa-mcp-843680657471.us-central1.run.app",
+      "url": "https://fmcsa-mcp-843680657471.us-central1.run.app/mcp#check_address_consistency",
+      "count": 14,
+      "probe_method": "POST",
+      "score": 29,
+      "verdict": "avoid",
+      "reachable": true,
+      "status": 400,
+      "latency_ms": 527,
+      "points": {
+        "gate": 10.0,
+        "challenge": 0.0,
+        "discovery": 7.0,
+        "payto": 12.0,
+        "price": 0.0,
+        "replay": 0.0
+      },
+      "penalty": 0.0,
+      "payto": null,
+      "network": "solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp",
+      "findings": [
+        "the resource is not listed in its own .well-known/x402 document",
+        "openapi.json documents this path without an input schema",
+        "payTo reputation NOT measured: the accepts entry declares no payTo, so there is nothing to verify on-chain",
+        "the challenge declares no payTo: a buyer has no address to pay",
+        "the challenge carries no nonce/expiry we can see: replay behaviour is unproven"
+      ],
+      "checked_at": "2026-10-08T20:42:20Z"
+    },
+    {
       "origin": "https://api.loopholetape.com",
       "url": "https://api.loopholetape.com/mcp#launches_since#launches_since",
       "count": 24,
@@ -8917,6 +9666,36 @@
         "the challenge carries no nonce/expiry we can see: replay behaviour is unproven"
       ],
       "checked_at": "2026-10-04T18:36:47Z"
+    },
+    {
+      "origin": "https://api.ibancheck.co.uk",
+      "url": "https://api.ibancheck.co.uk/api/generate-idempotency-key",
+      "count": 13,
+      "probe_method": "POST",
+      "score": 22,
+      "verdict": "avoid",
+      "reachable": true,
+      "status": 530,
+      "latency_ms": 165,
+      "points": {
+        "gate": 10.0,
+        "challenge": 0.0,
+        "discovery": 0.0,
+        "payto": 12.0,
+        "price": 0.0,
+        "replay": 0.0
+      },
+      "penalty": 0.0,
+      "payto": null,
+      "network": "eip155:8453",
+      "findings": [
+        "no reachable .well-known/x402 discovery document",
+        "no reachable openapi.json",
+        "payTo reputation NOT measured: the accepts entry declares no payTo, so there is nothing to verify on-chain",
+        "the challenge declares no payTo: a buyer has no address to pay",
+        "the challenge carries no nonce/expiry we can see: replay behaviour is unproven"
+      ],
+      "checked_at": "2026-10-06T20:42:08Z"
     },
     {
       "origin": "https://apexfaucet.xyz",

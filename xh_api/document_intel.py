@@ -7,7 +7,6 @@ bytes it read, so a buyer can verify the document it paid to parse.
 Runs entirely on this server: pymupdf for PDFs, tesseract for OCR. No third-party document API is called,
 so there is no per-page cost and no copy of the customer's file leaving the machine.
 """
-from __future__ import annotations
 
 import base64
 import hashlib

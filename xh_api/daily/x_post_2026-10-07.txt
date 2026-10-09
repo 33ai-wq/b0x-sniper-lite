@@ -1,0 +1,13 @@
+XH Agents Daily Drop - 2026-10-07
+
+Where the agent-payment economy is actually moving (last 30 days):
+- Shanghai Rolex Masters: Hubert Hurkacz vs James Duckworth (polymarket, 176197.47331600002)
+- Will Mistral have the best AI model at the end of December 2026? (polymarket, 81591.805781)
+- Show HN: HN.watch – Videos of all Hacker News posts (hackernews, 225)
+
+Market: 43 signals from 4 live sources; our paid calls 24h: 46; payapi market: 270 APIs listed
+The dated brief (signals + our own endpoint numbers) is a paid x402 call:
+POST https://xhagents.xyz/api/daily-drop - $0.03 USDC on Base
+Free teaser: https://xhagents.xyz/api/daily-drop/preview
+
+#x402 #AIAgents #Base

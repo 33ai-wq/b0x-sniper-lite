@@ -6,7 +6,6 @@ slippage. Every component is read from a public source at request time (Blocksco
 DexScreener). Checks we cannot perform honestly (buy/sell tax, honeypot simulation, off-chain intent) are
 listed in `not_checked` instead of being guessed.
 """
-from __future__ import annotations
 
 import json
 import re

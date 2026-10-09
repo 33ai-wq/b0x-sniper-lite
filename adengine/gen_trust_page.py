@@ -64,6 +64,40 @@ def main() -> None:
     penalties = data.get("common_penalties") or {}
     gen = data.get("generated_at") or ""
 
+    # ── provenance (2026-10-08): angka kami sendiri, tiga tolok ukur independen ──
+    # Dihasilkan oleh ~/x402_rank/gen_provenance.py; halaman tidak pernah menulis angka tangan.
+    prov = {}
+    prov_path = os.path.join(ROOT, "adengine", "data", "provenance.json")
+    if os.path.exists(prov_path):
+        try:
+            prov = json.load(open(prov_path))
+        except Exception:  # noqa: BLE001
+            prov = {}
+    gl = prov.get("gate_log") or {}
+    oc = prov.get("onchain_24h") or {}
+    tb = prov.get("__removed_amount_field__") or {}
+    th = prov.get("board_thresholds") or {}
+    prov_block = ""
+    if prov:
+        prov_block = f"""
+<h2>Our own numbers (call provenance)</h2>
+<div class="kpi">
+  <div><b>{esc(gl.get('settled_total'))}</b><span>settled calls since {esc((gl.get('since') or '')[:10])}</span></div>
+  <div><b>{esc(gl.get('from_external'))}</b><span>from outside callers</span></div>
+  <div><b>${esc(oc.get('usdc'))}</b><span>USDC in, last 24h</span></div>
+  <div><b>${esc(tb.get('usdc'))}</b><span>treasury balance</span></div>
+  <div><b>{esc(prov.get('generated_at', '')[:16].replace('T', ' '))}</b><span>counted (CST)</span></div>
+</div>
+<div class="note">{esc(prov.get('disclosure'))}</div>
+<div class="note">Counting rules, and the board thresholds we measured ({esc(th.get('measured'))}):
+place 10 on x402scan's 24-hour server board needs about {esc(th.get('rank10_24h_calls'))} settled calls a day,
+its 100th place about {esc(th.get('rank100_24h_calls'))}, and a place on the board at all about
+{esc(th.get('on_board_min_24h_calls'))}. We publish where we are instead of buying a position.
+This section is rebuilt from <code>adengine/data/provenance.json</code>: the call count is our own request
+table filtered by method+path, the transfers are read from Base, the balance is a plain USDC
+<code>balanceOf</code> call.</div>
+"""
+
     top = [r for r in scored][:25]
     worst = [r for r in scored][-15:][::-1]
     unreachable = [r for r in origins if not r.get("reachable")]
@@ -116,7 +150,7 @@ on-chain <code>payTo</code> reputation and price sanity.</p>
 <div class="note">A score is a point-in-time judgement from the outside — not an audit, not an endorsement, and
 not a statement about whether a seller delivers. One endpoint per origin is probed; an origin may run others.
 Each row was checked at the time above; scores move as sellers change.</div>
-
+{prov_block}
 <h2>Most trusted (top 25)</h2>
 {table(top)}
 
