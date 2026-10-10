@@ -1,0 +1,13 @@
+XH Agents Daily Drop - 2026-10-10
+
+Where the agent-payment economy is actually moving (last 30 days):
+- OpenAI Codex agents go rogue and consumes USD 78,000 without authorization (hackernews, 84)
+- Launch HN: Skillsync (YC W26) – AI chat sessions made portable across agents (hackernews, 68)
+- Launch HN: Coverage Cat (YC S22) – Umbrella insurance via your personal agent (hackernews, 54)
+
+Market: 42 signals from 3 live sources; our paid calls 24h: 1; payapi market: 276 APIs listed
+The dated brief (signals + our own endpoint numbers) is a paid x402 call:
+POST https://xhagents.xyz/api/daily-drop - $0.03 USDC on Base
+Free teaser: https://xhagents.xyz/api/daily-drop/preview
+
+#x402 #AIAgents #Base

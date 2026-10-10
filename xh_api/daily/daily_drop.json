@@ -1,31 +1,21 @@
 {
-  "date": "2026-10-09",
-  "generated_at": "2026-10-08T22:01:00+00:00",
+  "date": "2026-10-10",
+  "generated_at": "2026-10-09T22:01:03+00:00",
   "window_days": 30,
-  "headline": "40 signals from 4 live sources; our paid calls 24h: 9; payapi market: 271 APIs listed",
+  "headline": "42 signals from 3 live sources; our paid calls 24h: 1; payapi market: 276 APIs listed",
   "counts": {
-    "signals": 40,
-    "sources_ok": 4,
+    "signals": 42,
+    "sources_ok": 3,
     "sources_failed": 0,
-    "our_paid_calls_24h": 9
+    "our_paid_calls_24h": 1
   },
   "sources_ok": [
     "github",
     "hackernews",
-    "payapi-market",
-    "polymarket"
+    "payapi-market"
   ],
   "sources_failed": [],
   "signals": [
-    {
-      "kind": "polymarket",
-      "source": "polymarket",
-      "query": "keyword",
-      "title": "Shanghai Rolex Masters: Alex de Minaur vs Alex Molcan",
-      "score": 170115.78378099995,
-      "url": "https://polymarket.com/market/atp-minaur-molcan-2026-10-09",
-      "created_at": "2026-10-08T05:05:21.815565Z"
-    },
     {
       "kind": "hackernews",
       "source": "hackernews",
@@ -59,9 +49,9 @@
     {
       "kind": "github",
       "source": "github",
-      "query": "agent payments in:title,body created:>2026-09-08",
+      "query": "agent payments in:title,body created:>2026-09-09",
       "title": "openapi-typescript in maintenance mode",
-      "score": 47,
+      "score": 48,
       "comments": 4,
       "url": "https://github.com/openapi-ts/openapi-typescript/issues/2874",
       "created_at": "2026-09-19T15:40:58Z",
@@ -80,6 +70,16 @@
     {
       "kind": "hackernews",
       "source": "hackernews",
+      "query": "AI agent payments",
+      "title": "Ask HN: I just talked to an AI-obsessed client, and I need a shower afterwards",
+      "score": 30,
+      "comments": 51,
+      "url": "https://news.ycombinator.com/item?id=49826029",
+      "created_at": "2026-09-24T03:48:41Z"
+    },
+    {
+      "kind": "hackernews",
+      "source": "hackernews",
       "query": "paid API agents",
       "title": "Show HN: Pointless but mostly-exact clone of Hacker News",
       "score": 16,
@@ -90,7 +90,7 @@
     {
       "kind": "github",
       "source": "github",
-      "query": "agent payments in:title,body created:>2026-09-08",
+      "query": "agent payments in:title,body created:>2026-09-09",
       "title": "Bathhouse Update",
       "score": 14,
       "comments": 9,
@@ -101,13 +101,23 @@
     {
       "kind": "github",
       "source": "github",
-      "query": "agent payments in:title,body created:>2026-09-08",
+      "query": "agent payments in:title,body created:>2026-09-09",
       "title": "[Feature] Native Browser Use / Browser Automation tool for Unsloth Studio agents",
       "score": 7,
       "comments": 0,
       "url": "https://github.com/unslothai/unsloth/issues/10800",
       "created_at": "2026-09-11T15:50:33Z",
       "repo": "unslothai/unsloth"
+    },
+    {
+      "kind": "hackernews",
+      "source": "hackernews",
+      "query": "x402",
+      "title": "Agency offers staff two years pay if they can replace themselves with AI",
+      "score": 5,
+      "comments": 0,
+      "url": "https://mumbrella.com.au/agency-offers-staff-two-years-pay-if-they-can-replace-themselves-with-ai-940294",
+      "created_at": "2026-10-09T06:26:49Z"
     },
     {
       "kind": "hackernews",
@@ -135,7 +145,7 @@
       "query": "AI agent payments",
       "title": "Show HN: Tofu \u2013 let your agent deploy full-stack apps",
       "score": 4,
-      "comments": 4,
+      "comments": 7,
       "url": "https://trytofu.ai",
       "created_at": "2026-10-06T11:12:02Z"
     },
@@ -150,9 +160,19 @@
       "created_at": "2026-09-11T12:27:24Z"
     },
     {
+      "kind": "hackernews",
+      "source": "hackernews",
+      "query": "paid API agents",
+      "title": "Female AI agents 'paid' less than males, study finds",
+      "score": 4,
+      "comments": 1,
+      "url": "https://www.the-independent.com/tech/ai-gender-pay-gap-study-b3061881.html",
+      "created_at": "2026-10-08T22:32:08Z"
+    },
+    {
       "kind": "github",
       "source": "github",
-      "query": "x402 in:title,body created:>2026-09-08",
+      "query": "x402 in:title,body created:>2026-09-09",
       "title": "feat(x402): support trusted server-signed batch",
       "score": 4,
       "comments": 1,
@@ -163,7 +183,7 @@
     {
       "kind": "github",
       "source": "github",
-      "query": "agent payments in:title,body created:>2026-09-08",
+      "query": "agent payments in:title,body created:>2026-09-09",
       "title": "[RFC] A Durable component: durable execution on top of Messenger, with Doctrine and Temporal bridges",
       "score": 4,
       "comments": 0,
@@ -174,7 +194,7 @@
     {
       "kind": "github",
       "source": "github",
-      "query": "agent payments in:title,body created:>2026-09-08",
+      "query": "agent payments in:title,body created:>2026-09-09",
       "title": "Update dependency boto3 to v1.43.104",
       "score": 4,
       "comments": 3,
@@ -185,10 +205,10 @@
     {
       "kind": "github",
       "source": "github",
-      "query": "x402 in:title,body created:>2026-09-08",
+      "query": "x402 in:title,body created:>2026-09-09",
       "title": "feat: x402 pay-per-call helper \u2014 envelope parser + after_execute modifier",
       "score": 3,
-      "comments": 8,
+      "comments": 9,
       "url": "https://github.com/ComposioHQ/composio/pull/4635",
       "created_at": "2026-09-24T22:04:21Z",
       "repo": "ComposioHQ/composio"
@@ -196,7 +216,7 @@
     {
       "kind": "github",
       "source": "github",
-      "query": "x402 in:title,body created:>2026-09-08",
+      "query": "x402 in:title,body created:>2026-09-09",
       "title": "PG Award Intake: Stellar GO CLI",
       "score": 3,
       "comments": 12,
@@ -207,7 +227,7 @@
     {
       "kind": "github",
       "source": "github",
-      "query": "agent payments in:title,body created:>2026-09-08",
+      "query": "agent payments in:title,body created:>2026-09-09",
       "title": "Agent/swift fresh yrpw",
       "score": 3,
       "comments": 6,
@@ -218,10 +238,10 @@
     {
       "kind": "github",
       "source": "github",
-      "query": "agent payments in:title,body created:>2026-09-08",
+      "query": "agent payments in:title,body created:>2026-09-09",
       "title": "[spec] gate: let a runtime delegate \u00a77.4 approval to an external policy decision point",
       "score": 3,
-      "comments": 2,
+      "comments": 3,
       "url": "https://github.com/docker/sandbox-kit-spec/issues/64",
       "created_at": "2026-09-25T19:08:07Z",
       "repo": "docker/sandbox-kit-spec"
@@ -229,7 +249,7 @@
     {
       "kind": "github",
       "source": "github",
-      "query": "agent payments in:title,body created:>2026-09-08",
+      "query": "agent payments in:title,body created:>2026-09-09",
       "title": "Suggestions from itch.io: real User-Agent, API v2, data.json and QR login",
       "score": 3,
       "comments": 14,
@@ -240,7 +260,7 @@
     {
       "kind": "github",
       "source": "github",
-      "query": "agent payments in:title,body created:>2026-09-08",
+      "query": "agent payments in:title,body created:>2026-09-09",
       "title": "Finish school AI allowance activation and metered teacher generation",
       "score": 3,
       "comments": 19,
@@ -251,7 +271,7 @@
     {
       "kind": "github",
       "source": "github",
-      "query": "agent payments in:title,body created:>2026-09-08",
+      "query": "agent payments in:title,body created:>2026-09-09",
       "title": "Disable the workspace bank account row offline unless the reimburser is unlocking a locked account",
       "score": 3,
       "comments": 19,
@@ -262,7 +282,7 @@
     {
       "kind": "github",
       "source": "github",
-      "query": "agent payments in:title,body created:>2026-09-08",
+      "query": "agent payments in:title,body created:>2026-09-09",
       "title": "SAN-1274 PR 1 \u2014 Add the verified MDE AI skills foundation",
       "score": 3,
       "comments": 5,
@@ -273,7 +293,7 @@
     {
       "kind": "github",
       "source": "github",
-      "query": "agent payments in:title,body created:>2026-09-08",
+      "query": "agent payments in:title,body created:>2026-09-09",
       "title": "Real-money gate: close the external audit's code findings",
       "score": 3,
       "comments": 3,
@@ -284,7 +304,7 @@
     {
       "kind": "github",
       "source": "github",
-      "query": "agent payments in:title,body created:>2026-09-08",
+      "query": "agent payments in:title,body created:>2026-09-09",
       "title": "feat: Phase 2 tracked loan ledger + Loans category KPI exclusion (plan 011)",
       "score": 3,
       "comments": 22,
@@ -295,7 +315,18 @@
     {
       "kind": "github",
       "source": "github",
-      "query": "x402 in:title,body created:>2026-09-08",
+      "query": "x402 in:title,body created:>2026-09-09",
+      "title": "fix: persist x402_pay settlements in get_transaction_history",
+      "score": 2,
+      "comments": 1,
+      "url": "https://github.com/up2itnow0822/agentpay-mcp/pull/82",
+      "created_at": "2026-10-08T10:20:38Z",
+      "repo": "up2itnow0822/agentpay-mcp"
+    },
+    {
+      "kind": "github",
+      "source": "github",
+      "query": "x402 in:title,body created:>2026-09-09",
       "title": "feat(program): allow permissionless `settle` during the Closing grace period",
       "score": 2,
       "comments": 1,
@@ -306,7 +337,7 @@
     {
       "kind": "github",
       "source": "github",
-      "query": "x402 in:title,body created:>2026-09-08",
+      "query": "x402 in:title,body created:>2026-09-09",
       "title": "feat(ruby): Gate#accepts?(protocol) replaces the per-protocol checks",
       "score": 2,
       "comments": 2,
@@ -317,18 +348,7 @@
     {
       "kind": "github",
       "source": "github",
-      "query": "x402 in:title,body created:>2026-09-08",
-      "title": "feat(catalog): add Market Intelligence API provider",
-      "score": 2,
-      "comments": 2,
-      "url": "https://github.com/solana-foundation/pay-skills/pull/275",
-      "created_at": "2026-09-25T17:25:21Z",
-      "repo": "solana-foundation/pay-skills"
-    },
-    {
-      "kind": "github",
-      "source": "github",
-      "query": "x402 in:title,body created:>2026-09-08",
+      "query": "x402 in:title,body created:>2026-09-09",
       "title": "feat(rust): MPP/x402 over MCP/RPC",
       "score": 2,
       "comments": 1,
@@ -339,7 +359,7 @@
     {
       "kind": "github",
       "source": "github",
-      "query": "x402 in:title,body created:>2026-09-08",
+      "query": "x402 in:title,body created:>2026-09-09",
       "title": "feat(x402-router): make the statement page the landing page and relicense to Apache-2.0",
       "score": 2,
       "comments": 1,
@@ -350,7 +370,7 @@
     {
       "kind": "github",
       "source": "github",
-      "query": "x402 in:title,body created:>2026-09-08",
+      "query": "x402 in:title,body created:>2026-09-09",
       "title": "fix(mpp): enforce single-use charges and complete replay coverage",
       "score": 2,
       "comments": 2,
@@ -361,7 +381,7 @@
     {
       "kind": "github",
       "source": "github",
-      "query": "x402 in:title,body created:>2026-09-08",
+      "query": "x402 in:title,body created:>2026-09-09",
       "title": "fix(x402): harden settlement recovery and request identity",
       "score": 2,
       "comments": 5,
@@ -372,18 +392,7 @@
     {
       "kind": "github",
       "source": "github",
-      "query": "x402 in:title,body created:>2026-09-08",
-      "title": "fix: keep x402 session tokens inside the paid URL scope",
-      "score": 2,
-      "comments": 1,
-      "url": "https://github.com/up2itnow0822/agentpay-mcp/pull/65",
-      "created_at": "2026-09-24T11:27:26Z",
-      "repo": "up2itnow0822/agentpay-mcp"
-    },
-    {
-      "kind": "github",
-      "source": "github",
-      "query": "x402 in:title,body created:>2026-09-08",
+      "query": "x402 in:title,body created:>2026-09-09",
       "title": "feat: spend outcomes API and SpendingPolicy reserve/commit/release",
       "score": 2,
       "comments": 3,
@@ -394,7 +403,18 @@
     {
       "kind": "github",
       "source": "github",
-      "query": "x402 in:title,body created:>2026-09-08",
+      "query": "x402 in:title,body created:>2026-09-09",
+      "title": "fix: keep x402 session tokens inside the paid URL scope",
+      "score": 2,
+      "comments": 1,
+      "url": "https://github.com/up2itnow0822/agentpay-mcp/pull/65",
+      "created_at": "2026-09-24T11:27:26Z",
+      "repo": "up2itnow0822/agentpay-mcp"
+    },
+    {
+      "kind": "github",
+      "source": "github",
+      "query": "x402 in:title,body created:>2026-09-09",
       "title": "feat: sell_inference, paid OpenAI endpoints served by the agent",
       "score": 2,
       "comments": 4,
@@ -405,7 +425,7 @@
     {
       "kind": "github",
       "source": "github",
-      "query": "x402 in:title,body created:>2026-09-08",
+      "query": "x402 in:title,body created:>2026-09-09",
       "title": "fix: refuse x402 upto schemes instead of transferring the cap",
       "score": 2,
       "comments": 3,
@@ -416,125 +436,90 @@
     {
       "kind": "github",
       "source": "github",
-      "query": "x402 in:title,body created:>2026-09-08",
+      "query": "x402 in:title,body created:>2026-09-09",
       "title": "fix: retain unkeyed x402 protocol fees so a receipt timeout cannot double-charge",
       "score": 2,
       "comments": 9,
       "url": "https://github.com/up2itnow0822/agent-wallet-sdk/pull/64",
       "created_at": "2026-09-19T11:05:50Z",
       "repo": "up2itnow0822/agent-wallet-sdk"
-    },
-    {
-      "kind": "github",
-      "source": "github",
-      "query": "agent payments in:title,body created:>2026-09-08",
-      "title": "fix(security): remove unauthenticated agent endpoints",
-      "score": 2,
-      "comments": 10,
-      "url": "https://github.com/AudioJones-Dev/audiojones.com/pull/280",
-      "created_at": "2026-09-27T16:07:16Z",
-      "repo": "AudioJones-Dev/audiojones.com"
-    },
-    {
-      "kind": "github",
-      "source": "github",
-      "query": "agent payments in:title,body created:>2026-09-08",
-      "title": "system-one : typed decision readout for models that answer instead of writing",
-      "score": 2,
-      "comments": 2,
-      "url": "https://github.com/ggml-org/llama.cpp/pull/29321",
-      "created_at": "2026-09-23T16:16:24Z",
-      "repo": "ggml-org/llama.cpp"
     }
   ],
   "market": {
     "payapi": {
       "x402": {
-        "matches": 112,
-        "searched": 271
+        "matches": 115,
+        "searched": 276
       },
       "agent": {
-        "matches": 126,
-        "searched": 271
+        "matches": 130,
+        "searched": 276
       },
       "knowledge": {
         "matches": 1,
-        "searched": 271
+        "searched": 276
       },
       "trading": {
-        "matches": 10,
-        "searched": 271
+        "matches": 11,
+        "searched": 276
       }
     }
   },
   "our_endpoints": {
     "db": "/home/ubuntu/prpo_ai/xh_api/logs/xh_api.db",
     "available": true,
-    "requests_24h": 4700,
-    "paid_calls_24h": 9,
-    "revenue_usd_24h_proxy": 0.53,
+    "requests_24h": 3748,
+    "paid_calls_24h": 1,
+    "revenue_usd_24h_proxy": 0.05,
     "by_route_status": {
-      "GET /arkham-intel/counterparties 402": 14,
-      "GET /arkham-intel/exchange-flow 402": 14,
-      "GET /arkham-intel/portfolio 402": 14,
-      "GET /arkham-intel/trace 402": 12,
-      "GET /arkham-intel/use-cases 402": 13,
+      "GET /arkham-intel/counterparties 402": 16,
+      "GET /arkham-intel/exchange-flow 402": 15,
+      "GET /arkham-intel/portfolio 402": 15,
+      "GET /arkham-intel/trace 402": 15,
+      "GET /arkham-intel/use-cases 402": 16,
       "GET /arkham-intel/venue-users 402": 13,
-      "GET /daily-drop 402": 56,
-      "GET /document-extract 402": 35,
-      "GET /domain-audit 402": 33,
-      "GET /howto/create-x402-endpoint 402": 66,
-      "GET /howto/vps-gdrive-connect 402": 61,
-      "GET /howto/x402-register 402": 65,
-      "GET /howto/youtube-auto-ai 402": 54,
-      "GET /hundred-x-hunter 402": 22,
-      "GET /token-safety 402": 33,
-      "GET /trust-leaderboard 402": 34,
-      "GET /x402-trust 402": 66,
-      "POST /arkham-intel/counterparties 402": 12,
-      "POST /arkham-intel/exchange-flow 402": 12,
-      "POST /arkham-intel/portfolio 402": 12,
-      "POST /arkham-intel/trace 402": 12,
-      "POST /arkham-intel/use-cases 402": 12,
-      "POST /arkham-intel/venue-users 402": 12,
-      "POST /company-enrich 200": 1,
-      "POST /company-enrich 400": 1,
-      "POST /company-enrich 402": 175,
-      "POST /daily-drop 200": 1,
-      "POST /daily-drop 402": 138,
-      "POST /defi-sentiment 402": 155,
-      "POST /document-extract 200": 1,
-      "POST /document-extract 402": 54,
-      "POST /document-extract 422": 1,
-      "POST /domain-audit 200": 1,
-      "POST /domain-audit 402": 53,
-      "POST /domain-audit 422": 1,
-      "POST /gas-tracker 402": 133,
-      "POST /howto/create-x402-endpoint 402": 120,
-      "POST /howto/vps-gdrive-connect 402": 122,
-      "POST /howto/x402-register 402": 126,
-      "POST /howto/youtube-auto-ai 200": 1,
-      "POST /howto/youtube-auto-ai 402": 136,
-      "POST /hundred-x-hunter 402": 17,
-      "POST /payment-verify 402": 135,
-      "POST /social-data 402": 161,
-      "POST /token-check 402": 133,
-      "POST /token-safety 200": 1,
-      "POST /token-safety 402": 50,
-      "POST /trust-leaderboard 200": 1,
-      "POST /trust-leaderboard 402": 45,
-      "POST /trust-leaderboard 422": 1,
-      "POST /video-license 402": 16,
-      "POST /wallet-profile 200": 1,
-      "POST /wallet-profile 402": 164,
-      "POST /web-search 402": 156,
-      "POST /whale-watch 402": 135,
-      "POST /x402-check 402": 132,
-      "POST /x402-directory 402": 139,
+      "GET /daily-drop 402": 39,
+      "GET /document-extract 402": 44,
+      "GET /domain-audit 402": 38,
+      "GET /howto/create-x402-endpoint 402": 51,
+      "GET /howto/vps-gdrive-connect 402": 51,
+      "GET /howto/x402-register 402": 54,
+      "GET /howto/youtube-auto-ai 402": 43,
+      "GET /hundred-x-hunter 402": 11,
+      "GET /token-safety 402": 40,
+      "GET /trust-leaderboard 402": 40,
+      "GET /x402-trust 402": 40,
+      "POST /arkham-intel/counterparties 402": 7,
+      "POST /arkham-intel/exchange-flow 402": 7,
+      "POST /arkham-intel/portfolio 402": 7,
+      "POST /arkham-intel/trace 402": 7,
+      "POST /arkham-intel/use-cases 402": 7,
+      "POST /arkham-intel/venue-users 402": 7,
+      "POST /company-enrich 402": 164,
+      "POST /daily-drop 402": 122,
+      "POST /defi-sentiment 402": 130,
+      "POST /document-extract 402": 107,
+      "POST /domain-audit 402": 107,
+      "POST /gas-tracker 402": 111,
+      "POST /howto/create-x402-endpoint 402": 100,
+      "POST /howto/vps-gdrive-connect 402": 100,
+      "POST /howto/x402-register 402": 101,
+      "POST /howto/youtube-auto-ai 402": 125,
+      "POST /hundred-x-hunter 402": 7,
+      "POST /payment-verify 402": 114,
+      "POST /social-data 402": 133,
+      "POST /token-check 402": 121,
+      "POST /token-safety 402": 112,
+      "POST /trust-leaderboard 402": 110,
+      "POST /video-license 402": 8,
+      "POST /wallet-profile 402": 158,
+      "POST /web-search 402": 134,
+      "POST /whale-watch 402": 115,
+      "POST /x402-check 402": 115,
+      "POST /x402-directory 402": 130,
       "POST /x402-trust 200": 1,
-      "POST /x402-trust 402": 70,
-      "POST /x402-trust 422": 1,
-      "POST /xh-bundle 402": 135
+      "POST /x402-trust 402": 118,
+      "POST /xh-bundle 402": 106
     },
     "revenue_note": "proxy = sum of the quoted price on calls that returned 200; the on-chain treasury scan in `treasury` is the source of truth"
   },
