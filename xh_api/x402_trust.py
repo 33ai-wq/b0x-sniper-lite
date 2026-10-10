@@ -281,14 +281,42 @@ def assess(ctx: Ctx, url: str, method: str = "POST", body: dict | None = None,
                 "score": 0, "verdict": "avoid",
                 "reason": "the endpoint did not answer; an agent that pays an unreachable seller has no recourse"}
 
+    # A seller can answer 200 on the first call (a free trial, or a preview that the buyer consumes) and
+    # 402 on the next one, so a single probe honestly reports "no terms at all" for a route that is
+    # priced and payable. Reported by baianomarceloeduardo-jpg (2026-10-10, pulsefeed-x402#36) with his
+    # own route as the example. When the first probe shows no challenge, probe the same verb once more
+    # before concluding, and keep both observations in the report.
+    retry: dict[str, Any] = {}
+    if probe["status"] != 402:
+        first_status = probe["status"]
+        again = _http(url, method, body if body is not None else {})
+        attempted.append(f"{method}(retry)")
+        second_challenge = None
+        if again.get("ok"):
+            second_challenge, _ = ctx.decode_challenge(again["headers"].get("payment-required"),
+                                                       again["text"])
+        if again.get("ok") and again.get("status") == 402 and second_challenge:
+            retry = {"first": first_status, "second": again["status"]}
+            probe = again
+        else:
+            retry = {"first": first_status, "second": again.get("status") if again.get("ok") else None}
+
     status = probe["status"]
     headers = probe["headers"]
     challenge, transport = ctx.decode_challenge(headers.get("payment-required"), probe["text"])
     accs = (challenge or {}).get("accepts") or []
     a0 = accs[0] if isinstance(accs, list) and accs else (accs if isinstance(accs, dict) else {})
     checks: dict[str, Any] = {"probe_method": method, "methods_attempted": attempted}
+    if retry:
+        checks["no_challenge_retry"] = retry
     points: dict[str, Any] = {}
     notes: list[str] = []
+    if retry.get("second") == 402:
+        notes.append(f"the first probe answered {retry['first']} with no terms and the immediate retry "
+                     "returned the 402: a trial or a consumed preview, not an unpriced route")
+    elif retry and retry.get("second") is not None:
+        notes.append(f"probed twice, {retry['first']} then {retry['second']}: the route served no payment "
+                     "terms either time")
     if len(attempted) > 1 and method != attempted[0]:
         notes.append(f"the {attempted[0]} probe answered without a challenge while {method} returned the 402: "
                      "an agent has to pick the right verb")

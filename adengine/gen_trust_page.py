@@ -77,6 +77,13 @@ def main() -> None:
     oc = prov.get("onchain_24h") or {}
     tb = prov.get("__removed_amount_field__") or {}
     th = prov.get("board_thresholds") or {}
+    u = (prov.get("counting_units") or {})
+    oc_cov = ""
+    if oc:
+        read = oc.get("windows_read")
+        refused = oc.get("windows_refused") or 0
+        if read is not None and (refused or oc.get("_refused")):
+            oc_cov = f" ({read}/{read + refused} windows readable - refusals printed, never zeroed)"
     prov_block = ""
     if prov:
         prov_block = f"""
@@ -84,11 +91,17 @@ def main() -> None:
 <div class="kpi">
   <div><b>{esc(gl.get('settled_total'))}</b><span>settled calls since {esc((gl.get('since') or '')[:10])}</span></div>
   <div><b>{esc(gl.get('from_external'))}</b><span>from outside callers</span></div>
-  <div><b>${esc(oc.get('usdc'))}</b><span>USDC in, last 24h</span></div>
+  <div><b>${esc(oc.get('usdc'))}</b><span>USDC in, last 24h{oc_cov}</span></div>
   <div><b>${esc(tb.get('usdc'))}</b><span>treasury balance</span></div>
   <div><b>{esc(prov.get('generated_at', '')[:16].replace('T', ' '))}</b><span>counted (CST)</span></div>
 </div>
 <div class="note">{esc(prov.get('disclosure'))}</div>
+<div class="note">Three units, named, because a registry count, a gate log and a scanner count different things:
+<b>{esc(u.get('paid_attempts'))}</b> paid attempts, <b>{esc(u.get('settled'))}</b> settled
+(paid row, status 200, route matching the request method) and <b>{esc(u.get('rejected_402'))}</b> rejected
+challenges handed back with 402, since {esc((u.get('since') or '')[:10])}. x402scan and the Bazaar crawler
+read settled transfers on-chain, so their number will not equal any of these three; when we quote theirs we
+say whose it is.</div>
 <div class="note">Counting rules, and the board thresholds we measured ({esc(th.get('measured'))}):
 place 10 on x402scan's 24-hour server board needs about {esc(th.get('rank10_24h_calls'))} settled calls a day,
 its 100th place about {esc(th.get('rank100_24h_calls'))}, and a place on the board at all about
