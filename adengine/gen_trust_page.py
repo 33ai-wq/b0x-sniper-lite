@@ -202,9 +202,11 @@ Each row was checked at the time above; scores move as sellers change.</div>
 
 <h2>Reproduce any row</h2>
 <div class="cta">
-<p>One endpoint, live, for $0.05 USDC — <code>POST https://xhagents.xyz/api/x402-trust</code>
-with <code>{{"url": "…"}}</code> gives you the same 0-100 report with the evidence and the penalties.</p>
-<p>The full ranking as JSON, filterable by verdict and score, is $0.05 —
+<p>One endpoint, live, in one paid call — <code>POST https://xhagents.xyz/api/x402-trust</code>
+with <code>{{"url": "…"}}</code> gives you the same 0-100 report with the evidence and the penalties. The price is deliberately not
+written here: the live 402 challenge quotes it, and <a href="/openapi.json">openapi.json</a> records it
+per operation, so a price change needs no edit on this page.</p>
+<p>The full ranking as JSON, filterable by verdict and score, is one paid call —
 <code>GET https://xhagents.xyz/api/trust-leaderboard?limit=100&amp;order=worst</code>.
 Free method page and top-ten preview: <a href="/api/trust-leaderboard/method">/api/trust-leaderboard/method</a>.</p>
 <p>Every endpoint is listed with its price in <a href="/openapi.json">openapi.json</a> and

@@ -25,6 +25,8 @@ CASES = [
     ("asset name lies", dict(GOOD, asset_name="USDC (fake)"), "contradicts canonical USDC", None),
     ("wrong network (Solana)", dict(GOOD, network="solana:5eykt4UsFv8P8NJdTREpY1vzqKqZKvdp"),
      "not supported", None),
+    ("v1 shorthand 'base' accepted", dict(GOOD, network="base"), None, None),
+    ("unknown shorthand still refused", dict(GOOD, network="base-sepolia"), "not supported", None),
     ("payTo missing", dict(GOOD, payTo=""), "no payTo", None),
     ("payTo not an address", dict(GOOD, payTo="0x123"), "not a well-formed EVM address", None),
     ("payTo outside allowlist", GOOD, "not in the --pay-to allowlist",

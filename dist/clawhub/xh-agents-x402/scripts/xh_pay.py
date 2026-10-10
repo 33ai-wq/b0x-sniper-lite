@@ -18,7 +18,8 @@ Rules this code enforces (in code, not by convention)
   * asset: only canonical USDC on Base is signed for, checked by contract address and by the asset
     name carried in the challenge. A price ceiling alone is bypassable: a hostile seller can quote a
     small amount denominated in a different token, or in the same token with different decimals.
-  * network: only eip155:8453 (Base). Anything else is refused.
+  * network: only eip155:8453 (Base), with the documented x402 v1 shorthand "base" accepted as
+    an alias. Anything else is refused.
   * the payer key is required for `pay` and `whoami` only; `quote` and `catalogue` never touch it.
 
 Examples
@@ -58,6 +59,10 @@ except ImportError as exc:  # the free modes still work without the SDK
 UA = "xh-pay/1.1 (+https://xhagents.xyz)"
 DEFAULT_MAX = 0.10
 NETWORK = "eip155:8453"
+# Many x402 v1 services advertise the chain as a short name ("base") instead of the CAIP-2 id. That is
+# a label, not a different chain, and the authorization is always built for NETWORK - so the documented
+# v1 shorthand is accepted, while anything unknown is still refused. (Decision 2026-10-10.)
+NETWORK_ALIASES = {"base": NETWORK, "base-mainnet": NETWORK}
 USDC_BASE = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
 USDC_NAMES = ("usd coin", "usdc")
 USDC_DECIMALS = 6
@@ -193,6 +198,8 @@ def validate_quote(info: Dict[str, Any], max_price: float = DEFAULT_MAX,
     if allow_pay_to and pay_to.lower() not in {a.lower() for a in allow_pay_to}:
         return "payTo %s is not in the --pay-to allowlist" % pay_to
     network = (info.get("network") or "").strip()
+    if network.lower() in NETWORK_ALIASES:
+        network = NETWORK_ALIASES[network.lower()]  # v1 shorthand mapped to the CAIP-2 id
     if network != NETWORK:
         return "network %s is not supported (only %s)" % (network or "(empty)", NETWORK)
     asset = (info.get("asset") or "").strip().lower()

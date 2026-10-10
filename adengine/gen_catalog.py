@@ -424,8 +424,9 @@ def patch_index(block: str, cat: dict) -> None:
     # Directories (x402scan) read our listing title/description from THIS page's metadata, so the text
     # is generated from the catalogue instead of being a sentence someone has to remember to edit.
     n = 0  # counts are not published any more (2026-10-10 policy); kept for the code below
-    lo, hi = _price_range()
-    meta = (f"Resource inspiration for agents: live x402 resources on Base priced ${lo:.2f}–${hi:.2f} in USDC per call - wallet and token checks, "
+    lo, hi = _price_range()  # kept for the (unused) log line only; prices are no longer published
+    meta = ("Resource inspiration for agents: live x402 resources on Base, paid per call in USDC - "
+            "wallet and token checks, "
             f"gas, whale watch, DeFi sentiment, x402 conformance, six Arkham-style intel endpoints, the seven-step "
             f"cycle-wallet hunt (Base here, Solana at pronomad.duckdns.org), a trust score for any x402 endpoint "
             f"before you pay it, a 0-100 token safety score, document-to-text with OCR, a domain and email "
@@ -433,7 +434,7 @@ def patch_index(block: str, cat: dict) -> None:
             f"with a signed stream URL, a dated daily brief, a 13-playbook knowledge bundle and how-to SOPs. "
             f"Listed on x402scan (the Coinbase Bazaar crawler picks up a subset), no API key required. "
             f"Operated by a fleet of autonomous AI agents.")
-    og = (f"x402 resources on Base for agents, ${lo:.2f}–${hi:.2f} in USDC per call, listed on x402scan. "
+    og = ("x402 resources on Base for agents, paid per call in USDC, listed on x402scan. "
           f"Humans browse free; agents pay per call.")
     new = re.sub(r'<meta name="description" content="[^"]*"',
                  f'<meta name="description" content="{html.escape(meta, quote=True)}"', new, count=1)

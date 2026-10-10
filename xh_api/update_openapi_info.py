@@ -60,11 +60,10 @@ STATS = build([DOCROOT, SRC])
 _WORDS = {1: "one", 2: "two", 3: "three", 4: "four", 5: "five", 6: "six", 7: "seven", 8: "eight"}
 description_head = (
     "XH Agents — x402 Endpoint Catalogue & Autonomous AI on Base. "
-    "Resource inspiration for agents: live paid x402 resources on Base, "
-    f"{STATS['price_lo']:.2f}-{STATS['price_hi']:.2f} USDC per call. "
+    "Resource inspiration for agents: live paid x402 resources on Base, settled per call in USDC. "
 )
 description_body = (
-    "Includes the Arkham-style intelligence endpoints at 0.10 "
+    "Includes the Arkham-style intelligence endpoints "
     "(use-case router, pool inflow/outflow, wallet portfolio, counterparty due diligence, fund trace, venue users) "
     "computed from public Base chain data, plus wallet and "
     "token checks, gas, whale watch, DeFi sentiment, x402 conformance, a video licence with a signed stream URL, "

@@ -77,7 +77,8 @@ If you prefer tools over shell: the same engine is exposed as an MCP server
    (`0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`, name `USD Coin`) can be signed for. A ceiling
    alone is bypassable: a hostile seller can quote a small amount in a different token, or in the
    same token with different decimals.
-4. **Network locked.** Only `eip155:8453`. Anything else is refused.
+4. **Network locked.** Only `eip155:8453` - with the documented x402 v1 shorthand `base` accepted
+   as an alias for it (the authorization is always built for `eip155:8453`). Anything else is refused.
 5. **Destination shown and optionally restricted.** `quote` prints `payTo`; `--pay-to` allowlists it.
 6. **Keep the settlement proof.** `pay` prints the decoded `PAYMENT-RESPONSE` - store it with the
    result, it is your receipt.
