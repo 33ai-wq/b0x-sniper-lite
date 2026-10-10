@@ -54,3 +54,7 @@ BossyFactory/
 *_env
 litcount_repo/
 probe_nvidia_nim*_result.json
+# ── 2026-10-11: amounts must never be published (repo is PUBLIC) ──
+# gen_provenance.py rewrites this locally with counts only; it is regenerated on demand, so it is
+# not tracked. History was rewritten on the same day to remove the old copies.
+adengine/data/provenance.json
