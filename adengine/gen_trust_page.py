@@ -75,7 +75,7 @@ def main() -> None:
             prov = {}
     gl = prov.get("gate_log") or {}
     oc = prov.get("onchain_24h") or {}
-    tb = prov.get("__removed_amount_field__") or {}
+    # No balance is read here on purpose: the page publishes counts, never amounts.
     th = prov.get("board_thresholds") or {}
     u = (prov.get("counting_units") or {})
     oc_cov = ""

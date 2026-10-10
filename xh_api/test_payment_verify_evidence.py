@@ -127,7 +127,7 @@ check("amount_usdc of the buyer's own transfer", out["amount_usdc"] == 0.004)
 check("nothing marked unreadable", out["unreadable"] is False and out["read"]["log_search"]["attempted"] is False,
       str(out["unreadable_parts"]))
 check("no money figure beyond the payer's own transfer in the payload",
-      not any(k in out for k in ("balance", "__removed_amount_field__", "portfolio")))
+      not any(k in out for k in ("balance", "portfolio", "holdings", "revenue")))
 
 print("\n2. the payer broadcast it themselves (plain transfer)")
 rpc = RPC(receipt(PAYER, [tlog(TX, PAYER, TREASURY, VALUE, BLOCK)]), txpayload(PAYER, "0xa9059cbb"))
