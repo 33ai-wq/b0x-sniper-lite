@@ -91,8 +91,7 @@ def main() -> None:
 <div class="kpi">
   <div><b>{esc(gl.get('settled_total'))}</b><span>settled calls since {esc((gl.get('since') or '')[:10])}</span></div>
   <div><b>{esc(gl.get('from_external'))}</b><span>from outside callers</span></div>
-  <div><b>${esc(oc.get('usdc'))}</b><span>USDC in, last 24h{oc_cov}</span></div>
-  <div><b>${esc(tb.get('usdc'))}</b><span>treasury balance</span></div>
+  <div><b>{esc(oc.get('transfers'))}</b><span>USDC transfers in, last 24h{oc_cov}</span></div>
   <div><b>{esc(prov.get('generated_at', '')[:16].replace('T', ' '))}</b><span>counted (CST)</span></div>
 </div>
 <div class="note">{esc(prov.get('disclosure'))}</div>
@@ -107,8 +106,9 @@ place 10 on x402scan's 24-hour server board needs about {esc(th.get('rank10_24h_
 its 100th place about {esc(th.get('rank100_24h_calls'))}, and a place on the board at all about
 {esc(th.get('on_board_min_24h_calls'))}. We publish where we are instead of buying a position.
 This section is rebuilt from <code>adengine/data/provenance.json</code>: the call count is our own request
-table filtered by method+path, the transfers are read from Base, the balance is a plain USDC
-<code>balanceOf</code> call.</div>
+table filtered by method+path, the transfers are counted from Base logs. We publish counts and never
+amounts - not the balance, not what a call earned us - and we say whose measurement a number is whenever we
+quote somebody else's.</div>
 """
 
     ext_block = """
