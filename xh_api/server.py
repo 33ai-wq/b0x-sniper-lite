@@ -41,7 +41,7 @@ from pydantic import BaseModel, Field
 
 import sys
 sys.path.insert(0, "/home/ubuntu/prpo_ai")
-from xh_verify import verify_tx_usdc  # noqa: E402
+from xh_verify import TRANSFER_TOPIC, _addr_topic, _topic_to_addr, verify_tx_usdc  # noqa: E402
 
 # ── config ────────────────────────────────────────────────────────────────────
 PORT = int(os.environ.get("XH_API_PORT", "8991"))
@@ -100,6 +100,19 @@ _DEDICATED_RPC = (os.environ.get("XH_BASE_RPC", "").strip()
                   or (f"https://base-mainnet.g.alchemy.com/v2/{_ALCHEMY_KEY}" if _ALCHEMY_KEY else ""))
 RPC_LIST = ([_DEDICATED_RPC] if _DEDICATED_RPC else []) + _PUBLIC_RPC
 LOG_RPC_LIST = _PUBLIC_RPC + ([_DEDICATED_RPC] if _DEDICATED_RPC else [])
+# ── payment-verify evidence (2026-10-11) ───────────────────────────────────────
+# A receipt is the direct route to a settlement, but no public Base endpoint serves wide
+# eth_getLogs ranges: 1rpc.io/base caps at 50 blocks and a 10,000-block range answers 403 (measured
+# 2026-10-10, see x402_rank/README.md). So a log search walks short windows and rotates endpoints,
+# and counts what it read against what was refused — an all-refused window is reported as
+# `unreadable`, never as an empty list that would read as "no payment".
+LOGS_ENDPOINTS = ["https://base-rpc.publicnode.com", "https://mainnet.base.org",
+                  "https://base.drpc.org", "https://1rpc.io/base"]
+LOGS_WINDOW_BLOCKS = int(os.environ.get("XH_LOGS_WINDOW_BLOCKS", "4800"))
+LOGS_MAX_WINDOWS = int(os.environ.get("XH_LOGS_MAX_WINDOWS", "9"))
+# EIP-3009 transferWithAuthorization(address,address,uint256,uint256,uint256,bytes32,uint8,bytes32,bytes32)
+# A facilitator that relays this call pays the gas, so tx.from is the relayer, not the payer.
+EIP3009_SELECTOR = "0xe3ee160e"
 ERC20_MIN_ABI = [
     {"name": "name", "type": "function", "inputs": [], "outputs": [{"type": "string"}], "stateMutability": "view"},
     {"name": "symbol", "type": "function", "inputs": [], "outputs": [{"type": "string"}], "stateMutability": "view"},
@@ -377,13 +390,20 @@ PAID_ROUTES = [
       "endpoints": [{"url": "https://xhagents.xyz/api/gas-tracker", "price_usd": 0.1, "network": "eip155:8453",
                      "payTo": "0x6cb53f00a586f7704e1f7121c2e397b579eb3ed0", "sources": ["bazaar", "x402-list"]}]}),
     ("POST /payment-verify", "paymentVerify", "USDC settlement verification",
-     "Verifies that a transaction hash settled a USDC payment to a given recipient, returning the parsed transfer and confirmation count.",
+     "Verifies that a transaction hash settled a USDC payment to a given recipient, and reports who funded it: the payer from the Transfer log vs the account that broadcast the transaction (they differ when an EIP-3009 facilitator relays it), plus block number, UTC block time, status, gas used, and unreadable=true when no RPC would answer instead of a false empty result.",
      {"tx_hash": "0x" + "0" * 64, "to": TREASURY_BASE, "min_amount": 0.1},
      {"type": "object", "properties": {"tx_hash": {"type": "string"}, "to": {"type": "string"},
-                                       "from": {"type": "string"}, "min_amount": {"type": "number"}},
+                                       "from": {"type": "string"}, "min_amount": {"type": "number"},
+                                       "expect_relayer": {"type": "boolean"},
+                                       "expected_broadcaster": {"type": "string"}},
       "required": ["tx_hash"]},
-     {"verified": True, "from": "0x85fc53d6a89bf64e563588efc37b12ee89c4e421", "to": TREASURY_BASE,
-      "amount_usdc": "0.1", "confirmations": 3}),
+     {"verified": True, "payer": "0x85fc53d6a89bf64e563588efc37b12ee89c4e421",
+      "broadcaster": "0x85fc53d6a89bf64e563588efc37b12ee89c4e421", "relayed": False,
+      "eip3009": {"is_transfer_with_authorization": False, "selector": "0xa9059cbb"},
+      "block_number": 51825798, "block_time": "2026-08-05T00:00:00Z", "status": 1, "gas_used": 51000,
+      "transfer": {"from": "0x85fc53d6a89bf64e563588efc37b12ee89c4e421", "to": TREASURY_BASE,
+                   "value_atomic": 100000, "block": 51825798},
+      "amount_usdc": 0.1, "unreadable": False, "windows_read": 0, "windows_refused": 0}),
     ("POST /xh-bundle", "xhBundle", "XH Agents playbook bundle",
      "Thirteen production playbooks from running an x402 paid API on Base: shipping the endpoint, the payment-verifier rules, the real-money buyer test, the Base RPC capability audit, CDP authentication, directory registration, consolidating Cloudflare/Solana data, an rclone Google Drive bridge, AdSense, multi-size ad slots, nginx route recovery and secure Telegram alerts. Each item carries the mechanism, the commands, the pitfalls that cost us real money and how to verify the result.",
      {"topic": "fix-bug-base-rpc", "format": "json"},
@@ -822,6 +842,10 @@ class VerifyReq(BaseModel):
     to: str | None = None
     from_addr: str | None = Field(default=None, alias="from")
     min_amount: float | None = 0.0
+    # Optional strictness: refuse a payment that was not relayed by a facilitator (or one that was),
+    # and/or pin the account allowed to broadcast it.
+    expect_relayer: bool | None = None
+    expected_broadcaster: str | None = None
 
 
 class BundleReq(BaseModel):
@@ -1373,6 +1397,274 @@ def x402_check(req: CheckReq):
 
 
 # ── 5. payment verification ───────────────────────────────────────────────────
+# A payer is not always the account that broadcast the transaction: an x402 facilitator settles an
+# EIP-3009 `transferWithAuthorization` (selector 0xe3ee160e) and pays the gas, so `tx.from` is the
+# relayer while only the USDC `Transfer` log carries the payer. And a log search that reports an
+# empty list when the RPC refuses the block range is a false negative — the same failure we fixed on
+# /trust/. Both are handled explicitly below.
+def _iso_utc(ts: Any) -> str | None:
+    try:
+        return datetime.fromtimestamp(int(ts), tz=timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def _rpc_any(method: str, params: list, endpoints: list[str], timeout: float = 20.0) -> tuple[Any, str | None]:
+    """(result, last_error) — `last_error` is set exactly when every endpoint refused.
+
+    The caller must be able to tell "the chain answered: nothing there" (result is an empty list or
+    null) from "no endpoint answered" (result is None plus an error string). Collapsing those two is
+    how a payment that exists gets reported as zero.
+    """
+    last: str | None = None
+    for url in endpoints or []:
+        try:
+            r = httpx.post(url, json={"jsonrpc": "2.0", "id": 1, "method": method, "params": params},
+                           headers={"Content-Type": "application/json",
+                                    "User-Agent": "xh-agents-payment-verify/1.0"},
+                           timeout=timeout)
+            body = r.json()
+        except Exception as e:  # noqa: BLE001  # 403, non-JSON, timeout, rate limit -> next endpoint
+            last = f"{url}: {type(e).__name__} {str(e)[:70]}"
+            continue
+        if isinstance(body, dict) and body.get("error"):
+            last = f"{url}: {json.dumps(body['error'])[:120]}"
+            continue
+        if isinstance(body, dict) and "result" in body:
+            return body["result"], None
+        last = f"{url}: malformed JSON-RPC body"
+    return None, last or "no endpoints configured"
+
+
+def _usdc_transfers_to(logs: list, to_address: str, token: str = USDC_BASE) -> list[dict]:
+    """Every USDC Transfer log into `to_address`, re-checked locally (emitter, topic0, topic2).
+
+    The RPC filter is never trusted on its own: public and fallback providers have been seen
+    ignoring topics entirely.
+    """
+    want_to = to_address.lower()
+    want_token = token.lower()
+    out: list[dict] = []
+    for lg in logs or []:
+        if str(lg.get("address", "")).lower() != want_token:
+            continue
+        tp = lg.get("topics") or []
+        if len(tp) < 3 or str(tp[0]).lower() != TRANSFER_TOPIC:
+            continue
+        if _topic_to_addr(tp[2]) != want_to:
+            continue
+        try:
+            val = int(lg.get("data", "0x0"), 16)
+        except Exception:  # noqa: BLE001
+            continue
+        out.append({"from": _topic_to_addr(tp[1]), "to": _topic_to_addr(tp[2]), "value_atomic": val,
+                    "block": int(lg.get("blockNumber", "0x0"), 16),
+                    "tx_hash": str(lg.get("transactionHash", "")).lower()})
+    return out
+
+
+def _scan_transfer_windows(tx_hash: str, to_address: str, token: str = USDC_BASE,
+                           endpoints: list[str] | None = None, window_blocks: int | None = None,
+                           max_windows: int | None = None) -> tuple[dict | None, dict]:
+    """Find one tx's USDC Transfer log by walking short eth_getLogs windows back from the head.
+
+    One window is one request to the first endpoint that accepts the range, so a refusal costs a
+    different endpoint instead of the answer. Returns (log or None, meta); meta counts
+    windows_read / windows_refused and sets unreadable=True when nothing could be read at all.
+    """
+    endpoints = endpoints or LOGS_ENDPOINTS
+    step = int(window_blocks or LOGS_WINDOW_BLOCKS)
+    meta: dict[str, Any] = {"attempted": True, "method": "eth_getLogs_windows", "window_blocks": step,
+                            "max_windows": int(max_windows or LOGS_MAX_WINDOWS), "endpoints": endpoints,
+                            "windows_read": 0, "windows_refused": 0, "windows_scanned": 0,
+                            "unreadable": False, "errors": []}
+    head, err = _rpc_any("eth_blockNumber", [], endpoints)
+    if head is None:
+        meta["unreadable"] = True
+        meta["errors"].append(f"eth_blockNumber: {err}")
+        return None, meta
+    head = int(head, 16)
+    padded_to = _addr_topic(to_address)
+    want_tx = tx_hash.lower()
+    for i in range(meta["max_windows"]):
+        to_blk = head - i * step
+        if to_blk < 0:
+            break
+        frm_blk = max(0, to_blk - step + 1)
+        logs, werr = _rpc_any("eth_getLogs", [{"fromBlock": hex(frm_blk), "toBlock": hex(to_blk),
+                                               "address": token,
+                                               "topics": [TRANSFER_TOPIC, None, padded_to]}], endpoints)
+        meta["windows_scanned"] += 1
+        if logs is None:
+            meta["windows_refused"] += 1
+            if werr:
+                meta["errors"].append(f"{frm_blk}-{to_blk}: {werr}")
+            continue
+        meta["windows_read"] += 1
+        for lg in logs or []:
+            if str(lg.get("transactionHash", "")).lower() == want_tx:
+                meta["found_in_window"] = f"{frm_blk}-{to_blk}"
+                return lg, meta
+    if meta["windows_read"] == 0:
+        meta["unreadable"] = True
+    return None, meta
+
+
+def _payment_evidence(tx_hash: str, to: str, min_atomic: int, from_addr: str | None,
+                      expect_relayer: bool | None, expected_broadcaster: str | None,
+                      receipt_verdict: tuple[bool, str, dict] | None = None) -> dict:
+    """Build the evidence, naming every piece no endpoint would serve instead of guessing it."""
+    r_ok, r_reason, r_detail = receipt_verdict or (False, "not_checked", {})
+    from_verdict = r_detail if isinstance(r_detail, dict) and r_detail else None
+
+    ev: dict[str, Any] = {
+        "payer": None, "broadcaster": None, "relayed": None,
+        "block_number": None, "block_time": None, "status": None, "gas_used": None,
+        "eip3009": {"is_transfer_with_authorization": False, "selector": None},
+        "transfer": from_verdict,
+        "read": {"receipt": "not_attempted", "transaction": "not_attempted", "block": "not_attempted",
+                 "log_search": {"attempted": False, "reason": "not needed: the receipt was readable"},
+                 "errors": []},
+        "windows_read": 0, "windows_refused": 0, "unreadable": False, "unreadable_parts": [],
+    }
+
+    receipt, rerr = _rpc_any("eth_getTransactionReceipt", [tx_hash], RPC_LIST)
+    tx, terr = _rpc_any("eth_getTransactionByHash", [tx_hash], RPC_LIST)
+
+    if receipt is None:
+        ev["read"]["receipt"] = "refused"
+        if rerr:
+            ev["read"]["errors"].append(f"eth_getTransactionReceipt: {rerr}")
+    else:
+        ev["read"]["receipt"] = "ok"
+        try:
+            ev["status"] = int(receipt.get("status", "0x0"), 16)
+            ev["block_number"] = int(receipt.get("blockNumber", "0x0"), 16)
+            ev["gas_used"] = int(receipt.get("gasUsed", "0x0"), 16)
+        except Exception:  # noqa: BLE001
+            pass
+        if ev["block_number"] is not None:
+            blk, berr = _rpc_any("eth_getBlockByNumber", [hex(ev["block_number"]), False], RPC_LIST)
+            if blk is None:
+                ev["read"]["block"] = "refused"
+                if berr:
+                    ev["read"]["errors"].append(f"eth_getBlockByNumber: {berr}")
+            else:
+                ev["read"]["block"] = "ok"
+                ev["block_time"] = _iso_utc(int(blk.get("timestamp", "0x0"), 16))
+
+    if tx is None:
+        ev["read"]["transaction"] = "refused"
+        if terr:
+            ev["read"]["errors"].append(f"eth_getTransactionByHash: {terr}")
+    else:
+        ev["read"]["transaction"] = "ok"
+        ev["broadcaster"] = (tx.get("from") or "").lower() or None
+        selector = (tx.get("input") or "0x")[:10].lower()
+        ev["eip3009"] = {"is_transfer_with_authorization": selector == EIP3009_SELECTOR,
+                         "selector": selector if len(selector) == 10 else None}
+
+    matched: list[dict] = _usdc_transfers_to(receipt.get("logs") or [], to) if receipt else []
+    log_search: dict | None = None
+    if receipt is None:
+        # No endpoint would serve the receipt: walk short log windows rather than report "nothing".
+        lg, log_search = _scan_transfer_windows(tx_hash, to)
+        ev["read"]["log_search"] = log_search
+        ev["windows_read"] = int(log_search.get("windows_read", 0))
+        ev["windows_refused"] = int(log_search.get("windows_refused", 0))
+        if lg is not None:
+            matched = _usdc_transfers_to([lg], to)
+            ev["recovered_via"] = "eth_getLogs_windows"
+
+    if matched:
+        m = matched[0]
+        ev["transfer"] = m
+        ev["payer"] = str(m.get("from") or "").lower() or None
+        if ev["block_number"] is None:
+            ev["block_number"] = m.get("block")
+    elif from_verdict:
+        # the shared verifier matched a log we could not fetch ourselves (endpoints disagree)
+        ev["transfer"] = from_verdict
+        ev["payer"] = str(from_verdict.get("from") or "").lower() or None
+        if ev["block_number"] is None:
+            ev["block_number"] = from_verdict.get("block")
+
+    ev["relayed"] = ((ev["payer"] != ev["broadcaster"])
+                     if (ev["payer"] and ev["broadcaster"]) else None)
+
+    t = ev["transfer"]
+    logs_readable = bool(receipt is not None or (log_search and log_search.get("windows_read", 0) > 0))
+    amount_ok = (int(t.get("value_atomic") or 0) >= int(min_atomic)) if t else (False if logs_readable else None)
+    from_ok = None
+    if from_addr:
+        from_ok = (ev["payer"] == from_addr.lower()) if ev["payer"] else (False if logs_readable else None)
+    bcast_ok = None
+    if expected_broadcaster:
+        bcast_ok = (ev["broadcaster"] == expected_broadcaster.lower()) if ev["broadcaster"] else None
+    relay_ok = None
+    if expect_relayer is not None:
+        if ev["payer"] and ev["broadcaster"]:
+            relay_ok = (ev["payer"] != ev["broadcaster"]) == bool(expect_relayer)
+
+    ev["checks"] = {
+        "transfer_found": bool(t),
+        "recipient_matches": (True if t else (False if logs_readable else None)),
+        "amount_meets_minimum": amount_ok,
+        "payer_matches_requested_from": from_ok,
+        "broadcaster_matches_expected": bcast_ok,
+        "relayer_as_expected": relay_ok,
+        "receipt_status_ok": (ev["status"] == 1) if ev["status"] is not None else None,
+    }
+
+    # A requested expectation we could not evaluate is never a pass: it is reported as unreadable.
+    # An expectation that was not requested is not evaluated at all.
+    fails: list[str] = []
+    for label, requested, val in (("payer", from_addr is not None, from_ok),
+                                  ("broadcaster", expected_broadcaster is not None, bcast_ok),
+                                  ("relayer", expect_relayer is not None, relay_ok)):
+        if not requested:
+            continue
+        if val is False:
+            fails.append(f"{label}_mismatch")
+        elif val is None:
+            fails.append(f"{label}_unreadable")
+
+    verified = bool(r_ok)
+    reason = r_reason
+    can_recover = bool(t) and logs_readable and amount_ok is not False and from_ok is not False \
+        and ev["checks"]["receipt_status_ok"] in (True, None)
+    if not verified and can_recover:
+        # The chain shows a USDC Transfer into `to` carrying this exact tx hash, and every constraint
+        # we were asked for holds. Say which route proved it — never "ok" as if the receipt was read.
+        verified = True
+        reason = "ok_logs_only" if receipt is None else "ok_via_local_recheck"
+    if fails:
+        verified = False
+        reason = fails[0]
+    elif not verified:
+        if t is None and not logs_readable:
+            reason = "unreadable"
+        elif t is None:
+            reason = "no_matching_usdc_transfer"
+        elif amount_ok is False:
+            reason = "amount_below_minimum"
+
+    parts: list[str] = []
+    if ev["read"]["receipt"] == "refused":
+        parts.append("receipt")
+    if ev["read"]["transaction"] == "refused":
+        parts.append("transaction")
+    if ev["read"]["block"] == "refused":
+        parts.append("block")
+    if log_search and log_search.get("attempted") and log_search.get("unreadable"):
+        parts.append("logs")
+    ev["unreadable_parts"] = parts
+    ev["unreadable"] = bool(parts)
+    ev["verified"] = verified
+    ev["reason"] = reason
+    return ev
+
+
 @app.post("/payment-verify")
 def payment_verify(req: VerifyReq):
     if not re.fullmatch(r"0x[0-9a-fA-F]{64}", req.tx_hash or ""):
@@ -1380,20 +1672,53 @@ def payment_verify(req: VerifyReq):
     to = req.to or TREASURY_BASE
     if not _is_address(to):
         raise HTTPException(status_code=400, detail="invalid recipient")
+    if req.expected_broadcaster is not None and not _is_address(req.expected_broadcaster):
+        raise HTTPException(status_code=400, detail="invalid expected_broadcaster")
     min_atomic = int(round(float(req.min_amount or 0) * 1_000_000))
+    from_addr = req.from_addr if _is_address(req.from_addr or "") else None
+
     ok, reason, detail = verify_tx_usdc(tx_hash=req.tx_hash, to_address=to, min_atomic=min_atomic,
-                                        from_address=req.from_addr if _is_address(req.from_addr or "") else None,
-                                        rpc=RPC_LIST[0])
+                                        from_address=from_addr, rpc=RPC_LIST[0])
+    ev = _payment_evidence(req.tx_hash, to, min_atomic, from_addr, req.expect_relayer,
+                           req.expected_broadcaster, receipt_verdict=(ok, reason, detail))
+    transfer = ev["transfer"]
     return {
-        "tx_hash": req.tx_hash,
-        "verified": bool(ok),
-        "reason": reason,
+        "tx_hash": req.tx_hash.lower(),
+        "verified": ev["verified"],
+        "reason": ev["reason"],
+        # who funded the payment (Transfer.from / topics[1]) vs who pushed the transaction (tx.from):
+        # a facilitator relaying an EIP-3009 authorization makes these two different accounts.
+        "payer": ev["payer"],
+        "broadcaster": ev["broadcaster"],
+        "relayed": ev["relayed"],
+        "eip3009": ev["eip3009"],
+        "block_number": ev["block_number"],
+        "block_time": ev["block_time"],
+        "status": ev["status"],
+        "gas_used": ev["gas_used"],
+        "amount_usdc": (round(int(transfer["value_atomic"]) / 1e6, 6) if transfer else None),
+        "transfer": transfer,
         "expected": {"to": to.lower(), "min_amount_usdc": req.min_amount or 0,
-                     "from": (req.from_addr or "").lower() or None, "token": USDC_BASE},
-        "transfer": detail if isinstance(detail, dict) else None,
+                     "from": from_addr, "token": USDC_BASE,
+                     "expect_relayer": req.expect_relayer,
+                     "expected_broadcaster": (req.expected_broadcaster or "").lower() or None},
+        "checks": ev["checks"],
+        "unreadable": ev["unreadable"],
+        "unreadable_parts": ev["unreadable_parts"],
+        "windows_read": ev["windows_read"],
+        "windows_refused": ev["windows_refused"],
+        "read": ev["read"],
         "methodology": {
-            "how": "reads the transaction receipt and matches the USDC Transfer log (token contract as emitter, "
-                   "recipient as the third topic, sender as the second), re-checked locally",
+            "how": "reads the transaction receipt and matches the USDC Transfer log (token contract as "
+                   "emitter, recipient as the third topic, sender as the second), re-checked locally",
+            "payer_vs_broadcaster": "payer = Transfer.from (topics[1]); broadcaster = tx.from. They differ "
+                                    "when a facilitator relays an EIP-3009 transferWithAuthorization "
+                                    "(selector 0xe3ee160e), so tx.from alone never proves who paid",
+            "receipt_facts": "status, gasUsed, blockNumber from eth_getTransactionReceipt; block_time "
+                             "(UTC) from eth_getBlockByNumber; selector from eth_getTransactionByHash",
+            "refusals": "when no endpoint serves the receipt, short eth_getLogs windows are walked across "
+                        "endpoints; windows_read/windows_refused count them and unreadable lists what could "
+                        "not be read rather than reporting zero",
             "not_checked": ["off-chain promises", "payments in other tokens (USDC on Base only)"],
         },
     }
