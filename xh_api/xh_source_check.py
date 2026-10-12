@@ -184,6 +184,36 @@ def check_services() -> None:
             out.strip() or f"rc={rc}")
 
 
+# ── 3b. Security hardening (Boss approved 2026-10-12) - verified from the EFFECTIVE config ──────
+def check_security() -> None:
+    rc, out = run(["sudo", "-n", "sshd", "-T"], timeout=30)
+    eff = {}
+    for line in out.splitlines():
+        if " " in line:
+            k, v = line.split(None, 1)
+            eff[k.lower()] = v.strip()
+    if rc != 0 or not eff:
+        rec("TIDAK TERBACA", "sshd -T", "effective SSH hardening", out.strip()[:200])
+    else:
+        prl = eff.get("permitrootlogin", "?")
+        pwa = eff.get("passwordauthentication", "?")
+        ok = prl in ("without-password", "prohibit-password") and pwa == "no"
+        rec("TERKONFIRMASI" if ok else "GAGAL", "sshd -T (effective config)",
+            "root needs a key; password auth off",
+            f"permitrootlogin={prl} passwordauthentication={pwa}")
+    rc, out = run(["systemctl", "is-active", "fail2ban"], timeout=20)
+    rec("TERKONFIRMASI" if out.strip() == "active" else "GAGAL", "systemctl is-active", "fail2ban",
+        out.strip() or f"rc={rc}")
+    rc, out = run(["sudo", "-n", "fail2ban-client", "status", "sshd"], timeout=30)
+    if rc == 0:
+        rows = [l.strip() for l in out.splitlines()
+                if "Currently banned" in l or "Banned IP list" in l or "Total failed" in l]
+        rec("TERKONFIRMASI", "fail2ban-client status sshd", "sshd jail active",
+            " | ".join(rows)[:240] or out.strip()[:240])
+    else:
+        rec("TIDAK TERBACA", "fail2ban-client status sshd", "sshd jail", out.strip()[:160])
+
+
 # ── 4. Repositories: is what we committed actually on the remote? ───────────────────────────────
 def check_repos() -> None:
     for repo in REPOS:
@@ -260,6 +290,7 @@ def main() -> int:
     check_clawhub()
     check_http()
     check_services()
+    check_security()
     check_repos()
     check_treasury_inflow()
     check_pending_boss()
