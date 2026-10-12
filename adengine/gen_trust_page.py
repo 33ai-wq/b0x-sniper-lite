@@ -79,11 +79,16 @@ def main() -> None:
     th = prov.get("board_thresholds") or {}
     u = (prov.get("counting_units") or {})
     oc_cov = ""
+    oc_excl = ""
     if oc:
         read = oc.get("windows_read")
         refused = oc.get("windows_refused") or 0
         if read is not None and (refused or oc.get("_refused")):
             oc_cov = f" ({read}/{read + refused} windows readable - refusals printed, never zeroed)"
+        # Boss's decision (2026-10-12): our own test wallets are excluded from the published count, and
+        # the exclusion is stated on the page - a test payment is not a buyer.
+        if oc.get("internal_excluded"):
+            oc_excl = f" ({esc(oc['internal_excluded'])} from our own test wallet excluded)"
     prov_block = ""
     if prov:
         prov_block = f"""
@@ -91,7 +96,7 @@ def main() -> None:
 <div class="kpi">
   <div><b>{esc(gl.get('settled_total'))}</b><span>settled calls since {esc((gl.get('since') or '')[:10])}</span></div>
   <div><b>{esc(gl.get('from_external'))}</b><span>from outside callers</span></div>
-  <div><b>{esc(oc.get('transfers'))}</b><span>USDC transfers in, last 24h{oc_cov}</span></div>
+  <div><b>{esc(oc.get('transfers'))}</b><span>USDC transfers in, last 24h, from outside{oc_cov}{oc_excl}</span></div>
   <div><b>{esc(prov.get('generated_at', '')[:16].replace('T', ' '))}</b><span>counted (CST)</span></div>
 </div>
 <div class="note">{esc(prov.get('disclosure'))}</div>
@@ -106,7 +111,9 @@ place 10 on x402scan's 24-hour server board needs about {esc(th.get('rank10_24h_
 its 100th place about {esc(th.get('rank100_24h_calls'))}, and a place on the board at all about
 {esc(th.get('on_board_min_24h_calls'))}. We publish where we are instead of buying a position.
 This section is rebuilt from <code>adengine/data/provenance.json</code>: the call count is our own request
-table filtered by method+path, the transfers are counted from Base logs. We publish counts and never
+table filtered by method+path, the transfers are counted from Base logs, and transfers from our own test
+wallets are excluded (they exist to exercise the product, so a test payment is not counted as a buyer).
+We publish counts and never
 amounts - not the balance, not what a call earned us - and we say whose measurement a number is whenever we
 quote somebody else's.</div>
 """
