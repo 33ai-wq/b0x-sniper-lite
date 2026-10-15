@@ -162,8 +162,36 @@ if STANDARD_X402:
 
         _x402_middleware = payment_middleware(X402_ROUTES, _x402_server)
 
+        # ── non-POST verbs on the paid route (2026-10-15) ─────────────────────────────
+        # A crawler probing GET on /ask used to fall through to the "GET /{id}" entry lookup and get
+        # 404 "Entry not found" - a paid resource reading as a broken one. When the request carries NO
+        # payment header it is presented to the gate as the paid method, so it gets the identical 402
+        # challenge. A request that DOES carry a payment header is untouched: only the declared paid
+        # method may settle. Free routes (/ , /categories, /search, /{id}) are not in X402_ROUTES.
+        _paid_method_by_path = {}
+        for _route in X402_ROUTES:
+            _m, _p = _route.split(" ", 1)
+            _paid_method_by_path[_p] = _m.upper()
+        _declared_cache = {}
+
+        def _declared_methods_for(path: str) -> set:
+            if not _declared_cache:
+                for _r in app.routes:
+                    _rp = getattr(_r, "path", None)
+                    if _rp:
+                        _declared_cache.setdefault(_rp, set()).update(
+                            {str(x).upper() for x in (getattr(_r, "methods", None) or set())})
+            return _declared_cache.get(path, set())
+
         @app.middleware("http")
         async def x402_payment_gate(request: Request, call_next):
+            _path = request.url.path
+            _paid = _paid_method_by_path.get(_path)
+            if (_paid
+                    and request.method.upper() not in ("OPTIONS", _paid)
+                    and request.method.upper() not in _declared_methods_for(_path)
+                    and not (request.headers.get("x-payment") or request.headers.get("payment-signature"))):
+                request.scope["method"] = _paid
             return await _x402_middleware(request, call_next)
 
         print(f"[kb] standard x402 ON | facilitator={FACILITATOR_URL} | {ASK_ROUTE} "

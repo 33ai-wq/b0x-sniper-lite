@@ -721,9 +721,42 @@ if STANDARD_X402:
             raise RuntimeError(f"only {len(X402_ROUTES)} of {len(PAID_ROUTES)} paid routes were configured — "
                                "the gate would serve some paid endpoints for free")
 
+        # ── non-POST verbs on a paid route (2026-10-15) ───────────────────────────────
+        # Directory crawlers probe GET/HEAD/PUT/DELETE/PATCH on every registered resource, and this
+        # gate matches the declared method only: those verbs fell through to the router and answered
+        # 405 "Method Not Allowed", which a probe reads as a broken resource. When such a request
+        # carries NO payment header it is presented to the gate as the paid method, so it receives the
+        # byte-identical 402 challenge. Three guards: a request that DOES carry a payment header is
+        # left untouched (only the declared paid method may ever settle), a method the app really
+        # serves on that path is left untouched (the free GET previews on the bundle index and the
+        # video menu keep answering 200), and OPTIONS is left untouched so CORS preflight still works.
+        _paid_method_by_path = {}
+        for _route in X402_ROUTES:
+            _m, _p = _route.split(" ", 1)
+            _paid_method_by_path[_p] = _m.upper()
+        _declared_cache = {}
+
+        def _declared_methods_for(path: str) -> set:
+            if not _declared_cache:
+                for _r in app.routes:
+                    _rp = getattr(_r, "path", None)
+                    if _rp:
+                        _declared_cache.setdefault(_rp, set()).update(
+                            {str(x).upper() for x in (getattr(_r, "methods", None) or set())})
+            return _declared_cache.get(path, set())
+
+        _gate = payment_middleware(X402_ROUTES, _srv)
+
         @app.middleware("http")
         async def x402_payment_gate(request: Request, call_next):
-            return await payment_middleware(X402_ROUTES, _srv)(request, call_next)
+            _path = request.url.path
+            _paid = _paid_method_by_path.get(_path)
+            if (_paid
+                    and request.method.upper() not in ("OPTIONS", _paid)
+                    and request.method.upper() not in _declared_methods_for(_path)
+                    and not (request.headers.get("x-payment") or request.headers.get("payment-signature"))):
+                request.scope["method"] = _paid
+            return await _gate(request, call_next)
 
         print(f"[xh-api] standard x402 ON | facilitator={FACILITATOR_URL} | {len(X402_ROUTES)} paid routes "
               f"@ ${PRICE_USDC} -> {TREASURY_BASE}", flush=True)
