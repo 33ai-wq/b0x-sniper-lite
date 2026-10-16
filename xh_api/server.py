@@ -267,11 +267,10 @@ _TRUST_EXAMPLE = {
     "not_checked": ["does the seller deliver after payment", "uptime over time", "operator identity"]}
 
 _SAFETY_DESC = (
-    "One 0-100 safety score for a Base token, decided before the agent buys: liquidity on the deepest pair, "
-    "top-10 holder concentration, owner powers found in the bytecode (mint/blacklist/pause/fee setters), "
-    "upgradeability from the EIP-1967 slot, explorer/Sourcify verification, the creator's history, and the "
-    "price impact of a small trade. Returns safe/caution/danger with every component printed. Checks it cannot "
-    "do honestly (buy/sell tax, honeypot simulation) are listed as not_checked instead of guessed.")
+    "One 0-100 safety score for a Base token before an agent buys: liquidity, top-10 holder concentration, "
+    "owner powers in the bytecode, upgradeability (EIP-1967), explorer/Sourcify verification, creator "
+    "history, small-trade price impact. Verdicts: safe/caution/danger per component, unknown when a check "
+    "could not run, and not_a_token with no score when the address deploys no code.")
 _SAFETY_SCHEMA = {"type": "object", "properties": {
     "token": {"type": "string", "description": "Base token contract address"}}, "required": ["token"]}
 _SAFETY_EXAMPLE = {
@@ -597,7 +596,7 @@ for _sm, _sop in (("POST", "tokenSafety"), ("GET", "tokenSafetyGet")):
     _r = f"{_sm} /token-safety"
     PRICE_OVERRIDES[_r] = _SAFETY_PRICE
     RESOURCE_OVERRIDES[_r] = "/api/token-safety"
-    PAID_ROUTES.append((_r, _sop, "Token safety score (Base) — safe / caution / danger", _SAFETY_DESC,
+    PAID_ROUTES.append((_r, _sop, "Token safety score (Base) — safe / caution / danger, or not_a_token with no score", _SAFETY_DESC,
                         {"token": "0x4ed4E862860beD51a9570b96d89aF5E1B0Efefed"}, _SAFETY_SCHEMA, _SAFETY_EXAMPLE))
 
 _DOC_IN = {"url": "https://arxiv.org/pdf/1706.03762"}

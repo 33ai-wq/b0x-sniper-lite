@@ -5,6 +5,16 @@ owner powers, whether the creator has a habit of launching tokens, and what a sm
 slippage. Every component is read from a public source at request time (Blockscout Base, the Base RPC,
 DexScreener). Checks we cannot perform honestly (buy/sell tax, honeypot simulation, off-chain intent) are
 listed in `not_checked` instead of being guessed.
+
+Two rules that keep the answer honest (both added 2026-10-16 after a paying tester reported the first):
+
+  * A verdict is only for something that can be scored. `assess()` reads the deployed bytecode FIRST:
+    an address that deploys no code on Base returns `verdict: "not_a_token"` with no score. Scoring
+    the absence of a token is what produced a confident "danger 40" for 0x1111...1111, which can tell
+    an agent that a real token it holds is dangerous when the address was simply mistyped.
+  * A check that did not run is never reported as a negative finding. Verification is three states -
+    `verified` / `not verified` / `could not be read` (unmeasured) - and an unreachable explorer or a
+    failed cross-check reads as unknown, never as "not verified".
 """
 
 import json
@@ -20,6 +30,22 @@ ZERO = "0x0000000000000000000000000000000000000000"
 BURN = {"0x000000000000000000000000000000000000dEaD".lower(), ZERO}
 VERDICT_SAFE = 75
 VERDICT_CAUTION = 50
+# Published with every answer, so a buyer can redo the arithmetic and read the two non-numeric cases.
+VERDICT_BANDS = {
+    "safe": ">= 75",
+    "caution": "50-74",
+    "danger": "< 50",
+    "not_a_token": "the address deploys no contract code on Base - not scored",
+    "unknown": "a read the score depends on failed - not scored",
+}
+WEIGHTS = {"liquidity": 25, "concentration": 25, "contract_powers": 20,
+           "upgradeability_verification": 15, "creator_history": 10, "tradability": 5}
+NOT_CHECKED = [
+    "buy/sell tax and honeypot behaviour (needs a simulated swap on a forked node)",
+    "hidden owner powers that are not visible as standard selectors",
+    "off-chain intent, team identity, or social provenance",
+    "whether the top holders are one person behind several wallets",
+]
 
 RISKY_SELECTORS = {
     "0x40c10f19": "mint(address,uint256) — supply can be increased",
@@ -68,9 +94,14 @@ def _dex(token: str) -> dict | None:
 
 
 def _sourcify_verified(token: str) -> dict:
-    """Second opinion on verification: Sourcify's keyless API, chain 8453 (Base)."""
+    """Second opinion on verification: Sourcify's keyless API, chain 8453 (Base).
+
+    No `fields=` parameter on purpose: Sourcify v2 rejects `match` as a field selector
+    ("Field selector match is not a valid field", HTTP 400 on EVERY call), which silently disabled
+    this cross-check and made verified tokens lose 8 points and print "not verified". Fixed 2026-10-16.
+    """
     try:
-        d = _get(f"https://sourcify.dev/server/v2/contract/8453/{token}?fields=match,creationMatch")
+        d = _get(f"https://sourcify.dev/server/v2/contract/8453/{token}")
         return {"match": d.get("match"), "creationMatch": d.get("creationMatch")}
     except Exception as e:
         return {"error": f"{type(e).__name__}: {str(e)[:80]}"}
@@ -160,11 +191,63 @@ def _slippage(liquidity_usd: float, trade_usd: float = 1000.0) -> dict:
             "assumption": "constant product, liquidity split evenly across the pair"}
 
 
+def _unscorable(token: str, verdict: str, reason: str, code: dict, started: float) -> dict:
+    """The answer for an address that must not be given a score at all.
+
+    Two cases reach here, both handled before any component runs: the chain says the address deploys
+    no code (there is no token - `not_a_token`), or the chain could not be read (`unknown`). Neither
+    is a statement about a token's safety, so no score is produced and `scored` is false.
+    """
+    return {
+        "token": token,
+        "verdict": verdict,
+        "scored": False,
+        "score": None,
+        "reason": reason,
+        "symbol": None, "name": None, "decimals": None,
+        "points": {},
+        "weights": WEIGHTS,
+        "market": None,
+        "holders": None,
+        "top10_share_pct": None,
+        "holder_count": None,
+        "contract": {"verified": None, "proxy": None, "bytecode_bytes": code.get("length"),
+                     "risky_selectors": [], "owner": None},
+        "creator": None,
+        "findings": [reason],
+        "how_to_read": ("no safety score is produced for this address. Read it as 'there is nothing to "
+                        "buy here' (or 'the chain could not be read'), and re-check the address - do not "
+                        "read it as a risky token"),
+        "methodology": {"bytecode": "eth_getCode on Base is read before any component runs; a zero-length "
+                                    "answer means no contract is deployed at this address"},
+        "not_checked": NOT_CHECKED,
+        "verdicts": VERDICT_BANDS,
+        "elapsed_ms": round((time.time() - started) * 1000),
+    }
+
+
 def assess(ctx: Ctx, token: str) -> dict:
     started = time.time()
     token = token.lower()
     if not ctx.is_address(token):
         return {"token": token, "error": "not a Base contract address", "score": 0, "verdict": "avoid"}
+
+    # Read the code FIRST: a verdict belongs to something that can be scored. An address with no
+    # deployed code is not a token, and scoring it produced "danger 40" for 0x1111...1111 (reported by
+    # a paying tester, 2026-10-15). Distinguish "no code" from "could not read the chain".
+    code = _bytecode_risks(ctx, token)
+    if code.get("error") or code.get("length") is None:
+        return _unscorable(token, "unknown",
+                           "could not read the chain: eth_getCode did not answer on any RPC endpoint "
+                           f"({str(code.get('error'))[:120]}) - no score is produced, and this says nothing "
+                           "about any token at this address",
+                           code, started)
+    if not code.get("length"):
+        return _unscorable(token, "not_a_token",
+                           "no contract code at this address on Base (eth_getCode returned 0x): there is no "
+                           "token to score. This is a plain address - most often a mistyped or truncated "
+                           "one - not a dangerous token",
+                           code, started)
 
     checks: dict[str, Any] = {}
     points: dict[str, Any] = {}
@@ -179,7 +262,6 @@ def assess(ctx: Ctx, token: str) -> dict:
     dex = _dex(token)
     info = _address_info(token)
     holders = _holders(token)
-    code = _bytecode_risks(ctx, token)
     owner = _owner(ctx, token)
     proxy = _proxy(ctx, token)
     deployer = _deployer_history(ctx, info.get("creator"))
@@ -241,10 +323,11 @@ def assess(ctx: Ctx, token: str) -> dict:
                 p += 3
                 findings.append(f"a lock/vesting contract sits in the top holders ({lp_like[0]['label']})")
         else:
-            # unmeasured is not the same as bad: give a neutral floor and say so
+            # unmeasured is not the same as bad: give a neutral floor, name the reason, say so
             p += 12
-            findings.append("holder concentration could not be measured (explorer returned no holder list) "
-                            "— scored neutral, treat this component as unknown")
+            why = str(holders.get("error") or "the explorer returned no holder list")[:90]
+            findings.append(f"holder concentration could not be measured ({why}) — scored neutral, "
+                            "treat this component as unknown")
     except Exception as e:
         p += 12
         findings.append(f"concentration check failed ({type(e).__name__}) — scored neutral")
@@ -284,14 +367,23 @@ def assess(ctx: Ctx, token: str) -> dict:
     sourcify = _sourcify_verified(token)
     checks["is_verified"] = verified
     checks["sourcify"] = sourcify
+    checks["verification_reads_answered"] = {"explorer": "is_contract" in info,
+                                             "sourcify": "error" not in sourcify}
     if verified or sourcify.get("match"):
         p += 8
         findings.append("source is verified"
                         + ("" if verified else " (Sourcify) ")
                         + ("on the explorer" if verified else ""))
-    else:
-        findings.append("source is NOT verified in either explorer — its behaviour cannot be read from code")
+    elif "is_contract" in info or "error" not in sourcify:
+        # a source answered and found no match: this is a real negative
+        findings.append("source is NOT verified in either explorer (both answered, no match) — its behaviour "
+                        "cannot be read from code")
         p += 1
+    else:
+        # nothing answered: unmeasured must never be printed as a negative
+        p += 4
+        findings.append("verification could not be read (the explorer did not answer and Sourcify did not "
+                        "respond) — scored neutral 4/8, treat this component as unknown, NOT as unverified")
     points["upgradeability_verification"] = round(min(p, 15.0), 1)
 
     # 5. creator history (10)
@@ -340,10 +432,9 @@ def assess(ctx: Ctx, token: str) -> dict:
     return {
         "token": token, "symbol": meta.get("symbol"), "name": meta.get("name"),
         "decimals": meta.get("decimals"),
-        "score": score, "verdict": verdict,
+        "score": score, "verdict": verdict, "scored": True,
         "points": points,
-        "weights": {"liquidity": 25, "concentration": 25, "contract_powers": 20,
-                    "upgradeability_verification": 15, "creator_history": 10, "tradability": 5},
+        "weights": WEIGHTS,
         "market": dex,
         "holders": checks.get("top10_addresses"),
         "top10_share_pct": checks.get("top10_share_pct"),
@@ -362,14 +453,8 @@ def assess(ctx: Ctx, token: str) -> dict:
             "creator": "explorer creator address + its nonce",
             "slippage": "constant-product arithmetic from pool liquidity, stated as an estimate",
         },
-        "not_checked": [
-            "buy/sell tax and honeypot behaviour (needs a simulated swap on a forked node)",
-            "hidden owner powers that are not visible as standard selectors",
-            "off-chain intent, team identity, or social provenance",
-            "whether the top holders are one person behind several wallets",
-        ],
-        "verdicts": {"safe": f">= {VERDICT_SAFE}", "caution": f"{VERDICT_CAUTION}-{VERDICT_SAFE - 1}",
-                     "danger": f"< {VERDICT_CAUTION}"},
+        "not_checked": NOT_CHECKED,
+        "verdicts": VERDICT_BANDS,
         "elapsed_ms": round((time.time() - started) * 1000),
     }
 
@@ -391,12 +476,17 @@ def register(app, ctx: Ctx) -> None:
             "price_usdc_per_call": 0.05,
             "endpoints": [{"route": "POST /api/token-safety", "price_usd": 0.05},
                           {"route": "GET /api/token-safety?token=0x…", "price_usd": 0.05}],
-            "verdicts": {"safe": ">= 75", "caution": "50-74", "danger": "< 50"},
-            "weights": {"liquidity": 25, "concentration": 25, "contract_powers": 20,
-                        "upgradeability_verification": 15, "creator_history": 10, "tradability": 5},
+            "verdicts": VERDICT_BANDS,
+            "no_contract_code": ("an address that deploys no contract code on Base returns verdict "
+                                 "'not_a_token' with no score: the bytecode is read before any component "
+                                 "runs, so there is nothing to score - it is not a risky token"),
+            "unmeasured_checks": ("a component whose reads failed is scored neutral and printed as "
+                                  "'could not be measured / could not be read', never as a negative finding; "
+                                  "'not verified' is only said when a source answered and found no match"),
+            "weights": WEIGHTS,
             "sibling": {"chain": "solana", "route": "GET /v1/token-safety?mint=…",
                         "origin": "https://pronomad.duckdns.org"},
-            "not_checked": ["buy/sell tax", "honeypot simulation", "off-chain team identity"],
+            "not_checked": NOT_CHECKED,
         }
 
     def _run(token: str) -> dict:

@@ -31,11 +31,10 @@ TRUST_DESC = (
     "score with pay/pay-with-caution/avoid plus the evidence and penalties behind every point. Built so an "
     "autonomous agent can refuse a seller it cannot verify.")
 SAFETY_DESC = (
-    "One 0-100 safety score for a Base token: liquidity on the deepest pair, top-10 holder concentration, owner "
-    "powers found in the bytecode (mint/blacklist/pause/fee setters), upgradeability from the EIP-1967 slot, "
-    "explorer/Sourcify verification, the creator's history, and the price impact of a small trade. Returns "
-    "safe/caution/danger with every component printed. Checks that cannot be done honestly (buy/sell tax, "
-    "honeypot simulation) are listed as not_checked.")
+    "One 0-100 safety score for a Base token before an agent buys: liquidity, top-10 holder concentration, "
+    "owner powers in the bytecode, upgradeability (EIP-1967), explorer/Sourcify verification, creator "
+    "history, small-trade price impact. Verdicts: safe/caution/danger per component, unknown when a check "
+    "could not run, and not_a_token with no score when the address deploys no code.")
 
 PAYINFO = {"protocols": ["x402"], "price": {"mode": "fixed", "currency": "USD", "amount": "0.05"},
            "network": "eip155:8453", "asset": "USDC"}
