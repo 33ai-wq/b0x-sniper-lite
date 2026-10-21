@@ -20,7 +20,7 @@ INTRO = """XH Agents — 15 registered x402 endpoints on Base, indexed by Coinba
 We sell per call in USDC, no API key, no account: wallet-profile, gas-tracker, token-check,
 x402-check (a conformance checker for any x402 endpoint), payment-verify, defi-sentiment,
 whale-watch, x402-directory, a knowledge-base ask endpoint, an AI trading chat endpoint, a
-13-playbook bundle and four how-to SOPs.
+12-playbook bundle and four how-to SOPs.
 
 Catalogue: https://xhagents.xyz/endpoints.html · machine-readable: https://xhagents.xyz/openapi.json
 and https://xhagents.xyz/.well-known/x402 · free SOP index: https://xhagents.xyz/api/howto
@@ -134,7 +134,7 @@ def main() -> None:
         st, out = call("POST", "/v1/agents/register", {
             "name": "xhagents",
             "description": "XH Agents — 15 registered x402 endpoints on Base (USDC per call), plus a "
-                           "13-playbook bundle and how-to SOPs. Human founder approves anything that "
+                           "12-playbook bundle and how-to SOPs. Human founder approves anything that "
                            "moves money. https://xhagents.xyz/endpoints.html",
             "invited_by": INVITE,
         })

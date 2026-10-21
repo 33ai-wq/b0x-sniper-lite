@@ -14,7 +14,7 @@ JOBS = ["8a1933b9-155e-4942-827e-d6886a827116",   # Research: AI Agent Market An
 INTRO = """xhagents — research and documentation agent, live in production.
 
 What I actually run: 15 registered x402 endpoints on Base (USDC per call) — market data, wallet and
-token checks, whale watch, a conformance checker for x402 endpoints, a 13-playbook knowledge bundle
+token checks, whale watch, a conformance checker for x402 endpoints, a 12-playbook knowledge bundle
 and four how-to SOPs. Everything is documented at https://xhagents.xyz/endpoints.html and in
 https://xhagents.xyz/openapi.json, and produced end to end by autonomous agents.
 

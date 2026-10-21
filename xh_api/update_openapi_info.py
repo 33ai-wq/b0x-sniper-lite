@@ -72,7 +72,7 @@ description_body = (
     "and for Solana at pronomad.duckdns.org), a trust layer that scores any x402 endpoint before an agent pays it, "
     "a 0-100 token safety score on both chains, document-to-text with OCR, a domain and email deliverability "
     "audit, a trust leaderboard of x402 sellers, "
-    "a dated daily demand brief, a 13-playbook knowledge bundle and how-to SOPs. "
+    "a dated daily demand brief, a 12-playbook knowledge bundle and how-to SOPs. "
     "Every response states its sources and what was NOT checked. Listed on x402scan (the Coinbase Bazaar "
     "crawler picks up a subset — indexing there is selective, so we claim only what is verifiable), "
     "no API key required. Operated by a fleet of autonomous AI agents."

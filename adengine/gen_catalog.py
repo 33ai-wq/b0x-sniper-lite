@@ -44,7 +44,7 @@ SAMPLES = {
     "/api/x402-directory": '{"query":"gas","sources":{"coinbase-bazaar":"ok","x402-list":"ok"},"results":5,\n "endpoints":[{"url":"https://xhagents.xyz/api/gas-tracker","sources":["coinbase-bazaar","x402-list"]}]}',
     "/api/kb/ask": '{"best_match":{"id":"nginx-docroot","title":"Which docroot does nginx really serve?"},\n "matches":3}',
     "/api/chat": '{"reply":"BTC is trading near …","engine":"xh-chatengine","credits_left":1}',
-    "/api/compute/xh-bundle": '{"bundle":"XH Agents — Build & Ship an x402 Paid API","version":"1.0.0",\n "items_total":13,"items_returned":13,\n "items":[{"id":"ship-x402-endpoint","title":"Ship a new x402 paid endpoint end to end"}]}',
+    "/api/compute/xh-bundle": '{"bundle":"XH Agents — Build & Ship an x402 Paid API","version":"1.0.0",\n "items_total":12,"items_returned":12,\n "items":[{"id":"ship-x402-endpoint","title":"Ship a new x402 paid endpoint end to end"}]}',
     "/api/web-search": '{"query":"x402 paid API on Base","results_returned":5,"pages_retrieved":3,\n "results":[{"rank":1,"title":"Quickstart for Sellers - x402","domain":"docs.x402.org",\n "url":"https://docs.x402.org/getting-started/quickstart-for-seller",\n "retrieval":{"status":200,"chars_total":8123,"content":"…"}}]}',
     "/api/company-enrich": '{"query":"Coinbase","sources":["wikidata","linkedin-public","clearbit-autocomplete"],\n "resolved":{"wikidata_id":"Q16972754","industry":["cryptocurrency exchange","fintech"],\n "headquarters":"San Francisco","inception":"2012","stock_exchange":["Nasdaq"]},\n "linkedin":{"company_size":"1,001-5,000 employees","followers":1489647}}',
     "/api/social-data": '{"sources":["x-syndication","linkedin-public"],\n "x_tweet":{"id":"20","text":"just setting up my twttr","author":{"screen_name":"jack"},\n "metrics":{"likes":310997}},\n "linkedin":{"name":"Coinbase","industry":"Financial Services","headquarters":"Remote First"}}',
@@ -342,12 +342,10 @@ def endpoints_page(cat: dict) -> str:
 """
 
     return f"""<!DOCTYPE html><html lang="en"> <head>
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-7552930808768657"
-     crossorigin="anonymous"></script>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
 <title>x402 Endpoint Catalogue — {n} pay-per-call APIs on Base | XH Agents</title>
-<meta name="description" content="Catalogue of live x402 resources on Base for agents - resource inspiration for agents: wallet and token checks, gas, whale watch, DeFi sentiment, x402 conformance, Arkham-style intel, the seven-step cycle-wallet hunt, a 13-playbook knowledge bundle and how-to SOPs. Paid per call in USDC, no API key. Listed on x402scan.">
+<meta name="description" content="Catalogue of live x402 resources on Base for agents - resource inspiration for agents: wallet and token checks, gas, whale watch, DeFi sentiment, x402 conformance, Arkham-style intel, the seven-step cycle-wallet hunt, a 12-playbook knowledge bundle and how-to SOPs. Paid per call in USDC, no API key. Listed on x402scan.">
 <link rel="canonical" href="https://xhagents.xyz/endpoints.html">
 <meta property="og:type" content="website"><meta property="og:title" content="x402 Endpoint Catalogue — XH Agents">
 <meta property="og:description" content="x402 resources on Base for agents - resource inspiration for agents. Paid per call in USDC, listed on x402scan.">
@@ -431,7 +429,7 @@ def patch_index(block: str, cat: dict) -> None:
             f"cycle-wallet hunt (Base here, Solana at pronomad.duckdns.org), a trust score for any x402 endpoint "
             f"before you pay it, a 0-100 token safety score, document-to-text with OCR, a domain and email "
             f"deliverability audit, a trust leaderboard of x402 sellers, a video licence "
-            f"with a signed stream URL, a dated daily brief, a 13-playbook knowledge bundle and how-to SOPs. "
+            f"with a signed stream URL, a dated daily brief, a 12-playbook knowledge bundle and how-to SOPs. "
             f"Listed on x402scan (the Coinbase Bazaar crawler picks up a subset), no API key required. "
             f"Operated by a fleet of autonomous AI agents.")
     og = ("x402 resources on Base for agents, paid per call in USDC, listed on x402scan. "

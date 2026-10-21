@@ -232,31 +232,6 @@
       "files": ["~/.config/rclone/rclone.conf (mode 600)", "backup script", "cron entry"]
     },
     {
-      "id": "install-adsense",
-      "title": "Install AdSense correctly on a site you also sell ads on",
-      "requested_by_owner": true,
-      "solves": "Get a site through AdSense review, and keep your own paid placements unmistakably separate from Google's units.",
-      "prerequisites": ["A site you control end to end (source + live docroot)", "AdSense publisher id"],
-      "steps": [
-        {"n": 1, "do": "Put the script tag as the FIRST element in <head> of every page — in the shared layout, not per page", "cmd": "<head><script async src='https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXX' crossorigin='anonymous'></script>..."},
-        {"n": 2, "do": "Publish ads.txt at the docroot with the publisher line and no redirects", "cmd": "curl -s https://your-host/ads.txt"},
-        {"n": 3, "do": "Write the pages review looks for: about, privacy, terms, disclaimer — and make the privacy page name the ad network", "cmd": "curl -s -o /dev/null -w '%{http_code} %{url_effective}\\n' https://your-host/{about,privacy,terms,disclaimer}"},
-        {"n": 4, "do": "Label every unit you sell directly as Sponsored/Ad, and never place your own slot where it can be mistaken for a Google unit"},
-        {"n": 5, "do": "Verify against the live docroot, not the build output", "cmd": "curl -s --resolve your-host:443:127.0.0.1 -k https://your-host/ | grep -c 'adsbygoogle.js'"}
-      ],
-      "pitfalls": [
-        "On a hand-edited live docroot, editing only the Astro/Vite source changes nothing until a rebuild AND a copy to the docroot. Always curl the live host to confirm.",
-        "A missing ads.txt or an unreachable privacy page is a common review rejection.",
-        "The user-agent matters for the check: grep the origin with --resolve so DNS or a CDN cache cannot fool you.",
-        "Third-party scripts belong in the layout, otherwise new pages ship without the tag and the review sample fails."
-      ],
-      "verify": [
-        "curl -sD- https://your-host/ | grep -i 'adsbygoogle.js' shows the script in the first bytes of <head>",
-        "ads.txt and all four legal pages answer 200"
-      ],
-      "files": ["layout template (source)", "live docroot index.html", "ads.txt", "legal pages"]
-    },
-    {
       "id": "ads-size-setup",
       "title": "One ad slot, several sizes (and prove it cannot be abused)",
       "requested_by_owner": true,
@@ -265,7 +240,7 @@
       "steps": [
         {"n": 1, "do": "Define the sellable sizes and prices in ONE place (we use 728x90, 300x250, 480x320) and let the page pick, rather than duplicating markup"},
         {"n": 2, "do": "Render the slot at load from that definition, choosing by viewport, with a fixed aspect box so nothing jumps", "cmd": "<div class='ad-slot' data-sizes='728x90,480x320,300x250'>"},
-        {"n": 3, "do": "Keep third-party (AdSense) units and your own (Sponsored) units in the same slot mechanism but different labels"},
+        {"n": 3, "do": "Keep third-party ad units and your own (Sponsored) units in the same slot mechanism but different labels"},
         {"n": 4, "do": "Make activation/publishing require an admin token — an unauthenticated publish endpoint means anyone can put content on your site", "cmd": "curl -s -X POST https://your-host/api/ads/activate -d '{}'  # must NOT be 200 without the token"},
         {"n": 5, "do": "Test the slot with a hostile creative: oversized image, very long text, an iframe, a script tag — the page must stay intact", "cmd": "node test_ad_slot.mjs"}
       ],

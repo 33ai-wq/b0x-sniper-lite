@@ -404,7 +404,7 @@ PAID_ROUTES = [
                    "value_atomic": 100000, "block": 51825798},
       "amount_usdc": 0.1, "unreadable": False, "windows_read": 0, "windows_refused": 0}),
     ("POST /xh-bundle", "xhBundle", "XH Agents playbook bundle",
-     "Thirteen production playbooks from running an x402 paid API on Base: shipping the endpoint, the payment-verifier rules, the real-money buyer test, the Base RPC capability audit, CDP authentication, directory registration, consolidating Cloudflare/Solana data, an rclone Google Drive bridge, AdSense, multi-size ad slots, nginx route recovery and secure Telegram alerts. Each item carries the mechanism, the commands, the pitfalls that cost us real money and how to verify the result.",
+     "Twelve production playbooks from running an x402 paid API on Base: shipping the endpoint, the payment-verifier rules, the real-money buyer test, the Base RPC capability audit, CDP authentication, directory registration, consolidating Cloudflare/Solana data, an rclone Google Drive bridge, multi-size ad slots, nginx route recovery and secure Telegram alerts. Each item carries the mechanism, the commands, the pitfalls that cost us real money and how to verify the result.",
      {"topic": "fix-bug-base-rpc", "format": "json"},
      {"type": "object", "properties": {"topic": {"type": "string"}, "format": {"type": "string"}},
       "required": []},
@@ -2094,7 +2094,7 @@ def howto_index():
         "how_to_buy": f"GET or POST {SITE}/api/howto/<slug> with an x402 payment header; an unpaid request "
                       f"receives a standard 402 challenge quoting that SOP's price",
         "all_in_option": {"bundle": "POST " + SITE + "/api/compute/xh-bundle",
-                          "note": "the bundle contains 13 playbooks (including x402 registration and endpoint "
+                          "note": "the bundle contains 12 playbooks (including x402 registration and endpoint "
                                   "building) for a single call — check both prices before buying"},
     }
 

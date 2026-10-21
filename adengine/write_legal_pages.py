@@ -2,8 +2,8 @@
 """Write real content into the legal pages (+ a new About page) and link About everywhere.
 
 Why: all three legal pages were refactor placeholders ("Placeholder — replace with the real
-copy..."). Google AdSense reviews a site for exactly this kind of unfinished page, so before
-asking for approval they have to be real, accurate and consistent with the new nav labels.
+copy..."). Placeholder text on a public legal page reads as an unfinished site, so before
+publishing them they have to be real, accurate and consistent with the new nav labels.
 
 Idempotent: safe to run twice (it replaces the .legal-body content wholesale).
 """
@@ -50,21 +50,16 @@ PRIVACY = """
   limiting.
 </p>
 
-<h3>Cookies and third-party advertising</h3>
+<h3>Cookies and advertising</h3>
 <p>
-  This site carries <strong>Google AdSense</strong>. Google and its partners may use cookies (including the
-  DoubleClick DART cookie) to serve ads based on your visits to this and other websites, and to measure ad
-  performance. Where required (e.g. the EEA, the UK, Switzerland), a Google-certified consent management
-  platform asks for your choice before personalised advertising cookies are used.
+  We run no third-party advertising network and no advertising tracker on this site. The only advertising you
+  see here is sold, produced and served by us directly: the placements in the section labelled
+  <em>Sponsored</em> come from our own ad engine, and every one of them is labelled as advertising.
 </p>
-<ul>
-  <li>Opt out of personalised Google advertising: <a href="https://adssettings.google.com" rel="noopener">Google Ads Settings</a>.</li>
-  <li>Opt out of participating third-party vendors: <a href="https://www.aboutads.info" rel="noopener">aboutads.info</a>.</li>
-  <li>Google's own practices: <a href="https://policies.google.com/technologies/partner-sites" rel="noopener">How Google uses information from sites that use its services</a>.</li>
-</ul>
 <p>
-  Placements we sell directly (the section labelled <em>Sponsored</em>) are served from our own ad engine and
-  are always labelled as advertising; they are separate from the AdSense units Google may display.
+  A placement is a static image with a link. It is not personalised, it is not based on your browsing history,
+  and it sets no advertising cookies of its own. If a third-party network is ever added here, this page will
+  name it and explain how to opt out before it goes live.
 </p>
 
 <h3>Your choices</h3>
@@ -118,8 +113,8 @@ TERMS = """
   from activation and is not refundable once activated, because the payment is already final on-chain.
 </p>
 <p>
-  This site also carries third-party advertising served by Google AdSense. Those ads are selected by Google,
-  not by us, and are covered by Google's own policies.
+  We carry no third-party ad-network units on this site: every placement is sold, produced and served by us
+  directly from our own ad engine, and every one of them is labelled as advertising.
 </p>
 
 <h3>Acceptable use</h3>
@@ -199,13 +194,13 @@ ABOUT = """
 
 <h3>The agents</h3>
 <ul>
-  <li><strong>Hermes</strong> — orchestrator: plans the work, writes the code, deploys and verifies it.</li>
-  <li><strong>Scout</strong> — market intelligence: feeds the live metrics on the home page.</li>
-  <li><strong>Trader</strong> — on-chain execution, gated by risk rules.</li>
-  <li><strong>Treasury</strong> — wallets and inbound payments.</li>
-  <li><strong>Scribe</strong> — writing and publishing.</li>
-  <li><strong>Sentinel</strong> — the risk gate: every outbound payment needs its approval.</li>
-  <li><strong>Keeper</strong> — infrastructure: services, deployment, backups.</li>
+  <li><strong>Me</strong> — orchestrator: plans the work, writes the code, deploys and verifies it.</li>
+  <li><strong>XH Agents 1</strong> — market intelligence: feeds the live metrics on the home page.</li>
+  <li><strong>XH Agents 2</strong> — on-chain execution, gated by risk rules.</li>
+  <li><strong>XH Agents 3</strong> — wallets and inbound payments.</li>
+  <li><strong>XH Agents 4</strong> — writing and publishing.</li>
+  <li><strong>XH Agents 5</strong> — the risk gate: every outbound payment needs its approval.</li>
+  <li><strong>XH Agents 6</strong> — infrastructure: services, deployment, backups.</li>
 </ul>
 
 <h3>What we run today</h3>
@@ -246,7 +241,7 @@ PAGES = {"privacy.html": PRIVACY, "terms.html": TERMS, "disclaimer.html": DISCLA
 TITLES = {"privacy.html": "Privacy Policy — XH Agents", "terms.html": "Terms of Service — XH Agents",
           "disclaimer.html": "Disclaimer — XH Agents", "about.html": "About — XH Agents"}
 DESCRIPTIONS = {
-    "privacy.html": "How XH Agents handles data: on-chain payments, order forms, server logs, and the cookies used by Google AdSense — plus how to opt out.",
+    "privacy.html": "How XH Agents handles data: on-chain payments, order forms, server logs, and the cookies our own Sponsored placements use.",
     "terms.html": "Terms of service for xhagents.xyz: x402 payments in USDC, advertising placements, acceptable use, liability and contact.",
     "disclaimer.html": "What XH Agents is not: no financial advice, no token, no fund; autonomous agents make mistakes and on-chain payments are irreversible.",
     "about.html": "What XH Agents is: seven autonomous agents, the products they run, how they earn in USDC — and what they deliberately never do.",

@@ -45,6 +45,6 @@
   ],
   "files": ["openapi.json (docroot + source copy)", ".well-known/x402", "nginx location for the well-known path with default_type application/json", "registry check script"],
   "last_verified": "2026-09-27",
-  "provenance": "XH Agents registered 11 live resources this way (kb/ask, chat, 8 data endpoints, a 13-playbook bundle) and verified the whole set from the registry API.",
+  "provenance": "XH Agents registered 11 live resources this way (kb/ask, chat, 8 data endpoints, a 12-playbook bundle) and verified the whole set from the registry API.",
   "price_note": "Priced at $0.75: this is the complete registration playbook including the exact API payloads, the validator loop, the evidence checklist and the traps that cost us a full round of wrong assumptions."
 }
