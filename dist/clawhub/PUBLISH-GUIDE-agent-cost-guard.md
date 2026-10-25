@@ -54,6 +54,22 @@ referensi di Step 3 dan Step 4. Tidak ada perubahan perilaku paket - tetap dokum
 Paket diperiksa ulang sebelum publish: 4 berkas, setiap berkas dirujuk dari SKILL.md, ASCII murni (tanpa
 em dash/arrow - karakter non-ASCII dibaca sebagai unicode deception oleh pemindai).
 
+Receipt publish:
+
+    source-commit : 76cc49ce6f8acd6a78c81c74ad875ccffdd2b2b6
+    versionId     : k97bbx81zbe574pp06wyybhwqx8gynqx
+    attemptId     : zx7cabkqe45j0sjpc1bsprpbp18gz7gx
+    fingerprint   : 700cc773f3a3d8bdc4d15b1200daf243b3088515cde36b32ab5cee82a03e20b7
+    fileCount     : 4
+    publicationStatus: pending
+
+Saat publish 1.0.1 (±1 menit setelah unggah): `static-analysis.json` clean, sisanya (`clawscan`,
+`endor`, `skillspector`, `virustotal`) masih `null`, dan `clawhub inspect` masih menampilkan Mod Time
+versi 1.0.0. Bukti perbaikan yang harus dicari: **Mod Time di `clawhub inspect` berubah**, dan/atau
+`skillspector.json` di zip 1.0.1 berisi isi (bukan `null`). Kalau setelah beberapa jam keduanya masih
+tidak berubah, langkah berikutnya adalah menarik (withdraw) versi lama lalu mengunggah lagi - bukan
+menambah versi baru.
+
 ## Cara memeriksa keadaan rilis tanpa dashboard
 
 `clawhub skill verify <slug>` menjawab `403 Skill is hidden by moderation (<reason>)` selama rilis
