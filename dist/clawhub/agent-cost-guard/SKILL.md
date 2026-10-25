@@ -20,6 +20,14 @@ This package contains **documentation and reference tables only**. It ships no c
 no file, touches no key material and cannot move money. Everything below is a checklist you run with the tools you
 already have on your own machine.
 
+## What is in this package
+- `SKILL.md` - this checklist (Steps 1-7).
+- `references/prices-reference.md` - provider price table for the models you are most likely to be paying for;
+  used by Step 4.
+- `references/case-study.md` - the reported community case behind the inheritance trap and the two checks that
+  catch it; used by Steps 2 and 3.
+- `agents/openai.yaml` - catalog metadata (display name and short description) for the skill directory.
+
 ## When to use it
 - Someone asks "what is my agent costing me?" and the answer is not obvious.
 - You run an agent with background work: automatic skill curation, background review, compression, approval
@@ -42,9 +50,12 @@ you never configured, that is the inheritance trap, not a mystery.
 ## Step 3 - Count tokens per task per day
 From the same usage records, compute: tokens per day, per model, per task. Watch for a single background task
 that outweighs all interactive use. A reported community case ran hundreds of iterations in a day (about 353
-million tokens in 20 hours) because curation kept re-triggering itself on a top-tier model.
+million tokens in 20 hours) because curation kept re-triggering itself on a top-tier model. The full write-up,
+with the two checks that reproduce the mechanism on your own data, is in `references/case-study.md`.
 
 ## Step 4 - Price it
+Price table to start from: `references/prices-reference.md` (October 2026 figures, for estimation only - your
+provider is the authority, and prices move).
 Agents normally record **tokens, not money**, so price it yourself: tokens x provider price per million, split
 input and output.
 - Check whether your provider has **peak / off-peak** pricing, and compute both.
