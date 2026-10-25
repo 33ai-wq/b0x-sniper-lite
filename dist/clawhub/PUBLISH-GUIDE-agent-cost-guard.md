@@ -66,9 +66,33 @@ Receipt publish:
 Saat publish 1.0.1 (±1 menit setelah unggah): `static-analysis.json` clean, sisanya (`clawscan`,
 `endor`, `skillspector`, `virustotal`) masih `null`, dan `clawhub inspect` masih menampilkan Mod Time
 versi 1.0.0. Bukti perbaikan yang harus dicari: **Mod Time di `clawhub inspect` berubah**, dan/atau
-`skillspector.json` di zip 1.0.1 berisi isi (bukan `null`). Kalau setelah beberapa jam keduanya masih
-tidak berubah, langkah berikutnya adalah menarik (withdraw) versi lama lalu mengunggah lagi - bukan
-menambah versi baru.
+`skillspector.json` di zip versi ini berisi isi (bukan `null`).
+
+**KOREKSI sesudahnya:** catatan awal di sini menyebut "withdraw versi lama lalu unggah ulang". Itu **salah**.
+Penyebabnya stall di sisi ClawHub, dan bukti dari tracker vendor menunjukkan yang bisa tembus justru
+**kiriman versi BARU** (`withdraw` tidak menolong; `clawhub unhide` menjawab Forbidden untuk skill yang
+disembunyikan moderasi). Lihat bagian 1.0.2 di bawah.
+
+### 1.0.2 - kiriman ulang untuk re-queue (paket identik dengan 1.0.1)
+
+Alasan: `pending.publication` pada rilis CLEAN adalah stall di sisi ClawHub (bukan isi paket). Bukti dari tracker
+vendor menunjukkan stall ini **intermiten** dan **kiriman versi berikutnya bisa tembus** sementara versi yang
+tersangkut tidak pernah pulih. Jadi versi baru adalah retry yang sah, bukan kerja ganda.
+
+Yang dikirim: paket **byte-identik** dengan 1.0.1 (fingerprint sama, `700cc773...`) + catalog metadata
+(`--categories agents,operations`, `--topics cost,curator,background-work,guardrail,audit`).
+
+Receipt publish:
+
+    source-commit : 76cc49ce6f8acd6a78c81c74ad875ccffdd2b2b6
+    versionId     : k975vnhjjbds356zv6hfnsjvrs8gz6mz
+    attemptId     : zx71wzsew5fbmhjp2vnx4zqzyh8gymce
+    fingerprint   : 700cc773f3a3d8bdc4d15b1200daf243b3088515cde36b32ab5cee82a03e20b7
+    fileCount     : 4
+    publicationStatus: pending
+
+Batas kesabaran yang disepakati: tunggu ~24 jam. Kalau masih beku, ini urusan **moderator** - jangan kirim versi
+kelima. `clawhub scan --update` dan `clawhub unhide` sudah dibuktikan TIDAK bisa membuka stall ini.
 
 ## Cara memeriksa keadaan rilis tanpa dashboard
 
