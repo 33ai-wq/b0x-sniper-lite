@@ -1,18 +1,21 @@
-# Prompting-Claude-Opus-5.md
-# GURU File untuk Nomad 7 (BOSSY's Hermes Agentic AI)
+# Prompting Claude Opus 5 — dokumen acuan (ARSIP), bukan instruksi aktif
 #
-# File ini adalah kitab panduan / source of truth KEDUA setelah SOUL.md
-# Berisi pelajaran berharga, principles, dan wisdom dari BOSSY's research
-# tentang prompting Claude Opus 5 dan agentic AI best practices.
+# Asal: panduan prompting untuk model Anthropic Claude Opus 5, disimpan Boss sebagai bahan riset.
+# Salinan kanonik sekarang ada di skill (di luar repo ini, tidak ikut ter-publish):
+#   ~/.hermes/skills/autonomous-ai-agents/agentic-prompting-patterns/references/claude-opus-5-prompting.md
 #
-# Akses:
-#   - File ini di-load otomatis setiap kali Boss invoke agent
-#   - Bisa di-read manual via: cat /home/ubuntu/.hermes/profiles/prpo_ai/Prompting-Claude-Opus-5.md
-#   - Bisa di-update kapan saja BOSSY mau refine
+# KOREKSI 25 Okt 2026 — klaim lama di kepala berkas ini SALAH:
+#   - Berkas ini TIDAK di-load otomatis. Tidak ada satu pun config, SOUL.md, atau AGENTS.md yang
+#     merujuknya; ia dokumen mati sampai seseorang benar-benar memanggilnya.
+#   - Lokasinya bukan ~/.hermes/profiles/prpo_ai/ (folder itu tidak memuat berkas ini).
+#   - "Terhubung langsung NOTE70.md" sudah tidak berlaku.
 #
-# Status: Terhubung langsung NOTE70.md
-# Created: 2026-07-31
-# Last update: -
+# Status: ARSIP. Aturan yang berlaku umum sudah dipindahkan ke ~/.hermes/SOUL.md bagian
+# "Working discipline" dan ke skill agentic-prompting-patterns. Isi di bawah ini KHUSUS Claude Opus 5
+# (level effort, thinking nyala/mati, perilaku vision); mesin ini berjalan dengan deepseek-v4.1-flash,
+# jadi jangan dikutip sebagai aturan umum.
+#
+# Created: 2026-07-31 · Header dikoreksi: 2026-10-25
 
 ---
 
